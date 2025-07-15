@@ -1,0 +1,4 @@
+enum AdDisplayPosition {
+  afterAssistantMessage,
+  afterUserMessage,
+}
