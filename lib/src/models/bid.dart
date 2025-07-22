@@ -7,6 +7,10 @@ class Bid {
   final String code;
   final AdDisplayPosition position;
 
+  bool get isAfterAssistantMessage => position == AdDisplayPosition.afterAssistantMessage;
+
+  bool get isAfterUserMessage => position == AdDisplayPosition.afterUserMessage;
+
   @override
   bool operator ==(Object other) {
     return identical(this, other) || other is Bid && id == other.id && code == other.code && position == other.position;
@@ -14,4 +18,9 @@ class Bid {
 
   @override
   int get hashCode => Object.hash(id, code, position);
+
+  @override
+  String toString() {
+    return 'Bid(id: $id, code: $code, position: $position)';
+  }
 }

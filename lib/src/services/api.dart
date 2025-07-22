@@ -12,7 +12,7 @@ class Api {
 
   factory Api() => _instance;
 
-  Future<List<Bid>> preloadAds({
+  Future<List<Bid>> fetchBids({
     required String publisherToken,
     required String userId,
     required String conversationId,

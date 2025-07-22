@@ -13,6 +13,10 @@ class Message {
   final String content;
   final DateTime createdAt;
 
+  bool get isUser => role == MessageRole.user;
+
+  bool get isAssistant => role == MessageRole.assistant;
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -30,4 +34,9 @@ class Message {
 
   @override
   int get hashCode => Object.hash(id, role, content);
+
+  @override
+  String toString() {
+    return 'Message(id: $id, role: $role, content: $content, createdAt: $createdAt)';
+  }
 }

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:kontext_flutter_sdk/src/models/bid.dart';
 import 'package:kontext_flutter_sdk/src/widgets/ads_provider_data.dart';
 import 'package:kontext_flutter_sdk/src/models/message.dart';
-import 'package:kontext_flutter_sdk/src/widgets/use_preload_ads.dart';
+import 'package:kontext_flutter_sdk/src/widgets/hooks/use_last_messages.dart';
+import 'package:kontext_flutter_sdk/src/widgets/hooks/use_preload_ads.dart';
 
 class AdsProvider extends HookWidget {
   const AdsProvider({
@@ -22,17 +24,46 @@ class AdsProvider extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bids = usePreloadAds(
+    print('Building AdsProvider');
+    print('messages count: ${messages.length}');
+
+    final bids = useState<List<Bid>>([]);
+    final readyForStreamingAssistant = useState<bool>(false);
+    final readyForStreamingUser = useState<bool>(false);
+    final lastAssistantMessageId = useState<String?>(null);
+    final lastUserMessageId = useState<String?>(null);
+
+    void setBids(List<Bid> newBids) => bids.value = newBids;
+    void setReadyForStreamingAssistant(bool ready) => readyForStreamingAssistant.value = ready;
+    void setReadyForStreamingUser(bool ready) => readyForStreamingUser.value = ready;
+    void setLastAssistantMessageId(String? id) => lastAssistantMessageId.value = id;
+    void setLastUserMessageId(String? id) => lastUserMessageId.value = id;
+
+    usePreloadAds(
       context,
       publisherToken: publisherToken,
       messages: messages,
       userId: userId,
       conversationId: conversationId,
+      setBids: setBids,
+      setReadyForStreamingAssistant: setReadyForStreamingAssistant,
+      setReadyForStreamingUser: setReadyForStreamingUser,
+    );
+
+    useLastMessages(
+      messages,
+      setReadyForStreamingAssistant: setReadyForStreamingAssistant,
+      setLastAssistantMessageId: setLastAssistantMessageId,
+      setLastUserMessageId: setLastUserMessageId,
     );
 
     return AdsProviderData(
       messages: messages,
-      bids: bids,
+      bids: bids.value,
+      readyForStreamingAssistant: readyForStreamingAssistant.value,
+      readyForStreamingUser: readyForStreamingUser.value,
+      lastAssistantMessageId: lastAssistantMessageId.value,
+      lastUserMessageId: lastUserMessageId.value,
       child: child,
     );
   }
