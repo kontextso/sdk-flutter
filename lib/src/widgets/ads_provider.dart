@@ -25,7 +25,7 @@ class AdsProvider extends HookWidget {
   @override
   Widget build(BuildContext context) {
     print('Building AdsProvider');
-    print('messages count: ${messages.length}');
+    final messages = this.messages.take(10).toList(); // Limit to 10 messages for performance
 
     final bids = useState<List<Bid>>([]);
     final readyForStreamingAssistant = useState<bool>(false);

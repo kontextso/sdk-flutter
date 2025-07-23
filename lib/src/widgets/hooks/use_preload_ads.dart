@@ -23,17 +23,13 @@ void usePreloadAds(
     return;
   }
 
-  final messagesCopy = [...messages];
+  final userMessagesContent =
+      messages.reversed.take(6).where((message) => message.isUser).map((message) => message.content).join('\n');
 
-  final lastUserMessagesContent =
-      messagesCopy.reversed.take(6).where((message) => message.isUser).map((message) => message.content).join('\n');
-
-  final numberOfAssistantFollowups = messagesCopy.reversed.takeWhile((message) => !message.isUser).length;
+  final numberOfAssistantFollowups = messages.reversed.takeWhile((message) => !message.isUser).length;
 
   useEffect(() {
-    Timer? timer;
-
-    timer = Timer(const Duration(milliseconds: 300), () async {
+    final timer = Timer(const Duration(milliseconds: 300), () async {
       final api = Api();
       final bids = await api.fetchBids(
         publisherToken: publisherToken,
@@ -49,6 +45,6 @@ void usePreloadAds(
       setBids([...bids]);
     });
 
-    return () => timer?.cancel();
-  }, [lastUserMessagesContent, numberOfAssistantFollowups]);
+    return () => timer.cancel();
+  }, [userMessagesContent, numberOfAssistantFollowups]);
 }
