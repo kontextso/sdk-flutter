@@ -83,40 +83,43 @@ class InlineAd extends HookWidget {
           },
           onWebViewCreated: (controller) {
             controller.addJavaScriptHandler(
-              handlerName: 'message',
+              handlerName: 'postMessage',
               callback: (args) {
-                final message = args.firstOrNull;
-                if (message == null || message is! Json) {
+                final postMessage = args.firstOrNull;
+                if (postMessage == null || postMessage is! Json) {
                   return;
                 }
 
-                switch (message['type']) {
+                final messageType = postMessage['type'];
+                final data = postMessage['data'];
+
+                switch (messageType) {
                   case 'init-iframe':
-                    print('Initializing iframe with message: $message');
+                    print('Initializing iframe with message: $postMessage');
                     iframeLoaded.value = true;
                     _postUpdateIframe(controller, messages: messages);
                     break;
                   case 'show-iframe':
-                    print('Showing iframe with message: $message');
+                    print('Showing iframe with message: $postMessage');
                     showIframe.value = true;
                     break;
                   case 'resize-iframe':
-                    print('Resizing iframe with message: $message');
-                    final dataHeight = message['data']['height'];
+                    print('Resizing iframe with message: $postMessage');
+                    final dataHeight = data['height'];
                     if (dataHeight is num) {
                       height.value = dataHeight.toDouble();
                     }
                     break;
                   case 'view-iframe':
-                    print('Viewing iframe with message: $message');
-                    _handleAdCallback(adsProviderData.onAdView, message['data']);
+                    print('Viewing iframe with message: $postMessage');
+                    _handleAdCallback(adsProviderData.onAdView, data);
                     break;
                   case 'click-iframe':
-                    print('Clicking iframe with message: $message');
-                    _handleAdCallback(adsProviderData.onAdClick, message['data']);
+                    print('Clicking iframe with message: $postMessage');
+                    _handleAdCallback(adsProviderData.onAdClick, data);
                     break;
                   default:
-                    print('Unknown message type: ${message['type']}, message: $message');
+                    print('Unknown message type: $messageType, message: $postMessage');
                 }
               },
             );
@@ -133,7 +136,7 @@ class InlineAd extends HookWidget {
                   if (!window.__flutterSdkBridgeReady) {
                     window.__flutterSdkBridgeReady = true;
                     window.addEventListener('message', event => {
-                      window.flutter_inappwebview.callHandler('message', event.data);
+                      window.flutter_inappwebview.callHandler('postMessage', event.data);
                     });
                   }
                 ''');
