@@ -17,6 +17,7 @@ class AdsProviderData extends InheritedWidget {
     required this.lastUserMessageId,
     this.onAdView,
     this.onAdClick,
+    this.onAdDone,
     required super.child,
   });
 
@@ -28,6 +29,7 @@ class AdsProviderData extends InheritedWidget {
   final String? lastUserMessageId;
   final AdCallback? onAdView;
   final AdCallback? onAdClick;
+  final AdCallback? onAdDone;
 
   static AdsProviderData? of(BuildContext context) {
     return context.dependOnInheritedWidgetOfExactType<AdsProviderData>();

@@ -118,6 +118,10 @@ class InlineAd extends HookWidget {
                     print('Clicking iframe with message: $postMessage');
                     _handleAdCallback(adsProviderData.onAdClick, data);
                     break;
+                  case 'ad-done-iframe':
+                    print('Ad done with message: $postMessage');
+                    _handleAdCallback(adsProviderData.onAdDone, data);
+                    break;
                   default:
                     print('Unknown message type: $messageType, message: $postMessage');
                 }

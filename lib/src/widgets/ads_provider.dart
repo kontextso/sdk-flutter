@@ -15,6 +15,7 @@ class AdsProvider extends HookWidget {
     required this.messages,
     this.onAdView,
     this.onAdClick,
+    this.onAdDone,
     required this.child,
   });
 
@@ -24,12 +25,12 @@ class AdsProvider extends HookWidget {
   final List<Message> messages;
   final AdCallback? onAdView;
   final AdCallback? onAdClick;
+  final AdCallback? onAdDone;
   final Widget child;
 
   @override
   Widget build(BuildContext context) {
     print('Building AdsProvider');
-    final messages = this.messages.take(10).toList(); // Limit to 10 messages for performance
 
     final bids = useState<List<Bid>>([]);
     final readyForStreamingAssistant = useState<bool>(false);
@@ -70,6 +71,7 @@ class AdsProvider extends HookWidget {
       lastUserMessageId: lastUserMessageId.value,
       onAdView: onAdView,
       onAdClick: onAdClick,
+      onAdDone: onAdDone,
       child: child,
     );
   }

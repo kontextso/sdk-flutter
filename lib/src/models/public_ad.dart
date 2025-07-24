@@ -1,20 +1,20 @@
 class PublicAd {
   PublicAd({
-    this.id,
-    this.code,
+    required this.id,
+    required this.code,
     this.messageId,
     this.content,
   });
 
-  final String? id;
-  final String? code;
+  final String id;
+  final String code;
   final String? messageId;
   final String? content;
 
   factory PublicAd.fromJson(Map<String, dynamic> json) {
     return PublicAd(
-      id: json['id'] as String?,
-      code: json['code'] as String?,
+      id: json['id'] as String,
+      code: json['code'] as String,
       messageId: json['messageId'] as String?,
       content: json['content'] as String?,
     );
