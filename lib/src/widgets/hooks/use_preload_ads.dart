@@ -10,6 +10,7 @@ void usePreloadAds(
   BuildContext context, {
   required String publisherToken,
   required List<Message> messages,
+  required List<Message> lastMessages,
   required String userId,
   required String conversationId,
   required ValueChanged<List<Bid>> setBids,
@@ -35,7 +36,7 @@ void usePreloadAds(
         publisherToken: publisherToken,
         userId: userId,
         conversationId: conversationId,
-        messages: messages,
+        messages: lastMessages,
       );
       print('Fetched bids: $bids');
       if (!context.mounted) {

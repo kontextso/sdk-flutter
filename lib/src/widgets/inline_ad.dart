@@ -58,8 +58,6 @@ class InlineAd extends HookWidget {
     final showIframe = useState(false);
     final height = useState(.0);
 
-    final messages = adsProviderData.messages;
-
     return Offstage(
       offstage: !iframeLoaded.value || !showIframe.value,
       child: SizedBox(
@@ -97,7 +95,7 @@ class InlineAd extends HookWidget {
                   case 'init-iframe':
                     print('Initializing iframe with message: $postMessage');
                     iframeLoaded.value = true;
-                    _postUpdateIframe(controller, messages: messages);
+                    _postUpdateIframe(controller, messages: adsProviderData.messages);
                     break;
                   case 'show-iframe':
                     print('Showing iframe with message: $postMessage');
