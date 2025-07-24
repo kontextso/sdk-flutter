@@ -1,5 +1,4 @@
 import 'package:kontext_flutter_sdk/src/models/bid.dart';
-import 'package:kontext_flutter_sdk/src/models/enums.dart';
 import 'package:kontext_flutter_sdk/src/services/http_client.dart';
 import 'package:kontext_flutter_sdk/src/models/message.dart';
 
@@ -31,16 +30,7 @@ class Api {
         return [];
       }
 
-      final bids = bidJson.map((bid) {
-        return Bid(
-          id: bid['bidId'] as String,
-          code: bid['code'] as String,
-          position: AdDisplayPosition.values.firstWhere(
-            (position) => position.name == '${bid['adDisplayPosition']}',
-            orElse: () => AdDisplayPosition.afterAssistantMessage,
-          ),
-        );
-      }).toList();
+      final bids = bidJson.map((json) => Bid.fromJson(json)).toList();
 
       return bids;
     } catch (e) {

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:kontext_flutter_sdk/src/models/message.dart';
+import 'package:kontext_flutter_sdk/src/models/public_ad.dart';
 import 'package:kontext_flutter_sdk/src/services/http_client.dart';
 import 'package:kontext_flutter_sdk/src/widgets/ads_provider_data.dart';
 import 'package:kontext_flutter_sdk/src/widgets/hooks/use_bid.dart';
@@ -28,6 +29,15 @@ class InlineAd extends HookWidget {
     controller.evaluateJavascript(source: '''
       window.postMessage(${jsonEncode(payload)}, 'https://server.develop.megabrain.co');
     ''');
+  }
+
+  void _handleAdCallback(AdCallback? callback, Json? data) {
+    if (callback == null || data == null) {
+      return;
+    }
+
+    final ad = PublicAd.fromJson(data);
+    callback(ad);
   }
 
   @override
@@ -96,6 +106,14 @@ class InlineAd extends HookWidget {
                     if (dataHeight is num) {
                       height.value = dataHeight.toDouble();
                     }
+                    break;
+                  case 'view-iframe':
+                    print('Viewing iframe with message: $message');
+                    _handleAdCallback(adsProviderData.onAdView, message['data']);
+                    break;
+                  case 'click-iframe':
+                    print('Clicking iframe with message: $message');
+                    _handleAdCallback(adsProviderData.onAdClick, message['data']);
                     break;
                   default:
                     print('Unknown message type: ${message['type']}, message: $message');

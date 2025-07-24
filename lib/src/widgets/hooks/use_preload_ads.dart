@@ -23,8 +23,8 @@ void usePreloadAds(
     return;
   }
 
-  final userMessagesContent =
-      messages.reversed.take(6).where((message) => message.isUser).map((message) => message.content).join('\n');
+  final lastUserMessagesContent =
+      messages.reversed.where((message) => message.isUser).take(6).map((message) => message.content).join('\n');
 
   final numberOfAssistantFollowups = messages.reversed.takeWhile((message) => !message.isUser).length;
 
@@ -46,5 +46,5 @@ void usePreloadAds(
     });
 
     return () => timer.cancel();
-  }, [userMessagesContent, numberOfAssistantFollowups]);
+  }, [lastUserMessagesContent, numberOfAssistantFollowups]);
 }

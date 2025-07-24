@@ -2,6 +2,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:kontext_flutter_sdk/src/models/bid.dart';
 import 'package:kontext_flutter_sdk/src/models/message.dart';
+import 'package:kontext_flutter_sdk/src/models/public_ad.dart';
+
+typedef AdCallback = void Function(PublicAd ad);
 
 class AdsProviderData extends InheritedWidget {
   const AdsProviderData({
@@ -12,6 +15,8 @@ class AdsProviderData extends InheritedWidget {
     required this.readyForStreamingUser,
     required this.lastAssistantMessageId,
     required this.lastUserMessageId,
+    this.onAdView,
+    this.onAdClick,
     required super.child,
   });
 
@@ -21,6 +26,8 @@ class AdsProviderData extends InheritedWidget {
   final bool readyForStreamingUser;
   final String? lastAssistantMessageId;
   final String? lastUserMessageId;
+  final AdCallback? onAdView;
+  final AdCallback? onAdClick;
 
   static AdsProviderData? of(BuildContext context) {
     return context.dependOnInheritedWidgetOfExactType<AdsProviderData>();

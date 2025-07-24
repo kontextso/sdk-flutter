@@ -1,4 +1,4 @@
-import 'package:kontext_flutter_sdk/src/models/enums.dart';
+enum AdDisplayPosition { afterAssistantMessage, afterUserMessage }
 
 class Bid {
   Bid({required this.id, required this.code, required this.position});
@@ -10,6 +10,17 @@ class Bid {
   bool get isAfterAssistantMessage => position == AdDisplayPosition.afterAssistantMessage;
 
   bool get isAfterUserMessage => position == AdDisplayPosition.afterUserMessage;
+
+  factory Bid.fromJson(Map<String, dynamic> json) {
+    return Bid(
+      id: json['bidId'] as String,
+      code: json['code'] as String,
+      position: AdDisplayPosition.values.firstWhere(
+        (position) => position.name == '${json['adDisplayPosition']}',
+        orElse: () => AdDisplayPosition.afterAssistantMessage,
+      ),
+    );
+  }
 
   @override
   bool operator ==(Object other) {

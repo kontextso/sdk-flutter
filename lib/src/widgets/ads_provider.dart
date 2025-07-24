@@ -13,6 +13,8 @@ class AdsProvider extends HookWidget {
     required this.userId,
     required this.conversationId,
     required this.messages,
+    this.onAdView,
+    this.onAdClick,
     required this.child,
   });
 
@@ -20,6 +22,8 @@ class AdsProvider extends HookWidget {
   final String userId;
   final String conversationId;
   final List<Message> messages;
+  final AdCallback? onAdView;
+  final AdCallback? onAdClick;
   final Widget child;
 
   @override
@@ -64,6 +68,8 @@ class AdsProvider extends HookWidget {
       readyForStreamingUser: readyForStreamingUser.value,
       lastAssistantMessageId: lastAssistantMessageId.value,
       lastUserMessageId: lastUserMessageId.value,
+      onAdView: onAdView,
+      onAdClick: onAdClick,
       child: child,
     );
   }
