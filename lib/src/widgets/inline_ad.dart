@@ -6,6 +6,7 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:kontext_flutter_sdk/src/models/message.dart';
 import 'package:kontext_flutter_sdk/src/models/public_ad.dart';
 import 'package:kontext_flutter_sdk/src/services/http_client.dart';
+import 'package:kontext_flutter_sdk/src/utils/extensions.dart';
 import 'package:kontext_flutter_sdk/src/widgets/ads_provider_data.dart';
 import 'package:kontext_flutter_sdk/src/widgets/hooks/use_bid.dart';
 
@@ -95,7 +96,7 @@ class InlineAd extends HookWidget {
                   case 'init-iframe':
                     print('Initializing iframe with message: $postMessage');
                     iframeLoaded.value = true;
-                    _postUpdateIframe(controller, messages: adsProviderData.messages);
+                    _postUpdateIframe(controller, messages: adsProviderData.messages.getLastMessages());
                     break;
                   case 'show-iframe':
                     print('Showing iframe with message: $postMessage');
