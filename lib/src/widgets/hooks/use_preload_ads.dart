@@ -27,12 +27,17 @@ void usePreloadAds(
   final lastUserMessagesContent =
       messages.reversed.where((message) => message.isUser).take(6).map((message) => message.content).join('\n');
 
-  final numberOfAssistantFollowups = messages.reversed.takeWhile((message) => !message.isUser).length;
+  final assistantMessageCount = messages.where((message) => message.isAssistant).length;
 
   useEffect(() {
+    // Skip preload if this is the first assistant message
+    if (assistantMessageCount <= 1) {
+      return null;
+    }
+
     final timer = Timer(const Duration(milliseconds: 300), () async {
       final api = Api();
-      final bids = await api.fetchBids(
+      final bids = await api.preload(
         publisherToken: publisherToken,
         userId: userId,
         conversationId: conversationId,
@@ -47,5 +52,5 @@ void usePreloadAds(
     });
 
     return () => timer.cancel();
-  }, [lastUserMessagesContent, numberOfAssistantFollowups]);
+  }, [lastUserMessagesContent, assistantMessageCount]);
 }

@@ -11,7 +11,7 @@ class Api {
 
   factory Api() => _instance;
 
-  Future<List<Bid>> fetchBids({
+  Future<List<Bid>> preload({
     required String publisherToken,
     required String userId,
     required String conversationId,

@@ -8,11 +8,7 @@ Bid? useBid(AdsProviderData data, {required String code, required String message
     return null;
   }
 
-  if (data.lastAssistantMessageId == null || !data.readyForStreamingAssistant) {
-    return null;
-  }
-
-  if (data.lastAssistantMessageId != messageId) {
+  if (data.lastAssistantMessageId != messageId || !data.readyForStreamingAssistant) {
     return null;
   }
 

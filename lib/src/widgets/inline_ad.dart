@@ -11,19 +11,27 @@ import 'package:kontext_flutter_sdk/src/widgets/ads_provider_data.dart';
 import 'package:kontext_flutter_sdk/src/widgets/hooks/use_bid.dart';
 
 class InlineAd extends HookWidget {
-  const InlineAd({super.key, required this.code, required this.messageId});
+  const InlineAd({
+    super.key,
+    required this.code,
+    required this.messageId,
+    this.otherParams,
+  });
 
   final String code;
   final String messageId;
+  final Map<String, dynamic>? otherParams;
 
   void _postUpdateIframe(InAppWebViewController controller, {required List<Message> messages}) {
+    print('Posted update iframe');
     final payload = {
       'type': 'update-iframe',
       'data': {
         'sdk': 'sdk',
         'code': code,
         'messageId': messageId,
-        'messages': messages.map((message) => message.toJson()).toList(),
+        'messages': messages.map((m) => m.toJson()).toList(),
+        if (otherParams != null) 'otherParams': otherParams,
       },
     };
 
@@ -43,21 +51,34 @@ class InlineAd extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    print('Building InlineAd with code: $code, messageId: $messageId');
     final adsProviderData = AdsProviderData.of(context);
     if (adsProviderData == null) {
       return const SizedBox.shrink();
     }
 
     final bid = useBid(adsProviderData, code: code, messageId: messageId);
-    print('Bid for code $code: $bid');
     if (bid == null) {
       return const SizedBox.shrink();
     }
 
+    final messageContent = adsProviderData.messages.firstWhere((m) => m.id == messageId).content;
+    print('Bid found for code $code: $bid, messageContent: $messageContent');
+
     final iframeLoaded = useState(false);
     final showIframe = useState(false);
     final height = useState(.0);
+
+    final webViewController = useRef<InAppWebViewController?>(null);
+
+    useEffect(() {
+      if (!iframeLoaded.value || webViewController.value == null) {
+        return null;
+      }
+
+      _postUpdateIframe(webViewController.value!, messages: adsProviderData.messages.getLastMessages());
+
+      return null;
+    }, [iframeLoaded.value, webViewController.value, otherParams]);
 
     return Offstage(
       offstage: !iframeLoaded.value || !showIframe.value,
@@ -68,9 +89,7 @@ class InlineAd extends HookWidget {
           initialUrlRequest: URLRequest(
             url: WebUri('https://server.develop.megabrain.co/api/frame/${bid.id}?code=$code&messageId=$messageId'),
           ),
-          initialSettings: InAppWebViewSettings(
-            useShouldOverrideUrlLoading: true,
-          ),
+          initialSettings: InAppWebViewSettings(useShouldOverrideUrlLoading: true),
           shouldOverrideUrlLoading: (controller, navigationAction) async {
             final url = navigationAction.request.url?.toString();
             print('Navigating to URL: $url');
@@ -81,10 +100,12 @@ class InlineAd extends HookWidget {
             print('Console Message: ${consoleMessage.message}');
           },
           onWebViewCreated: (controller) {
+            webViewController.value = controller;
             controller.addJavaScriptHandler(
               handlerName: 'postMessage',
               callback: (args) {
                 final postMessage = args.firstOrNull;
+                print('Received postMessage: $postMessage');
                 if (postMessage == null || postMessage is! Json) {
                   return;
                 }
@@ -96,7 +117,6 @@ class InlineAd extends HookWidget {
                   case 'init-iframe':
                     print('Initializing iframe with message: $postMessage');
                     iframeLoaded.value = true;
-                    _postUpdateIframe(controller, messages: adsProviderData.messages.getLastMessages());
                     break;
                   case 'show-iframe':
                     print('Showing iframe with message: $postMessage');
@@ -131,12 +151,17 @@ class InlineAd extends HookWidget {
             print('onReceivedError: $error');
           },
           onReceivedHttpError: (controller, request, error) {
-            print('onReceivedHttpError: $error');
+            // Ignore favicon 404 errors as they're not critical
+            if (request.url.toString().endsWith('/favicon.ico')) {
+              return;
+            }
+
+            print('onReceivedHttpError: $error, request: $request');
           },
           onLoadStop: (controller, url) async {
             await controller.evaluateJavascript(source: '''
-                  console.log('InAppWebView loaded with URL: $url');
                   if (!window.__flutterSdkBridgeReady) {
+                    console.log('InAppWebView loaded with message: $messageContent, URL: $url');
                     window.__flutterSdkBridgeReady = true;
                     window.addEventListener('message', event => {
                       window.flutter_inappwebview.callHandler('postMessage', event.data);
