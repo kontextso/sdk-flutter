@@ -36,7 +36,13 @@ void usePreloadAds(
       return null;
     }
 
-    final timer = Timer(const Duration(milliseconds: 300), () async {
+    Timer? timer;
+    bool cancelled = false;
+
+    setBids([]);
+    timer = Timer(const Duration(milliseconds: 300), () async {
+      if (cancelled) return;
+
       final api = Api();
       final bids = await api.preload(
         publisherToken: publisherToken,
@@ -44,14 +50,18 @@ void usePreloadAds(
         conversationId: conversationId,
         messages: messages.getLastMessages(),
       );
-      print('Fetched bids: assistantMessageCount: $assistantMessageCount, lastUserMessagesContent length: ${lastUserMessagesContent.length}, $bids');
-      if (!context.mounted) {
+
+      if (cancelled || !context.mounted) {
         return;
       }
 
+      print('Fetched bids: assistantMessageCount: $assistantMessageCount, lastUserMessagesContent length: ${lastUserMessagesContent.length}, $bids');
       setBids([...bids]);
     });
 
-    return () => timer.cancel();
+    return () {
+      cancelled = true;
+      timer?.cancel();
+    };
   }, [lastUserMessagesContent, assistantMessageCount]);
 }

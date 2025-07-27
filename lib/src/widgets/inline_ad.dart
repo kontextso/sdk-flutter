@@ -70,14 +70,6 @@ class InlineAd extends HookWidget {
     final webViewController = useRef<InAppWebViewController?>(null);
 
     useEffect(() {
-      iframeLoaded.value = false;
-      showIframe.value = false;
-      height.value = 0.0;
-      webViewController.value = null;
-      return null;
-    }, [bid.id]);
-
-    useEffect(() {
       if (!iframeLoaded.value || webViewController.value == null) {
         return null;
       }
@@ -93,7 +85,6 @@ class InlineAd extends HookWidget {
         height: height.value,
         width: double.infinity,
         child: InAppWebView(
-          key: ValueKey('${bid.id}_$messageId'),
           initialUrlRequest: URLRequest(
             url: WebUri('https://server.develop.megabrain.co/api/frame/${bid.id}?code=$code&messageId=$messageId'),
           ),
