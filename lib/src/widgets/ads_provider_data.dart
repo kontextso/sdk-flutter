@@ -43,7 +43,13 @@ class AdsProviderData extends InheritedWidget {
         readyForStreamingAssistant != oldWidget.readyForStreamingAssistant ||
         lastAssistantMessageId != oldWidget.lastAssistantMessageId ||
         lastUserMessageId != oldWidget.lastUserMessageId;
-    print('AdsProviderData updateShouldNotify: $foo');
+    print('AdsProviderData updateShouldNotify: listEquals<Message>: ${!listEquals<Message>(messages, oldWidget.messages)}, '
+          'listEquals<Bid>: ${!listEquals<Bid>(bids, oldWidget.bids)}, '
+          'readyForStreamingUser: old: ${oldWidget.readyForStreamingUser}, new: $readyForStreamingUser, changed: ${readyForStreamingUser != oldWidget.readyForStreamingUser}, '
+          'readyForStreamingAssistant: old: ${oldWidget.readyForStreamingAssistant}, new: $readyForStreamingAssistant, changed: ${readyForStreamingAssistant != oldWidget.readyForStreamingAssistant}, '
+          'lastAssistantMessageId: old: ${oldWidget.lastAssistantMessageId}, new: $lastAssistantMessageId, changed: ${lastAssistantMessageId != oldWidget.lastAssistantMessageId}, '
+          'lastUserMessageId: old: ${oldWidget.lastUserMessageId}, new: $lastUserMessageId, changed: ${lastUserMessageId != oldWidget.lastUserMessageId}, '
+          'result: $foo');
     return foo;
   }
 }

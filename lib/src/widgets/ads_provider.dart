@@ -30,8 +30,6 @@ class AdsProvider extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    print('Building AdsProvider');
-
     final bids = useState<List<Bid>>([]);
     final readyForStreamingAssistant = useState<bool>(false);
     final readyForStreamingUser = useState<bool>(false);

@@ -30,6 +30,7 @@ void usePreloadAds(
   final assistantMessageCount = messages.where((message) => message.isAssistant).length;
 
   useEffect(() {
+    print('usePreloadAds useEffect triggered - assistantMessageCount: $assistantMessageCount, lastUserMessagesContent length: ${lastUserMessagesContent.length}');
     // Skip preload if this is the first assistant message
     if (assistantMessageCount <= 1) {
       return null;
@@ -43,7 +44,7 @@ void usePreloadAds(
         conversationId: conversationId,
         messages: messages.getLastMessages(),
       );
-      print('Fetched bids: $bids');
+      print('Fetched bids: assistantMessageCount: $assistantMessageCount, lastUserMessagesContent length: ${lastUserMessagesContent.length}, $bids');
       if (!context.mounted) {
         return;
       }

@@ -62,13 +62,20 @@ class InlineAd extends HookWidget {
     }
 
     final messageContent = adsProviderData.messages.firstWhere((m) => m.id == messageId).content;
-    print('Bid found for code $code: $bid, messageContent: $messageContent');
 
     final iframeLoaded = useState(false);
     final showIframe = useState(false);
     final height = useState(.0);
 
     final webViewController = useRef<InAppWebViewController?>(null);
+
+    useEffect(() {
+      iframeLoaded.value = false;
+      showIframe.value = false;
+      height.value = 0.0;
+      webViewController.value = null;
+      return null;
+    }, [bid.id]);
 
     useEffect(() {
       if (!iframeLoaded.value || webViewController.value == null) {
@@ -86,6 +93,7 @@ class InlineAd extends HookWidget {
         height: height.value,
         width: double.infinity,
         child: InAppWebView(
+          key: ValueKey('${bid.id}_$messageId'),
           initialUrlRequest: URLRequest(
             url: WebUri('https://server.develop.megabrain.co/api/frame/${bid.id}?code=$code&messageId=$messageId'),
           ),
@@ -115,30 +123,24 @@ class InlineAd extends HookWidget {
 
                 switch (messageType) {
                   case 'init-iframe':
-                    print('Initializing iframe with message: $postMessage');
                     iframeLoaded.value = true;
                     break;
                   case 'show-iframe':
-                    print('Showing iframe with message: $postMessage');
                     showIframe.value = true;
                     break;
                   case 'resize-iframe':
-                    print('Resizing iframe with message: $postMessage');
                     final dataHeight = data['height'];
                     if (dataHeight is num) {
                       height.value = dataHeight.toDouble();
                     }
                     break;
                   case 'view-iframe':
-                    print('Viewing iframe with message: $postMessage');
                     _handleAdCallback(adsProviderData.onAdView, data);
                     break;
                   case 'click-iframe':
-                    print('Clicking iframe with message: $postMessage');
                     _handleAdCallback(adsProviderData.onAdClick, data);
                     break;
                   case 'ad-done-iframe':
-                    print('Ad done with message: $postMessage');
                     _handleAdCallback(adsProviderData.onAdDone, data);
                     break;
                   default:

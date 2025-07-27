@@ -12,5 +12,8 @@ Bid? useBid(AdsProviderData data, {required String code, required String message
     return null;
   }
 
+  final messageContent = data.messages.firstWhere((m) => m.id == messageId).content;
+  print('Bid found for code $code: $bid, messageContent: $messageContent');
+
   return bid;
 }
