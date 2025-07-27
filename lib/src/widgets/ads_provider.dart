@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kontext_flutter_sdk/src/models/bid.dart';
+import 'package:kontext_flutter_sdk/src/services/api.dart';
+import 'package:kontext_flutter_sdk/src/services/http_client.dart';
 import 'package:kontext_flutter_sdk/src/widgets/ads_provider_data.dart';
 import 'package:kontext_flutter_sdk/src/models/message.dart';
+import 'package:kontext_flutter_sdk/src/widgets/constants.dart';
 import 'package:kontext_flutter_sdk/src/widgets/hooks/use_last_messages.dart';
 import 'package:kontext_flutter_sdk/src/widgets/hooks/use_preload_ads.dart';
 
 class AdsProvider extends HookWidget {
   const AdsProvider({
     super.key,
+    this.adServerUrl = kDefaultAdServerUrl,
     required this.publisherToken,
     required this.userId,
     required this.conversationId,
@@ -20,6 +24,8 @@ class AdsProvider extends HookWidget {
     required this.child,
   });
 
+
+  final String adServerUrl;
   final String publisherToken;
   final String userId;
   final String conversationId;
@@ -52,8 +58,15 @@ class AdsProvider extends HookWidget {
       setLastUserMessageId(null);
     }
 
+    useEffect(() {
+      Api.resetInstance();
+      HttpClient.resetInstance();
+      return null;
+    }, [adServerUrl]);
+
     usePreloadAds(
       context,
+      adServerUrl: adServerUrl,
       publisherToken: publisherToken,
       messages: messages,
       userId: userId,
@@ -71,6 +84,7 @@ class AdsProvider extends HookWidget {
     );
 
     return AdsProviderData(
+      adServerUrl: adServerUrl,
       messages: messages,
       bids: bids.value,
       readyForStreamingAssistant: readyForStreamingAssistant.value,

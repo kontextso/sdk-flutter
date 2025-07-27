@@ -9,6 +9,7 @@ import 'package:kontext_flutter_sdk/src/utils/extensions.dart';
 
 void usePreloadAds(
   BuildContext context, {
+  required String adServerUrl,
   required String publisherToken,
   required List<Message> messages,
   required String userId,
@@ -44,7 +45,7 @@ void usePreloadAds(
     preload() async {
       if (cancelled) return;
 
-      final api = Api();
+      final api = Api(baseUrl: adServerUrl);
       final bids = await api.preload(
         publisherToken: publisherToken,
         userId: userId,

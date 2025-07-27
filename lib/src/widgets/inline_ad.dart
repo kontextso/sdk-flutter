@@ -22,7 +22,11 @@ class InlineAd extends HookWidget {
   final String messageId;
   final Map<String, dynamic>? otherParams;
 
-  void _postUpdateIframe(InAppWebViewController controller, {required List<Message> messages}) {
+  void _postUpdateIframe(
+    InAppWebViewController controller, {
+    required String adServerUrl,
+    required List<Message> messages,
+  }) {
     print('Posted update iframe');
     final payload = {
       'type': 'update-iframe',
@@ -36,7 +40,7 @@ class InlineAd extends HookWidget {
     };
 
     controller.evaluateJavascript(source: '''
-      window.postMessage(${jsonEncode(payload)}, 'https://server.develop.megabrain.co');
+      window.postMessage(${jsonEncode(payload)}, '$adServerUrl');
     ''');
   }
 
@@ -74,7 +78,11 @@ class InlineAd extends HookWidget {
         return null;
       }
 
-      _postUpdateIframe(webViewController.value!, messages: adsProviderData.messages.getLastMessages());
+      _postUpdateIframe(
+        webViewController.value!,
+        adServerUrl: adsProviderData.adServerUrl,
+        messages: adsProviderData.messages.getLastMessages(),
+      );
 
       return null;
     }, [iframeLoaded.value, webViewController.value, otherParams]);
@@ -94,7 +102,7 @@ class InlineAd extends HookWidget {
         width: double.infinity,
         child: InAppWebView(
           initialUrlRequest: URLRequest(
-            url: WebUri('https://server.develop.megabrain.co/api/frame/${bid.id}?code=$code&messageId=$messageId'),
+            url: WebUri('${adsProviderData.adServerUrl}/api/frame/${bid.id}?code=$code&messageId=$messageId'),
           ),
           initialSettings: InAppWebViewSettings(useShouldOverrideUrlLoading: true),
           shouldOverrideUrlLoading: (controller, navigationAction) async {

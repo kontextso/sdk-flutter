@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:kontext_flutter_sdk/src/widgets/constants.dart';
 
 typedef Json = Map<String, dynamic>;
 
@@ -8,9 +9,15 @@ class HttpClient {
 
   final String baseUrl;
 
-  static final HttpClient _instance = HttpClient._internal('https://server.develop.megabrain.co');
+  static HttpClient? _instance;
 
-  factory HttpClient() => _instance;
+  factory HttpClient({String? baseUrl}) {
+    return _instance ??= HttpClient._internal(baseUrl ?? kDefaultAdServerUrl);
+  }
+
+  static void resetInstance() {
+    _instance = null;
+  }
 
   Future<Json> post(String path, {Json? body}) async {
     final url = Uri.parse('$baseUrl$path');

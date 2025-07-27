@@ -3,13 +3,19 @@ import 'package:kontext_flutter_sdk/src/services/http_client.dart';
 import 'package:kontext_flutter_sdk/src/models/message.dart';
 
 class Api {
-  Api._internal() : _client = HttpClient();
+  Api._internal({String? baseUrl}) : _client = HttpClient(baseUrl: baseUrl);
 
   final HttpClient _client;
 
-  static final Api _instance = Api._internal();
+  static Api? _instance;
 
-  factory Api() => _instance;
+  factory Api({String? baseUrl}) {
+    return _instance ??= Api._internal(baseUrl: baseUrl);
+  }
+
+  static void resetInstance() {
+    _instance = null;
+  }
 
   Future<List<Bid>> preload({
     required String publisherToken,
