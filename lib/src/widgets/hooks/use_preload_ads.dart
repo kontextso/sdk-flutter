@@ -36,11 +36,10 @@ void usePreloadAds(
       return null;
     }
 
-    Timer? timer;
     bool cancelled = false;
-
     setBids([]);
-    timer = Timer(const Duration(milliseconds: 300), () async {
+
+    preload() async {
       if (cancelled) return;
 
       final api = Api();
@@ -57,11 +56,12 @@ void usePreloadAds(
 
       print('Fetched bids: assistantMessageCount: $assistantMessageCount, lastUserMessagesContent length: ${lastUserMessagesContent.length}, $bids');
       setBids([...bids]);
-    });
+    }
+
+    preload();
 
     return () {
       cancelled = true;
-      timer?.cancel();
     };
   }, [lastUserMessagesContent, assistantMessageCount]);
 }
