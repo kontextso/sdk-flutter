@@ -79,6 +79,14 @@ class InlineAd extends HookWidget {
       return null;
     }, [iframeLoaded.value, webViewController.value, otherParams]);
 
+    void resetIframe() {
+      iframeLoaded.value = false;
+      showIframe.value = false;
+      height.value = 0.0;
+      webViewController.value = null;
+      adsProviderData.resetAll();
+    }
+
     return Offstage(
       offstage: !iframeLoaded.value || !showIframe.value,
       child: SizedBox(
@@ -133,6 +141,9 @@ class InlineAd extends HookWidget {
                     break;
                   case 'ad-done-iframe':
                     _handleAdCallback(adsProviderData.onAdDone, data);
+                    break;
+                  case 'error-iframe':
+                    resetIframe();
                     break;
                   default:
                     print('Unknown message type: $messageType, message: $postMessage');

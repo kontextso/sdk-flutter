@@ -27,7 +27,7 @@ void useLastMessages(
       setLastUserMessageId(lastUserMessage?.id);
 
       // Ready for streaming if the last message is from the assistant
-      setReadyForStreamingAssistant(messages.lastOrNull?.isAssistant == true);
+      setReadyForStreamingAssistant(messages.last.isAssistant);
 
       return null;
     },

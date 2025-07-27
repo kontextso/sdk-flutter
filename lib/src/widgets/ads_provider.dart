@@ -44,6 +44,14 @@ class AdsProvider extends HookWidget {
     void setLastAssistantMessageId(String? id) => lastAssistantMessageId.value = id;
     void setLastUserMessageId(String? id) => lastUserMessageId.value = id;
 
+    void resetAll() {
+      setBids([]);
+      setReadyForStreamingAssistant(false);
+      setReadyForStreamingUser(false);
+      setLastAssistantMessageId(null);
+      setLastUserMessageId(null);
+    }
+
     usePreloadAds(
       context,
       publisherToken: publisherToken,
@@ -70,6 +78,7 @@ class AdsProvider extends HookWidget {
       lastAssistantMessageId: lastAssistantMessageId.value,
       lastUserMessageId: lastUserMessageId.value,
       enabledPlacementCodes: enabledPlacementCodes,
+      resetAll: resetAll,
       onAdView: onAdView,
       onAdClick: onAdClick,
       onAdDone: onAdDone,
