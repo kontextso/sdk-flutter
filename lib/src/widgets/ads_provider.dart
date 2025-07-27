@@ -5,6 +5,7 @@ import 'package:kontext_flutter_sdk/src/services/api.dart';
 import 'package:kontext_flutter_sdk/src/services/http_client.dart';
 import 'package:kontext_flutter_sdk/src/widgets/ads_provider_data.dart';
 import 'package:kontext_flutter_sdk/src/models/message.dart';
+import 'package:kontext_flutter_sdk/src/models/character.dart';
 import 'package:kontext_flutter_sdk/src/widgets/constants.dart';
 import 'package:kontext_flutter_sdk/src/widgets/hooks/use_last_messages.dart';
 import 'package:kontext_flutter_sdk/src/widgets/hooks/use_preload_ads.dart';
@@ -18,6 +19,7 @@ class AdsProvider extends HookWidget {
     required this.conversationId,
     required this.messages,
     this.enabledPlacementCodes = const [],
+    this.character,
     this.onAdView,
     this.onAdClick,
     this.onAdDone,
@@ -31,6 +33,7 @@ class AdsProvider extends HookWidget {
   final String conversationId;
   final List<Message> messages;
   final List<String> enabledPlacementCodes;
+  final Character? character;
   final AdCallback? onAdView;
   final AdCallback? onAdClick;
   final AdCallback? onAdDone;
@@ -71,6 +74,7 @@ class AdsProvider extends HookWidget {
       messages: messages,
       userId: userId,
       conversationId: conversationId,
+      character: character,
       setBids: setBids,
       setReadyForStreamingAssistant: setReadyForStreamingAssistant,
       setReadyForStreamingUser: setReadyForStreamingUser,

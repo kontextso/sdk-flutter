@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kontext_flutter_sdk/src/models/bid.dart';
+import 'package:kontext_flutter_sdk/src/models/character.dart';
 import 'package:kontext_flutter_sdk/src/models/message.dart';
 import 'package:kontext_flutter_sdk/src/services/api.dart';
 import 'package:kontext_flutter_sdk/src/utils/extensions.dart';
@@ -14,6 +15,7 @@ void usePreloadAds(
   required List<Message> messages,
   required String userId,
   required String conversationId,
+  Character? character,
   required ValueChanged<List<Bid>> setBids,
   required ValueChanged<bool> setReadyForStreamingAssistant,
   required ValueChanged<bool> setReadyForStreamingUser,
@@ -51,6 +53,7 @@ void usePreloadAds(
         userId: userId,
         conversationId: conversationId,
         messages: messages.getLastMessages(),
+        character: character,
       );
 
       if (cancelled || !context.mounted) {

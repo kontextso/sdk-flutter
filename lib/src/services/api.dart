@@ -1,4 +1,5 @@
 import 'package:kontext_flutter_sdk/src/models/bid.dart';
+import 'package:kontext_flutter_sdk/src/models/character.dart';
 import 'package:kontext_flutter_sdk/src/services/http_client.dart';
 import 'package:kontext_flutter_sdk/src/models/message.dart';
 
@@ -22,14 +23,19 @@ class Api {
     required String userId,
     required String conversationId,
     required List<Message> messages,
+    Character? character,
   }) async {
     try {
-      final response = await _client.post('/preload', body: {
-        'publisherToken': publisherToken,
-        'userId': userId,
-        'conversationId': conversationId,
-        'messages': messages.map((message) => message.toJson()).toList(),
-      });
+      final response = await _client.post(
+        '/preload',
+        body: {
+          'publisherToken': publisherToken,
+          'userId': userId,
+          'conversationId': conversationId,
+          'messages': messages.map((message) => message.toJson()).toList(),
+          if (character != null) 'character': character.toJson(),
+        },
+      );
 
       final bidJson = response['bids'] as List<dynamic>?;
       if (bidJson == null) {
