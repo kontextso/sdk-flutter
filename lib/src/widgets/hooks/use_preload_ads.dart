@@ -36,9 +36,11 @@ void usePreloadAds(
       return null;
     }
 
-    bool cancelled = false;
     setBids([]);
+    setReadyForStreamingAssistant(false);
+    setReadyForStreamingUser(false);
 
+    bool cancelled = false;
     preload() async {
       if (cancelled) return;
 
@@ -56,6 +58,16 @@ void usePreloadAds(
 
       print('Fetched bids: assistantMessageCount: $assistantMessageCount, lastUserMessagesContent length: ${lastUserMessagesContent.length}, $bids');
       setBids([...bids]);
+      setReadyForStreamingUser(true);
+
+      // TODO: if (!isInitialized) {
+      //   const lastMessage = getLastMessage(messages)
+      //   if (lastMessage?.role === 'assistant') {
+      //     setReadyForStreamingAssistant(true)
+      //   }
+      // }
+      //
+      // setIsInitialized(true)
     }
 
     preload();
