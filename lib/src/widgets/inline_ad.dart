@@ -127,6 +127,9 @@ class InlineAd extends HookWidget {
                   case 'show-iframe':
                     showIframe.value = true;
                     break;
+                  case 'hide-iframe':
+                    showIframe.value = false;
+                    break;
                   case 'resize-iframe':
                     final dataHeight = data['height'];
                     if (dataHeight is num) {
