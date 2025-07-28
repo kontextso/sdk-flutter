@@ -16,7 +16,6 @@ class AdsProviderData extends InheritedWidget {
     required this.readyForStreamingUser,
     required this.lastAssistantMessageId,
     required this.lastUserMessageId,
-    this.enabledPlacementCodes = const [],
     required this.resetAll,
     this.onAdView,
     this.onAdClick,
@@ -31,7 +30,6 @@ class AdsProviderData extends InheritedWidget {
   final bool readyForStreamingUser;
   final String? lastAssistantMessageId;
   final String? lastUserMessageId;
-  final List<String> enabledPlacementCodes;
   final VoidCallback resetAll;
   final AdCallback? onAdView;
   final AdCallback? onAdClick;
@@ -51,7 +49,6 @@ class AdsProviderData extends InheritedWidget {
         readyForStreamingAssistant != oldWidget.readyForStreamingAssistant ||
         lastAssistantMessageId != oldWidget.lastAssistantMessageId ||
         lastUserMessageId != oldWidget.lastUserMessageId ||
-        enabledPlacementCodes != oldWidget.enabledPlacementCodes ||
         onAdView != oldWidget.onAdView ||
         onAdClick != oldWidget.onAdClick ||
         onAdDone != oldWidget.onAdDone;

@@ -18,7 +18,6 @@ class AdsProvider extends HookWidget {
     required this.userId,
     required this.conversationId,
     required this.messages,
-    this.enabledPlacementCodes = const [],
     this.character,
     this.vendorId,
     this.variantId,
@@ -35,7 +34,6 @@ class AdsProvider extends HookWidget {
   final String userId;
   final String conversationId;
   final List<Message> messages;
-  final List<String> enabledPlacementCodes;
   final Character? character;
   final String? vendorId;
   final String? variantId;
@@ -104,7 +102,6 @@ class AdsProvider extends HookWidget {
       readyForStreamingUser: readyForStreamingUser.value,
       lastAssistantMessageId: lastAssistantMessageId.value,
       lastUserMessageId: lastUserMessageId.value,
-      enabledPlacementCodes: enabledPlacementCodes,
       resetAll: resetAll,
       onAdView: onAdView,
       onAdClick: onAdClick,
