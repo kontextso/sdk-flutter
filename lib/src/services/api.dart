@@ -35,6 +35,7 @@ class Api {
     String? sessionId,
     required List<Message> messages,
     Character? character,
+    String? vendorId,
     String? variantId,
     String? advertisingId,
   }) async {
@@ -48,6 +49,7 @@ class Api {
           if (sessionId != null) 'sessionId': sessionId,
           'messages': messages.map((message) => message.toJson()).toList(),
           if (character != null) 'character': character.toJson(),
+          if (vendorId != null) 'vendorId': vendorId,
           if (variantId != null) 'variantId': variantId,
           if (advertisingId != null) 'advertisingId': advertisingId,
         },

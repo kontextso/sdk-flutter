@@ -14,6 +14,7 @@ void usePreloadAds(
   required String userId,
   required String conversationId,
   Character? character,
+  String? vendorId,
   String? variantId,
   String? advertisingId,
   required ValueChanged<List<Bid>> setBids,
@@ -50,6 +51,7 @@ void usePreloadAds(
         sessionId: sessionId.value,
         messages: messages.getLastMessages(),
         character: character,
+        vendorId: vendorId,
         variantId: variantId,
         advertisingId: advertisingId,
       );
