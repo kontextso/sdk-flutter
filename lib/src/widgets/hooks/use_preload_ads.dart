@@ -30,15 +30,9 @@ void usePreloadAds(
   final lastUserMessagesContent =
       messages.reversed.where((message) => message.isUser).take(6).map((message) => message.content).join('\n');
 
-  final assistantMessageCount = messages.where((message) => message.isAssistant).length;
 
   useEffect(() {
-    print('usePreloadAds useEffect triggered - assistantMessageCount: $assistantMessageCount, lastUserMessagesContent length: ${lastUserMessagesContent.length}');
-    // Skip preload if this is the first assistant message
-    if (assistantMessageCount <= 1) {
-      return null;
-    }
-
+    print('usePreloadAds useEffect triggered - lastUserMessagesContent length: ${lastUserMessagesContent.length}');
     setBids([]);
     setReadyForStreamingAssistant(false);
     setReadyForStreamingUser(false);
@@ -60,7 +54,7 @@ void usePreloadAds(
         return;
       }
 
-      print('Fetched bids: assistantMessageCount: $assistantMessageCount, lastUserMessagesContent length: ${lastUserMessagesContent.length}, $bids');
+      print('Fetched bids: assistantMessageCount: lastUserMessagesContent length: ${lastUserMessagesContent.length}, $bids');
       setBids([...bids]);
       setReadyForStreamingUser(true);
     }
@@ -70,5 +64,5 @@ void usePreloadAds(
     return () {
       cancelled = true;
     };
-  }, [lastUserMessagesContent, assistantMessageCount]);
+  }, [lastUserMessagesContent]);
 }
