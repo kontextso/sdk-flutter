@@ -12,20 +12,22 @@ class AdsProviderData extends InheritedWidget {
     required this.adServerUrl,
     required this.messages,
     required this.bids,
+    required this.isDisabled,
     required this.readyForStreamingAssistant,
     required this.readyForStreamingUser,
     required this.lastAssistantMessageId,
     required this.lastUserMessageId,
     required this.resetAll,
-    this.onAdView,
-    this.onAdClick,
-    this.onAdDone,
+    required this.onAdView,
+    required this.onAdClick,
+    required this.onAdDone,
     required super.child,
   });
 
   final String adServerUrl;
   final List<Message> messages;
   final List<Bid> bids;
+  final bool isDisabled;
   final bool readyForStreamingAssistant;
   final bool readyForStreamingUser;
   final String? lastAssistantMessageId;
@@ -45,6 +47,7 @@ class AdsProviderData extends InheritedWidget {
         adServerUrl != oldWidget.adServerUrl ||
         !listEquals<Message>(messages, oldWidget.messages) ||
         !listEquals<Bid>(bids, oldWidget.bids) ||
+        isDisabled != oldWidget.isDisabled ||
         readyForStreamingUser != oldWidget.readyForStreamingUser ||
         readyForStreamingAssistant != oldWidget.readyForStreamingAssistant ||
         lastAssistantMessageId != oldWidget.lastAssistantMessageId ||

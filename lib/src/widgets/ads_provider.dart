@@ -18,6 +18,7 @@ class AdsProvider extends HookWidget {
     required this.userId,
     required this.conversationId,
     required this.messages,
+    this.isDisabled = false,
     this.character,
     this.vendorId,
     this.variantId,
@@ -34,6 +35,7 @@ class AdsProvider extends HookWidget {
   final String userId;
   final String conversationId;
   final List<Message> messages;
+  final bool isDisabled;
   final Character? character;
   final String? vendorId;
   final String? variantId;
@@ -75,9 +77,10 @@ class AdsProvider extends HookWidget {
       context,
       adServerUrl: adServerUrl,
       publisherToken: publisherToken,
-      messages: messages,
       userId: userId,
       conversationId: conversationId,
+      messages: messages,
+      isDisabled: isDisabled,
       character: character,
       vendorId: vendorId,
       variantId: variantId,
@@ -98,6 +101,7 @@ class AdsProvider extends HookWidget {
       adServerUrl: adServerUrl,
       messages: messages,
       bids: bids.value,
+      isDisabled: isDisabled,
       readyForStreamingAssistant: readyForStreamingAssistant.value,
       readyForStreamingUser: readyForStreamingUser.value,
       lastAssistantMessageId: lastAssistantMessageId.value,

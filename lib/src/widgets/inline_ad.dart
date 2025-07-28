@@ -60,6 +60,10 @@ class InlineAd extends HookWidget {
       return const SizedBox.shrink();
     }
 
+    if (adsProviderData.isDisabled) {
+      return const SizedBox.shrink();
+    }
+
     final bid = useBid(adsProviderData, code: code, messageId: messageId);
     if (bid == null) {
       return const SizedBox.shrink();

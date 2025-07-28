@@ -10,13 +10,14 @@ void usePreloadAds(
   BuildContext context, {
   required String adServerUrl,
   required String publisherToken,
-  required List<Message> messages,
   required String userId,
   required String conversationId,
-  Character? character,
-  String? vendorId,
-  String? variantId,
-  String? advertisingId,
+  required List<Message> messages,
+  required bool isDisabled,
+  required Character? character,
+  required String? vendorId,
+  required String? variantId,
+  required String? advertisingId,
   required ValueChanged<List<Bid>> setBids,
   required ValueChanged<bool> setReadyForStreamingAssistant,
   required ValueChanged<bool> setReadyForStreamingUser,
@@ -41,7 +42,7 @@ void usePreloadAds(
 
     bool cancelled = false;
     preload() async {
-      if (cancelled) return;
+      if (isDisabled || cancelled) return;
 
       final api = Api(baseUrl: adServerUrl);
       final result = await api.preload(
