@@ -14,6 +14,8 @@ void usePreloadAds(
   required String userId,
   required String conversationId,
   Character? character,
+  String? variantId,
+  String? advertisingId,
   required ValueChanged<List<Bid>> setBids,
   required ValueChanged<bool> setReadyForStreamingAssistant,
   required ValueChanged<bool> setReadyForStreamingUser,
@@ -48,6 +50,8 @@ void usePreloadAds(
         sessionId: sessionId.value,
         messages: messages.getLastMessages(),
         character: character,
+        variantId: variantId,
+        advertisingId: advertisingId,
       );
 
       if (cancelled || !context.mounted) {
@@ -56,8 +60,7 @@ void usePreloadAds(
 
       sessionId.value = result.sessionId;
 
-      print(
-          'Fetched bids: lastUserMessagesContent length: ${lastUserMessagesContent.length}, ${result.bids}');
+      print('Fetched bids: lastUserMessagesContent length: ${lastUserMessagesContent.length}, ${result.bids}');
       setBids([...result.bids]);
       setReadyForStreamingUser(true);
     }

@@ -35,6 +35,8 @@ class Api {
     String? sessionId,
     required List<Message> messages,
     Character? character,
+    String? variantId,
+    String? advertisingId,
   }) async {
     try {
       final response = await _client.post(
@@ -46,6 +48,8 @@ class Api {
           if (sessionId != null) 'sessionId': sessionId,
           'messages': messages.map((message) => message.toJson()).toList(),
           if (character != null) 'character': character.toJson(),
+          if (variantId != null) 'variantId': variantId,
+          if (advertisingId != null) 'advertisingId': advertisingId,
         },
       );
 

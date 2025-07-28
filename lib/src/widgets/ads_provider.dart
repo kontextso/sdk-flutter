@@ -20,6 +20,8 @@ class AdsProvider extends HookWidget {
     required this.messages,
     this.enabledPlacementCodes = const [],
     this.character,
+    this.variantId,
+    this.advertisingId,
     this.onAdView,
     this.onAdClick,
     this.onAdDone,
@@ -34,6 +36,8 @@ class AdsProvider extends HookWidget {
   final List<Message> messages;
   final List<String> enabledPlacementCodes;
   final Character? character;
+  final String? variantId;
+  final String? advertisingId;
   final AdCallback? onAdView;
   final AdCallback? onAdClick;
   final AdCallback? onAdDone;
@@ -75,6 +79,8 @@ class AdsProvider extends HookWidget {
       userId: userId,
       conversationId: conversationId,
       character: character,
+      variantId: variantId,
+      advertisingId: advertisingId,
       setBids: setBids,
       setReadyForStreamingAssistant: setReadyForStreamingAssistant,
       setReadyForStreamingUser: setReadyForStreamingUser,
