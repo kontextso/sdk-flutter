@@ -3,6 +3,16 @@ import 'package:kontext_flutter_sdk/src/models/character.dart';
 import 'package:kontext_flutter_sdk/src/services/http_client.dart';
 import 'package:kontext_flutter_sdk/src/models/message.dart';
 
+class PreloadResult {
+  const PreloadResult({
+    required this.sessionId,
+    required this.bids,
+  });
+
+  final String? sessionId;
+  final List<Bid> bids;
+}
+
 class Api {
   Api._internal({String? baseUrl}) : _client = HttpClient(baseUrl: baseUrl);
 
@@ -18,10 +28,11 @@ class Api {
     _instance = null;
   }
 
-  Future<List<Bid>> preload({
+  Future<PreloadResult> preload({
     required String publisherToken,
     required String userId,
     required String conversationId,
+    String? sessionId,
     required List<Message> messages,
     Character? character,
   }) async {
@@ -32,22 +43,26 @@ class Api {
           'publisherToken': publisherToken,
           'userId': userId,
           'conversationId': conversationId,
+          if (sessionId != null) 'sessionId': sessionId,
           'messages': messages.map((message) => message.toJson()).toList(),
           if (character != null) 'character': character.toJson(),
         },
       );
 
+      print("[Kontext] Preload response: $response");
+      final sessionIdJson = response['sessionId'] as String?;
       final bidJson = response['bids'] as List<dynamic>?;
-      if (bidJson == null) {
-        return [];
-      }
 
-      final bids = bidJson.map((json) => Bid.fromJson(json)).toList();
-
-      return bids;
+      return PreloadResult(
+        sessionId: sessionIdJson,
+        bids: bidJson?.map((json) => Bid.fromJson(json)).toList() ?? [],
+      );
     } catch (e) {
       print("[Kontext] Error fetching data: $e");
-      return [];
+      return const PreloadResult(
+        sessionId: null,
+        bids: [],
+      );
     }
   }
 }

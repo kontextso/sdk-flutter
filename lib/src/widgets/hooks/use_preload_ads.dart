@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/widgets.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kontext_flutter_sdk/src/models/bid.dart';
@@ -20,6 +18,8 @@ void usePreloadAds(
   required ValueChanged<bool> setReadyForStreamingAssistant,
   required ValueChanged<bool> setReadyForStreamingUser,
 }) {
+  final sessionId = useRef<String?>(null);
+
   if (messages.isEmpty) {
     setBids([]);
     setReadyForStreamingAssistant(false);
@@ -29,7 +29,6 @@ void usePreloadAds(
 
   final lastUserMessagesContent =
       messages.reversed.where((message) => message.isUser).take(6).map((message) => message.content).join('\n');
-
 
   useEffect(() {
     print('usePreloadAds useEffect triggered - lastUserMessagesContent length: ${lastUserMessagesContent.length}');
@@ -42,10 +41,11 @@ void usePreloadAds(
       if (cancelled) return;
 
       final api = Api(baseUrl: adServerUrl);
-      final bids = await api.preload(
+      final result = await api.preload(
         publisherToken: publisherToken,
         userId: userId,
         conversationId: conversationId,
+        sessionId: sessionId.value,
         messages: messages.getLastMessages(),
         character: character,
       );
@@ -54,8 +54,11 @@ void usePreloadAds(
         return;
       }
 
-      print('Fetched bids: assistantMessageCount: lastUserMessagesContent length: ${lastUserMessagesContent.length}, $bids');
-      setBids([...bids]);
+      sessionId.value = result.sessionId;
+
+      print(
+          'Fetched bids: lastUserMessagesContent length: ${lastUserMessagesContent.length}, ${result.bids}');
+      setBids([...result.bids]);
       setReadyForStreamingUser(true);
     }
 
