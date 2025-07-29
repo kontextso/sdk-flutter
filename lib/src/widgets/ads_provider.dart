@@ -70,6 +70,7 @@ class AdsProvider extends HookWidget {
     useEffect(() {
       Api.resetInstance();
       HttpClient.resetInstance();
+      resetAll();
       return null;
     }, [adServerUrl]);
 
