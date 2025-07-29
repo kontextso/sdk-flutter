@@ -113,6 +113,10 @@ class InlineAd extends HookWidget {
             final url = navigationAction.request.url?.toString();
             print('Navigating to URL: $url');
 
+            if (url != null && url.contains(adsProviderData.adServerUrl)) {
+              return NavigationActionPolicy.ALLOW;
+            }
+
             return NavigationActionPolicy.CANCEL;
           },
           onConsoleMessage: (controller, consoleMessage) {
