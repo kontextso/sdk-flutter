@@ -117,6 +117,7 @@ class InlineAd extends HookWidget {
               return NavigationActionPolicy.ALLOW;
             }
 
+            url?.openUrl();
             return NavigationActionPolicy.CANCEL;
           },
           onConsoleMessage: (controller, consoleMessage) {

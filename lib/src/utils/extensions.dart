@@ -1,5 +1,6 @@
 import 'package:kontext_flutter_sdk/src/utils/helper_methods.dart';
 import 'package:kontext_flutter_sdk/src/models/message.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 extension DeepHashExt on Object? {
   int get deepHash => deepHashObject(this);
@@ -24,5 +25,17 @@ extension ListExtension<E> on List<E> {
 extension MessageListExtension on List<Message> {
   List<Message> getLastMessages({int count = 10}) {
     return length > count ? sublist(length - count) : this;
+  }
+}
+
+extension StringUrlExtension on String {
+  Future<bool> openUrl({bool useExternalApplication = true}) async {
+    final url = Uri.tryParse(this);
+    if (url != null) {
+      await launchUrl(url, mode: useExternalApplication ? LaunchMode.externalApplication : LaunchMode.platformDefault);
+      return true;
+    }
+
+    return false;
   }
 }
