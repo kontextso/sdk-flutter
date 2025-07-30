@@ -184,7 +184,7 @@ class InlineAd extends HookWidget {
           onLoadStop: (controller, url) async {
             await controller.evaluateJavascript(source: '''
                   if (!window.__flutterSdkBridgeReady) {
-                    console.log('InAppWebView loaded with message: $messageContent, URL: $url');
+                    console.log('InAppWebView loaded with message: ' + ${jsonEncode(messageContent)} + ', URL: ' + ${jsonEncode(url.toString())});
                     window.__flutterSdkBridgeReady = true;
                     window.addEventListener('message', event => {
                       window.flutter_inappwebview.callHandler('postMessage', event.data);
