@@ -1,16 +1,28 @@
 import 'package:kontext_flutter_sdk/src/models/bid.dart';
 import 'package:kontext_flutter_sdk/src/models/character.dart';
+import 'package:kontext_flutter_sdk/src/services/logger.dart';
 import 'package:kontext_flutter_sdk/src/services/http_client.dart';
 import 'package:kontext_flutter_sdk/src/models/message.dart';
+import 'package:kontext_flutter_sdk/src/utils/extensions.dart';
 
-class PreloadResult {
-  const PreloadResult({
+class PreloadResponse {
+  const PreloadResponse({
     required this.sessionId,
     required this.bids,
+    this.statusCode,
+    this.remoteLogLevel,
+    this.error,
+    this.errorCode,
+    this.permanentError,
   });
 
   final String? sessionId;
   final List<Bid> bids;
+  final int? statusCode;
+  final LogLevel? remoteLogLevel;
+  final String? error;
+  final String? errorCode;
+  final bool? permanentError;
 }
 
 class Api {
@@ -24,7 +36,7 @@ class Api {
     return _instance ??= Api._internal();
   }
 
-  Future<PreloadResult> preload({
+  Future<PreloadResponse> preload({
     required String publisherToken,
     required String userId,
     required String conversationId,
@@ -36,7 +48,7 @@ class Api {
     String? advertisingId,
   }) async {
     try {
-      final response = await _client.post(
+      final result = await _client.post(
         '/preload',
         body: {
           'publisherToken': publisherToken,
@@ -51,17 +63,32 @@ class Api {
         },
       );
 
-      print("[Kontext] Preload response: $response");
-      final sessionIdJson = response['sessionId'] as String?;
-      final bidJson = response['bids'] as List<dynamic>?;
+      final statusCode = result.response.statusCode;
+      final data = result.data;
 
-      return PreloadResult(
+      final sessionIdJson = data['sessionId'] as String?;
+      final bidJson = data['bids'] as List<dynamic>?;
+      final remoteLogLevel = data['remoteLogLevel'] as String?;
+      final error = data['error'] as String?;
+      final errorCode = data['errCode'] as String?;
+      final permanentError = data['permanent'] as bool?;
+
+      return PreloadResponse(
         sessionId: sessionIdJson,
         bids: bidJson?.map((json) => Bid.fromJson(json)).toList() ?? [],
+        statusCode: statusCode,
+        remoteLogLevel: remoteLogLevel != null
+            ? LogLevel.values.firstWhereOrElse(
+                (level) => level.name == remoteLogLevel,
+              )
+            : null,
+        error: error,
+        errorCode: errorCode,
+        permanentError: permanentError,
       );
     } catch (e) {
       print("[Kontext] Error fetching data: $e");
-      return const PreloadResult(
+      return const PreloadResponse(
         sessionId: null,
         bids: [],
       );

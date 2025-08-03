@@ -4,6 +4,7 @@ import 'package:kontext_flutter_sdk/src/models/bid.dart';
 import 'package:kontext_flutter_sdk/src/models/character.dart';
 import 'package:kontext_flutter_sdk/src/models/message.dart';
 import 'package:kontext_flutter_sdk/src/services/api.dart';
+import 'package:kontext_flutter_sdk/src/services/logger.dart';
 import 'package:kontext_flutter_sdk/src/utils/extensions.dart';
 
 void usePreloadAds(
@@ -23,6 +24,7 @@ void usePreloadAds(
   required ValueChanged<bool> setReadyForStreamingUser,
 }) {
   final sessionId = useRef<String?>(null);
+  final sessionDisabled = useRef<bool>(false);
 
   if (messages.isEmpty) {
     setBids([]);
@@ -31,21 +33,37 @@ void usePreloadAds(
     return;
   }
 
+  useEffect(() {
+    if (sessionId.value != null) {
+      Logger.setRemoteConfig({
+        'sessionId': sessionId.value,
+        'publisherToken': publisherToken,
+        'userId': userId,
+        'conversationId': conversationId,
+        'character': character?.toJson(),
+        'vendorId': vendorId,
+        'variantId': variantId,
+        'advertisingId': advertisingId,
+      });
+    }
+
+    return null;
+  }, [sessionId.value, publisherToken, userId, conversationId, character, vendorId, variantId, advertisingId]);
+
   final lastUserMessagesContent =
       messages.reversed.where((message) => message.isUser).take(6).map((message) => message.content).join('\n');
 
   useEffect(() {
-    print('usePreloadAds useEffect triggered - lastUserMessagesContent length: ${lastUserMessagesContent.length}');
     setBids([]);
     setReadyForStreamingAssistant(false);
     setReadyForStreamingUser(false);
 
     bool cancelled = false;
     preload() async {
-      if (isDisabled || cancelled) return;
+      if (isDisabled || cancelled || sessionDisabled.value) return;
 
       final api = Api();
-      final result = await api.preload(
+      final response = await api.preload(
         publisherToken: publisherToken,
         userId: userId,
         conversationId: conversationId,
@@ -61,11 +79,32 @@ void usePreloadAds(
         return;
       }
 
-      sessionId.value = result.sessionId;
+      if (response.statusCode == 204) {
+        Logger.log('Preload ads finished (204)');
+        return;
+      }
 
-      print('Fetched bids: lastUserMessagesContent length: ${lastUserMessagesContent.length}, ${result.bids}');
-      setBids([...result.bids]);
+      if (response.error != null || response.errorCode != null || response.sessionId == null) {
+        if (response.permanentError == true) {
+          // Geo disabled or other reason, ads are permanently disabled
+          sessionDisabled.value = true;
+          Logger.info('Session is disabled. Reason: Error=${response.error}, ErrorCode=${response.errorCode}');
+          return;
+        }
+        Logger.info('Ad generation skipped. Reason: Error=${response.error}, ErrorCode=${response.errorCode}');
+        return;
+      }
+
+      if (response.remoteLogLevel != null) {
+        Logger.setRemoteLogLevel(response.remoteLogLevel!);
+      }
+
+      sessionId.value = response.sessionId;
+
+      setBids([...response.bids]);
       setReadyForStreamingUser(true);
+
+      Logger.log('Preload Ads finished');
     }
 
     preload();

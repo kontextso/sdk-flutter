@@ -76,19 +76,12 @@ class AdsProvider extends HookWidget {
     }, [adServerUrl]);
 
     useEffect(() {
-      Logger.setLocalLogLevel(logLevel ?? LogLevel.info);
-      Logger.setRemoteConfig({
-        'adServerUrl': adServerUrl,
-        'publisherToken': publisherToken,
-        'userId': userId,
-        'conversationId': conversationId,
-        'character': character?.toJson(),
-        'vendorId': vendorId,
-        'variantId': variantId,
-        'advertisingId': advertisingId,
-      });
+      final logLevel = this.logLevel;
+      if (logLevel != null) {
+        Logger.setLocalLogLevel(logLevel);
+      }
       return null;
-    }, [logLevel, adServerUrl, publisherToken, userId, conversationId, character, vendorId, variantId, advertisingId]);
+    }, [logLevel]);
 
     usePreloadAds(
       context,

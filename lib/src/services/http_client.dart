@@ -19,7 +19,7 @@ class HttpClient {
     _instance = null;
   }
 
-  Future<Json> post(String path, {Json? body}) async {
+  Future<({http.Response response, Json data})> post(String path, {Json? body}) async {
     final url = Uri.parse('$baseUrl$path');
     final response = await http.post(
       url,
@@ -27,7 +27,6 @@ class HttpClient {
       body: jsonEncode(body ?? {}),
     );
 
-    print("Response status: ${response.statusCode}");
-    return jsonDecode(response.body) as Json;
+    return (response: response, data: jsonDecode(response.body) as Json);
   }
 }
