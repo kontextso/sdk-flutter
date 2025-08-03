@@ -31,7 +31,7 @@ class InlineAd extends HookWidget {
     final payload = {
       'type': 'update-iframe',
       'data': {
-        'sdk': 'sdk',
+        'sdk': 'sdk-flutter',
         'code': code,
         'messageId': messageId,
         'messages': messages.map((m) => m.toJson()).toList(),
