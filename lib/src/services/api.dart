@@ -14,18 +14,14 @@ class PreloadResult {
 }
 
 class Api {
-  Api._internal({String? baseUrl}) : _client = HttpClient(baseUrl: baseUrl);
+  Api._internal() : _client = HttpClient();
 
   final HttpClient _client;
 
   static Api? _instance;
 
-  factory Api({String? baseUrl}) {
-    return _instance ??= Api._internal(baseUrl: baseUrl);
-  }
-
-  static void resetInstance() {
-    _instance = null;
+  factory Api() {
+    return _instance ??= Api._internal();
   }
 
   Future<PreloadResult> preload({

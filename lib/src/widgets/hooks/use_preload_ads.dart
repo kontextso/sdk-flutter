@@ -44,7 +44,7 @@ void usePreloadAds(
     preload() async {
       if (isDisabled || cancelled) return;
 
-      final api = Api(baseUrl: adServerUrl);
+      final api = Api();
       final result = await api.preload(
         publisherToken: publisherToken,
         userId: userId,
