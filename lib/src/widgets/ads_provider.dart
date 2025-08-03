@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kontext_flutter_sdk/src/models/bid.dart';
-import 'package:kontext_flutter_sdk/src/services/api.dart';
 import 'package:kontext_flutter_sdk/src/services/http_client.dart';
+import 'package:kontext_flutter_sdk/src/services/logger.dart';
 import 'package:kontext_flutter_sdk/src/widgets/ads_provider_data.dart';
 import 'package:kontext_flutter_sdk/src/models/message.dart';
 import 'package:kontext_flutter_sdk/src/models/character.dart';
@@ -23,12 +23,12 @@ class AdsProvider extends HookWidget {
     this.vendorId,
     this.variantId,
     this.advertisingId,
+    this.logLevel,
     this.onAdView,
     this.onAdClick,
     this.onAdDone,
     required this.child,
   });
-
 
   final String adServerUrl;
   final String publisherToken;
@@ -40,6 +40,7 @@ class AdsProvider extends HookWidget {
   final String? vendorId;
   final String? variantId;
   final String? advertisingId;
+  final LogLevel? logLevel;
   final AdCallback? onAdView;
   final AdCallback? onAdClick;
   final AdCallback? onAdDone;
@@ -73,6 +74,21 @@ class AdsProvider extends HookWidget {
       resetAll();
       return null;
     }, [adServerUrl]);
+
+    useEffect(() {
+      Logger.setLocalLogLevel(logLevel ?? LogLevel.info);
+      Logger.setRemoteConfig({
+        'adServerUrl': adServerUrl,
+        'publisherToken': publisherToken,
+        'userId': userId,
+        'conversationId': conversationId,
+        'character': character?.toJson(),
+        'vendorId': vendorId,
+        'variantId': variantId,
+        'advertisingId': advertisingId,
+      });
+      return null;
+    }, [logLevel, adServerUrl, publisherToken, userId, conversationId, character, vendorId, variantId, advertisingId]);
 
     usePreloadAds(
       context,
