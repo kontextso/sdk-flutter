@@ -43,8 +43,7 @@ class AdsProviderData extends InheritedWidget {
 
   @override
   bool updateShouldNotify(AdsProviderData oldWidget) {
-    final foo =
-        adServerUrl != oldWidget.adServerUrl ||
+    return adServerUrl != oldWidget.adServerUrl ||
         !listEquals<Message>(messages, oldWidget.messages) ||
         !listEquals<Bid>(bids, oldWidget.bids) ||
         isDisabled != oldWidget.isDisabled ||
@@ -55,14 +54,5 @@ class AdsProviderData extends InheritedWidget {
         onAdView != oldWidget.onAdView ||
         onAdClick != oldWidget.onAdClick ||
         onAdDone != oldWidget.onAdDone;
-    print(
-        'AdsProviderData updateShouldNotify: listEquals<Message>: ${!listEquals<Message>(messages, oldWidget.messages)}, '
-        'listEquals<Bid>: ${!listEquals<Bid>(bids, oldWidget.bids)}, '
-        'readyForStreamingUser: old: ${oldWidget.readyForStreamingUser}, new: $readyForStreamingUser, changed: ${readyForStreamingUser != oldWidget.readyForStreamingUser}, '
-        'readyForStreamingAssistant: old: ${oldWidget.readyForStreamingAssistant}, new: $readyForStreamingAssistant, changed: ${readyForStreamingAssistant != oldWidget.readyForStreamingAssistant}, '
-        'lastAssistantMessageId: old: ${oldWidget.lastAssistantMessageId}, new: $lastAssistantMessageId, changed: ${lastAssistantMessageId != oldWidget.lastAssistantMessageId}, '
-        'lastUserMessageId: old: ${oldWidget.lastUserMessageId}, new: $lastUserMessageId, changed: ${lastUserMessageId != oldWidget.lastUserMessageId}, '
-        'result: $foo');
-    return foo;
   }
 }

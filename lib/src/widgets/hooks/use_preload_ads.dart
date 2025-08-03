@@ -62,6 +62,7 @@ void usePreloadAds(
     preload() async {
       if (isDisabled || cancelled || sessionDisabled.value) return;
 
+      Logger.log('Preload ads started');
       final api = Api();
       final response = await api.preload(
         publisherToken: publisherToken,

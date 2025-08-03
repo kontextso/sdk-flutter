@@ -86,8 +86,8 @@ class Api {
         errorCode: errorCode,
         permanentError: permanentError,
       );
-    } catch (e) {
-      print("[Kontext] Error fetching data: $e");
+    } catch (e, stack) {
+      Logger.exception(e, stack);
       return const PreloadResponse(
         sessionId: null,
         bids: [],
