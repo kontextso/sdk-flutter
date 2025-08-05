@@ -20,11 +20,13 @@ void useLastMessages(
 
   useEffect(
     () {
-      final lastAssistantMessage = messages.lastWhereOrElse((message) => message.isAssistant);
       final lastUserMessage = messages.lastWhereOrElse((message) => message.isUser);
-
-      setLastAssistantMessageId(lastAssistantMessage?.id);
       setLastUserMessageId(lastUserMessage?.id);
+
+      // Set the lastAssistantMessageId based on the last assistant message in the sequence
+      final latestAssistantMessagesInSequence = messages.reversed.takeWhile((message) => message.isAssistant);
+      final lastAssistantMessage = latestAssistantMessagesInSequence.lastOrNull;
+      setLastAssistantMessageId(lastAssistantMessage?.id);
 
       // Ready for streaming if the last message is from the assistant
       setReadyForStreamingAssistant(messages.last.isAssistant);
