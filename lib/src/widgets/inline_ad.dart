@@ -158,7 +158,10 @@ class InlineAd extends HookWidget {
                     _handleAdCallback(adsProviderData.onAdClick, data);
                     break;
                   case 'ad-done-iframe':
-                    _handleAdCallback(adsProviderData.onAdDone, data);
+                    // To ensure the ad is fully processed
+                    Future.delayed(const Duration(milliseconds: 300), () {
+                      _handleAdCallback(adsProviderData.onAdDone, data);
+                    });
                     break;
                   case 'error-iframe':
                     resetIframe();
