@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:kontext_flutter_sdk/src/widgets/constants.dart';
+import 'package:kontext_flutter_sdk/src/utils/constants.dart';
 
 typedef Json = Map<String, dynamic>;
 
