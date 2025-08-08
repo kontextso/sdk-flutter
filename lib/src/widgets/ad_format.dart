@@ -78,6 +78,15 @@ class AdFormat extends HookWidget {
     final showIframe = useState(false);
     final height = useState(.0);
 
+    useEffect(() {
+      // messageId can only become relevant if an ad was shown for that specific messageId
+      if (showIframe.value) {
+        adsProviderData.setRelevantAssistantMessageId(messageId);
+      }
+
+      return;
+    }, [showIframe.value]);
+
     final webViewController = useRef<InAppWebViewController?>(null);
 
     useEffect(() {

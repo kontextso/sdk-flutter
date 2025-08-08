@@ -9,7 +9,7 @@ Bid? useBid(AdsProviderData data, {required String code, required String message
   }
 
   final isValidMessage = bid.isAfterAssistantMessage
-      ? data.lastAssistantMessageId == messageId && data.readyForStreamingAssistant
+      ? (data.relevantAssistantMessageId ?? data.lastAssistantMessageId) == messageId && data.readyForStreamingAssistant
       : data.lastUserMessageId == messageId && data.readyForStreamingUser;
   if (!isValidMessage) {
     return null;

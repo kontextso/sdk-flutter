@@ -53,12 +53,14 @@ class AdsProvider extends HookWidget {
     final readyForStreamingUser = useState<bool>(false);
     final lastAssistantMessageId = useState<String?>(null);
     final lastUserMessageId = useState<String?>(null);
+    final relevantAssistantMessageId = useState<String?>(null);
 
     void setBids(List<Bid> newBids) => bids.value = newBids;
     void setReadyForStreamingAssistant(bool ready) => readyForStreamingAssistant.value = ready;
     void setReadyForStreamingUser(bool ready) => readyForStreamingUser.value = ready;
     void setLastAssistantMessageId(String? id) => lastAssistantMessageId.value = id;
     void setLastUserMessageId(String? id) => lastUserMessageId.value = id;
+    void setRelevantAssistantMessageId(String? id) => relevantAssistantMessageId.value = id;
 
     void resetAll() {
       setBids([]);
@@ -105,6 +107,7 @@ class AdsProvider extends HookWidget {
       setReadyForStreamingAssistant: setReadyForStreamingAssistant,
       setLastAssistantMessageId: setLastAssistantMessageId,
       setLastUserMessageId: setLastUserMessageId,
+      setRelevantAssistantMessageId: setRelevantAssistantMessageId,
     );
 
     return AdsProviderData(
@@ -116,6 +119,8 @@ class AdsProvider extends HookWidget {
       readyForStreamingUser: readyForStreamingUser.value,
       lastAssistantMessageId: lastAssistantMessageId.value,
       lastUserMessageId: lastUserMessageId.value,
+      relevantAssistantMessageId: relevantAssistantMessageId.value,
+      setRelevantAssistantMessageId: setRelevantAssistantMessageId,
       resetAll: resetAll,
       onAdView: onAdView,
       onAdClick: onAdClick,

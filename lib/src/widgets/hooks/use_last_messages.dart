@@ -8,11 +8,13 @@ void useLastMessages(
   required ValueChanged<bool> setReadyForStreamingAssistant,
   required ValueChanged<String?> setLastAssistantMessageId,
   required ValueChanged<String?> setLastUserMessageId,
+  required ValueChanged<String?> setRelevantAssistantMessageId,
 }) {
   if (messages.isEmpty) {
     setReadyForStreamingAssistant(false);
     setLastAssistantMessageId(null);
     setLastUserMessageId(null);
+    setRelevantAssistantMessageId(null);
     return;
   }
 
@@ -23,9 +25,12 @@ void useLastMessages(
       final lastUserMessage = messages.lastWhereOrElse((message) => message.isUser);
       setLastUserMessageId(lastUserMessage?.id);
 
-      // Set the lastAssistantMessageId based on the last assistant message in the sequence
-      final latestAssistantMessagesInSequence = messages.reversed.takeWhile((message) => message.isAssistant);
-      final lastAssistantMessage = latestAssistantMessagesInSequence.lastOrNull;
+      // If the last message is from the user, reset the relevant assistant message ID
+      if (messages.last.isUser) {
+        setRelevantAssistantMessageId(null);
+      }
+
+      final lastAssistantMessage = messages.lastWhereOrElse((message) => message.isAssistant);
       setLastAssistantMessageId(lastAssistantMessage?.id);
 
       // Ready for streaming if the last message is from the assistant

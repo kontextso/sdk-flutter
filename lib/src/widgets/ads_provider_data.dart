@@ -17,6 +17,8 @@ class AdsProviderData extends InheritedWidget {
     required this.readyForStreamingUser,
     required this.lastAssistantMessageId,
     required this.lastUserMessageId,
+    required this.relevantAssistantMessageId,
+    required this.setRelevantAssistantMessageId,
     required this.resetAll,
     required this.onAdView,
     required this.onAdClick,
@@ -32,6 +34,8 @@ class AdsProviderData extends InheritedWidget {
   final bool readyForStreamingUser;
   final String? lastAssistantMessageId;
   final String? lastUserMessageId;
+  final String? relevantAssistantMessageId;
+  final void Function(String?) setRelevantAssistantMessageId;
   final VoidCallback resetAll;
   final AdCallback? onAdView;
   final AdCallback? onAdClick;
@@ -50,6 +54,7 @@ class AdsProviderData extends InheritedWidget {
         readyForStreamingUser != oldWidget.readyForStreamingUser ||
         readyForStreamingAssistant != oldWidget.readyForStreamingAssistant ||
         lastAssistantMessageId != oldWidget.lastAssistantMessageId ||
+        relevantAssistantMessageId != oldWidget.relevantAssistantMessageId ||
         lastUserMessageId != oldWidget.lastUserMessageId ||
         onAdView != oldWidget.onAdView ||
         onAdClick != oldWidget.onAdClick ||

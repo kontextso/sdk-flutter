@@ -51,7 +51,7 @@ void usePreloadAds(
   }, [sessionId.value, publisherToken, userId, conversationId, character, vendorId, variantId, advertisingId]);
 
   final lastUserMessagesContent =
-      messages.reversed.where((message) => message.isUser).take(6).map((message) => message.content).join('\n');
+      messages.reversed.where((message) => message.isUser).take(10).map((message) => message.content).join('\n');
 
   useEffect(() {
     setBids([]);
