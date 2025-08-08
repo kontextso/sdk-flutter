@@ -26,10 +26,14 @@ void usePreloadAds(
   final sessionId = useRef<String?>(null);
   final sessionDisabled = useRef<bool>(false);
 
+  final prevUserMessageCount = useRef<int>(0);
+  final userMessageCount = messages.where((message) => message.isUser).length;
+
   if (messages.isEmpty) {
     setBids([]);
     setReadyForStreamingAssistant(false);
     setReadyForStreamingUser(false);
+    prevUserMessageCount.value = 0;
     return;
   }
 
@@ -50,10 +54,14 @@ void usePreloadAds(
     return null;
   }, [sessionId.value, publisherToken, userId, conversationId, character, vendorId, variantId, advertisingId]);
 
-  final lastUserMessagesContent =
-      messages.reversed.where((message) => message.isUser).take(10).map((message) => message.content).join('\n');
-
   useEffect(() {
+    final isNewUserMessage = userMessageCount > prevUserMessageCount.value;
+    prevUserMessageCount.value = userMessageCount;
+
+    if (!isNewUserMessage) {
+      return null;
+    }
+
     setBids([]);
     setReadyForStreamingAssistant(false);
     setReadyForStreamingUser(false);
@@ -113,5 +121,5 @@ void usePreloadAds(
     return () {
       cancelled = true;
     };
-  }, [lastUserMessagesContent]);
+  }, [userMessageCount]);
 }
