@@ -1,5 +1,6 @@
 import 'package:kontext_flutter_sdk/src/models/bid.dart';
 import 'package:kontext_flutter_sdk/src/models/character.dart';
+import 'package:kontext_flutter_sdk/src/services/device_app_info.dart';
 import 'package:kontext_flutter_sdk/src/services/logger.dart';
 import 'package:kontext_flutter_sdk/src/services/http_client.dart';
 import 'package:kontext_flutter_sdk/src/models/message.dart';
@@ -48,6 +49,7 @@ class Api {
     String? advertisingId,
   }) async {
     try {
+      final device = DeviceAppInfo.instance?.toJson();
       final result = await _client.post(
         '/preload',
         body: {
@@ -55,6 +57,7 @@ class Api {
           'userId': userId,
           'conversationId': conversationId,
           if (sessionId != null) 'sessionId': sessionId,
+          if (device != null) 'device': device,
           'messages': messages.map((message) => message.toJson()).toList(),
           if (character != null) 'character': character.toJson(),
           if (vendorId != null) 'vendorId': vendorId,

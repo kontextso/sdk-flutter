@@ -28,6 +28,16 @@ extension MessageListExtension on List<Message> {
   }
 }
 
+extension MapExtension<K, V> on Map<K, V> {
+  V? getOrNull(K key) {
+    if (containsKey(key)) {
+      return this[key];
+    }
+    return null;
+  }
+}
+
+
 extension StringUrlExtension on String {
   Future<bool> openUrl({bool useExternalApplication = true}) async {
     final url = Uri.tryParse(this);
