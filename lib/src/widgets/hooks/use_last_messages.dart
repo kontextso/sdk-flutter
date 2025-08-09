@@ -5,6 +5,7 @@ import 'package:kontext_flutter_sdk/src/utils/extensions.dart';
 
 void useLastMessages(
   List<Message> messages, {
+  required String? lastUserMessageId,
   required ValueChanged<bool> setReadyForStreamingAssistant,
   required ValueChanged<String?> setLastAssistantMessageId,
   required ValueChanged<String?> setLastUserMessageId,
@@ -26,7 +27,7 @@ void useLastMessages(
       setLastUserMessageId(lastUserMessage?.id);
 
       // If the last message is from the user, reset the relevant assistant message ID
-      if (messages.last.isUser) {
+      if (messages.last.isUser && lastUserMessage?.id != lastUserMessageId) {
         setRelevantAssistantMessageId(null);
       }
 

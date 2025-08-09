@@ -104,6 +104,7 @@ class AdsProvider extends HookWidget {
 
     useLastMessages(
       messages,
+      lastUserMessageId: lastUserMessageId.value,
       setReadyForStreamingAssistant: setReadyForStreamingAssistant,
       setLastAssistantMessageId: setLastAssistantMessageId,
       setLastUserMessageId: setLastUserMessageId,
