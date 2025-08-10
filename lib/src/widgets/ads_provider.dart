@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kontext_flutter_sdk/src/models/bid.dart';
-import 'package:kontext_flutter_sdk/src/services/device_app_info.dart' show DeviceAppInfo;
 import 'package:kontext_flutter_sdk/src/services/http_client.dart';
 import 'package:kontext_flutter_sdk/src/services/logger.dart';
 import 'package:kontext_flutter_sdk/src/widgets/ads_provider_data.dart';
@@ -88,11 +87,6 @@ class AdsProvider extends HookWidget {
       return null;
     }, [logLevel]);
 
-    useEffect(() {
-      DeviceAppInfo.init(iosAppStoreId: iosAppStoreId);
-      return null;
-    }, []);
-
     usePreloadAds(
       context,
       adServerUrl: adServerUrl,
@@ -105,6 +99,7 @@ class AdsProvider extends HookWidget {
       vendorId: vendorId,
       variantId: variantId,
       advertisingId: advertisingId,
+      iosAppStoreId: iosAppStoreId,
       setBids: setBids,
       setReadyForStreamingAssistant: setReadyForStreamingAssistant,
       setReadyForStreamingUser: setReadyForStreamingUser,

@@ -19,6 +19,7 @@ void usePreloadAds(
   required String? vendorId,
   required String? variantId,
   required String? advertisingId,
+  required String? iosAppStoreId,
   required ValueChanged<List<Bid>> setBids,
   required ValueChanged<bool> setReadyForStreamingAssistant,
   required ValueChanged<bool> setReadyForStreamingUser,
@@ -82,6 +83,7 @@ void usePreloadAds(
         vendorId: vendorId,
         variantId: variantId,
         advertisingId: advertisingId,
+        iosAppStoreId: iosAppStoreId,
       );
 
       if (cancelled || !context.mounted) {
