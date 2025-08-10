@@ -47,6 +47,7 @@ class Api {
     String? vendorId,
     String? variantId,
     String? advertisingId,
+    String? iosAppStoreId,
   }) async {
     try {
       final device = DeviceAppInfo.instance?.toJson();
