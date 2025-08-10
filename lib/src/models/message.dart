@@ -8,9 +8,16 @@ class Message {
     required this.createdAt,
   });
 
+  /// A unique identifier for the message.
   final String id;
+
+  /// The role of the message sender, either [MessageRole.user] or [MessageRole.assistant].
   final MessageRole role;
+
+  /// The text content of the message.
   final String content;
+
+  /// The timestamp when the message was created.
   final DateTime createdAt;
 
   bool get isUser => role == MessageRole.user;

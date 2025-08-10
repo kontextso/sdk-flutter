@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:flutter_hooks/flutter_hooks.dart' show HookWidget, useState, useEffect;
 import 'package:kontext_flutter_sdk/src/models/bid.dart';
 import 'package:kontext_flutter_sdk/src/services/http_client.dart';
 import 'package:kontext_flutter_sdk/src/services/logger.dart';
@@ -31,21 +31,63 @@ class AdsProvider extends HookWidget {
     required this.child,
   });
 
+  /// The URL of the ad server.
+  ///
+  /// Defaults to [kDefaultAdServerUrl] if not provided.
   final String adServerUrl;
+
+  /// Your unique publisher token.
   final String publisherToken;
+
+  /// A unique string that should remain the same during the user’s
+  /// lifetime (used for retargeting and rewarded ads).
   final String userId;
+
+  /// Unique identifier of the conversation.
   final String conversationId;
+
+  /// A list of messages between the assistant and the user.
   final List<Message> messages;
+
+  /// Whether the ads are disabled.
   final bool isDisabled;
+
+  /// The character object used in this conversation.
   final Character? character;
+
+  /// Vendor-specific ID.
   final String? vendorId;
+
+  /// A variant ID that helps determine which type of ad to render.
+  ///
+  /// This ID is typically unique for each publisher and is defined
+  /// based on an agreement between the publisher and Kontext.so.
   final String? variantId;
+
+  /// Device-specific identifier provided by the operating systems (IDFA/GAID)
   final String? advertisingId;
+
+  /// The log level for the SDK:
+  /// [LogLevel.debug], [LogLevel.info],
+  /// [LogLevel.log], [LogLevel.warn],
+  /// [LogLevel.error], or [LogLevel.silent].
   final LogLevel? logLevel;
+
+  /// iOS App Store ID for the app, used for better ad matching and reporting.
+  ///
+  /// Ignored on Android.
   final String? iosAppStoreId;
+
+  /// Callback when an ad is viewed.
   final AdCallback? onAdView;
+
+  /// Callback when an ad is clicked.
   final AdCallback? onAdClick;
+
+  /// Callback when an ad is fully processed.
   final AdCallback? onAdDone;
+
+  /// The child widget to be wrapped by the AdsProvider.
   final Widget child;
 
   @override

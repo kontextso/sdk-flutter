@@ -9,8 +9,13 @@ class InlineAd extends StatefulWidget {
     this.otherParams,
   });
 
+  /// The ad format code that identifies the ad to be displayed.
   final String code;
+
+  /// A unique identifier for the message associated with this ad.
   final String messageId;
+
+  /// Additional parameters associated with the ad.
   final Map<String, dynamic>? otherParams;
 
   @override
