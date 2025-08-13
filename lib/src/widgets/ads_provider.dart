@@ -19,6 +19,7 @@ class AdsProvider extends HookWidget {
     required this.conversationId,
     required this.messages,
     this.isDisabled = false,
+    this.enabledPlacementCodes = const [],
     this.character,
     this.vendorId,
     this.variantId,
@@ -51,6 +52,9 @@ class AdsProvider extends HookWidget {
 
   /// Whether the ads are disabled.
   final bool isDisabled;
+
+  /// A list of enabled placement codes for the ads.
+  final List<String> enabledPlacementCodes;
 
   /// The character object used in this conversation.
   final Character? character;
@@ -161,6 +165,7 @@ class AdsProvider extends HookWidget {
       messages: messages,
       bids: bids.value,
       isDisabled: isDisabled,
+      enabledPlacementCodes: enabledPlacementCodes,
       readyForStreamingAssistant: readyForStreamingAssistant.value,
       readyForStreamingUser: readyForStreamingUser.value,
       lastAssistantMessageId: lastAssistantMessageId.value,
