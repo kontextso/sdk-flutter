@@ -29,7 +29,7 @@ class Message {
       'id': id,
       'role': role.name,
       'content': content,
-      'createdAt': createdAt.toIso8601String(),
+      'createdAt': createdAt.toUtc().toIso8601String(),
     };
   }
 
