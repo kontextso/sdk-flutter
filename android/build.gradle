@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace "so.kontext.sdk"
+    namespace "so.kontext.sdk.flutter"
     compileSdk = 34
 
     defaultConfig {

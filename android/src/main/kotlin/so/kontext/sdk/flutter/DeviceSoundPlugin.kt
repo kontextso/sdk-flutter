@@ -1,4 +1,4 @@
-package so.kontext.sdk
+package so.kontext.sdk.flutter
 
 import android.content.Context
 import android.media.AudioManager
