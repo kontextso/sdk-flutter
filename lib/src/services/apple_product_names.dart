@@ -1,3 +1,6 @@
+// Edited: 2025-08-13
+// Source: https://gist.github.com/adamawolf/3048717
+
 const appleProductNames = {
   "i386": "iPhone Simulator",
   "x86_64": "iPhone Simulator",
