@@ -7,6 +7,7 @@ import 'package:kontext_flutter_sdk/src/models/message.dart';
 import 'package:kontext_flutter_sdk/src/models/public_ad.dart';
 import 'package:kontext_flutter_sdk/src/services/logger.dart';
 import 'package:kontext_flutter_sdk/src/services/http_client.dart';
+import 'package:kontext_flutter_sdk/src/utils/constants.dart';
 import 'package:kontext_flutter_sdk/src/utils/extensions.dart';
 import 'package:kontext_flutter_sdk/src/widgets/ads_provider_data.dart';
 import 'package:kontext_flutter_sdk/src/widgets/hooks/use_bid.dart';
@@ -31,7 +32,7 @@ class AdFormat extends HookWidget {
     final payload = {
       'type': 'update-iframe',
       'data': {
-        'sdk': 'sdk-flutter',
+        'sdk': kSdkLabel,
         'code': code,
         'messageId': messageId,
         'messages': messages.map((m) => m.toJson()).toList(),

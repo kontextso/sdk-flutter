@@ -5,6 +5,7 @@ import 'package:kontext_flutter_sdk/src/services/device_app_info.dart';
 import 'package:kontext_flutter_sdk/src/services/logger.dart';
 import 'package:kontext_flutter_sdk/src/services/http_client.dart';
 import 'package:kontext_flutter_sdk/src/models/message.dart';
+import 'package:kontext_flutter_sdk/src/utils/constants.dart';
 import 'package:kontext_flutter_sdk/src/utils/extensions.dart';
 
 const MethodChannel _soundChannel = MethodChannel('kontext_flutter_sdk/device_sound');
@@ -57,7 +58,7 @@ class Api {
       final result = await _client.post(
         '/preload',
         body: {
-          'sdk': 'sdk-flutter',
+          'sdk': kSdkLabel,
           'sdkVersion': '0.0.1',
           'publisherToken': publisherToken,
           'userId': userId,
