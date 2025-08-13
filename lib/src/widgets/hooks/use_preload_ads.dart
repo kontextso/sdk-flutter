@@ -5,6 +5,7 @@ import 'package:kontext_flutter_sdk/src/models/character.dart';
 import 'package:kontext_flutter_sdk/src/models/message.dart';
 import 'package:kontext_flutter_sdk/src/services/api.dart';
 import 'package:kontext_flutter_sdk/src/services/logger.dart';
+import 'package:kontext_flutter_sdk/src/utils/constants.dart';
 import 'package:kontext_flutter_sdk/src/utils/extensions.dart';
 
 void usePreloadAds(
@@ -41,6 +42,8 @@ void usePreloadAds(
   useEffect(() {
     if (sessionId.value != null) {
       Logger.setRemoteConfig({
+        'sdk': kSdkLabel,
+        'sdkVersion': kSdkVersion,
         'sessionId': sessionId.value,
         'publisherToken': publisherToken,
         'userId': userId,

@@ -59,7 +59,7 @@ class Api {
         '/preload',
         body: {
           'sdk': kSdkLabel,
-          'sdkVersion': '0.0.1',
+          'sdkVersion': kSdkVersion,
           'publisherToken': publisherToken,
           'userId': userId,
           'conversationId': conversationId,
