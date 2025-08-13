@@ -141,6 +141,7 @@ class AdsProvider extends HookWidget {
       userId: userId,
       conversationId: conversationId,
       messages: messages,
+      enabledPlacementCodes: enabledPlacementCodes,
       isDisabled: isDisabled,
       character: character,
       vendorId: vendorId,
