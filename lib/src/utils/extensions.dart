@@ -37,6 +37,12 @@ extension MapExtension<K, V> on Map<K, V> {
   }
 }
 
+extension StringExtension on String {
+  String? get nullIfEmpty {
+    final cleaned = trim();
+    return cleaned.isEmpty ? null : cleaned;
+  }
+}
 
 extension StringUrlExtension on String {
   Future<bool> openUrl({bool useExternalApplication = true}) async {
