@@ -116,6 +116,7 @@ class AdsProvider extends HookWidget {
       setReadyForStreamingUser(false);
       setLastAssistantMessageId(null);
       setLastUserMessageId(null);
+      setRelevantAssistantMessageId(null);
     }
 
     useEffect(() {
