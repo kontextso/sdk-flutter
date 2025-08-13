@@ -6,6 +6,8 @@ The official Flutter SDK for integrating Kontext.so ads into your mobile applica
 
 - **Flutter**: 3.24.0 or newer
 - **Dart**: 3.5.0 or newer
+- **Android**: `minSdkVersion >= 21`, `compileSdk >= 34`, [AGP](https://developer.android.com/build/releases/gradle-plugin) version `>= 7.3.0` (use [Android Studio - Android Gradle plugin Upgrade Assistant](https://developer.android.com/build/agp-upgrade-assistant) for help), support for `androidx` (see [AndroidX Migration](https://flutter.dev/docs/development/androidx-migration) to migrate an existing app)
+- **iOS**: `12.0+, --ios-language swift`, Xcode version `>= 15.0`
 - A [Kontext.so publisher account](https://docs.kontext.so/publishers#getting-started-is-easy) to obtain your `publisherToken` and ad `code`.
 
 ## Installation

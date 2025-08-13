@@ -2,6 +2,8 @@ name: kontext_flutter_sdk
 description: Kontext Flutter SDK
 version: 0.0.1
 homepage: https://www.kontext.so/
+repository: https://github.com/kontextso/sdk-flutter/
+license: Apache-2.0
 
 environment:
   sdk: ^3.5.0

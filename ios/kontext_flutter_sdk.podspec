@@ -7,12 +7,12 @@ Best-effort "soundOn"
   DESC
   s.homepage         = 'https://www.kontext.so/'
   s.license          = { :file => '../LICENSE' }
-  s.author           = { 'Kontext' => 'dev@kontext.so' }
+  s.author           = { 'Kontext' => 'support@kontext.so' }
   s.source           = { :path => '.' }
 
   s.source_files     = 'Classes/**/*'
   s.dependency       'Flutter'
-  s.platform         = :ios, '11.0'
+  s.platform         = :ios, '12.0'
   s.swift_version    = '5.0'
 
   s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES' }
