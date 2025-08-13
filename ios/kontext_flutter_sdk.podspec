@@ -15,5 +15,9 @@ Best-effort "soundOn"
   s.platform         = :ios, '12.0'
   s.swift_version    = '5.0'
 
+  s.frameworks       = 'AVFoundation'
+
+  s.resources = ['PrivacyInfo.xcprivacy']
+
   s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES' }
 end
