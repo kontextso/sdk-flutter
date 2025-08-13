@@ -82,7 +82,9 @@ class AdFormat extends HookWidget {
     useEffect(() {
       // messageId can only become relevant if an ad was shown for that specific messageId
       if (showIframe.value) {
-        adsProviderData.setRelevantAssistantMessageId(messageId);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          adsProviderData.setRelevantAssistantMessageId(messageId);
+        });
       }
 
       return;
