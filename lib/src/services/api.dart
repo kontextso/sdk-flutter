@@ -57,6 +57,8 @@ class Api {
       final result = await _client.post(
         '/preload',
         body: {
+          'sdk': 'sdk-flutter',
+          'sdkVersion': '0.0.1',
           'publisherToken': publisherToken,
           'userId': userId,
           'conversationId': conversationId,
