@@ -25,10 +25,10 @@ class AdFormat extends HookWidget {
   final Map<String, dynamic>? otherParams;
 
   void _postUpdateIframe(
-      InAppWebViewController controller, {
-        required String adServerUrl,
-        required List<Message> messages,
-      }) {
+    InAppWebViewController controller, {
+    required String adServerUrl,
+    required List<Message> messages,
+  }) {
     final payload = {
       'type': 'update-iframe',
       'data': {
@@ -121,7 +121,11 @@ class AdFormat extends HookWidget {
           initialUrlRequest: URLRequest(
             url: WebUri('${adsProviderData.adServerUrl}/api/frame/${bid.id}?code=$code&messageId=$messageId'),
           ),
-          initialSettings: InAppWebViewSettings(useShouldOverrideUrlLoading: true),
+          initialSettings: InAppWebViewSettings(
+            useShouldOverrideUrlLoading: true,
+            mediaPlaybackRequiresUserGesture: false,
+            allowsInlineMediaPlayback: true,
+          ),
           shouldOverrideUrlLoading: (controller, navigationAction) async {
             final url = navigationAction.request.url?.toString();
 
@@ -168,7 +172,7 @@ class AdFormat extends HookWidget {
                     _handleAdCallback(adsProviderData.onAdClick, data);
                     break;
                   case 'ad-done-iframe':
-                  // To ensure the ad is fully processed
+                    // To ensure the ad is fully processed
                     Future.delayed(const Duration(milliseconds: 300), () {
                       _handleAdCallback(adsProviderData.onAdDone, data);
                     });
