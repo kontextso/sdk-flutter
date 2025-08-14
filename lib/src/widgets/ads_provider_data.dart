@@ -53,7 +53,7 @@ class AdsProviderData extends InheritedWidget {
         !listEquals<Message>(messages, oldWidget.messages) ||
         !listEquals<Bid>(bids, oldWidget.bids) ||
         isDisabled != oldWidget.isDisabled ||
-        enabledPlacementCodes != oldWidget.enabledPlacementCodes ||
+        !listEquals(enabledPlacementCodes, oldWidget.enabledPlacementCodes) ||
         readyForStreamingUser != oldWidget.readyForStreamingUser ||
         readyForStreamingAssistant != oldWidget.readyForStreamingAssistant ||
         lastAssistantMessageId != oldWidget.lastAssistantMessageId ||
