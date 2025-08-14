@@ -4,6 +4,7 @@ class PublicAd {
     required this.code,
     this.messageId,
     this.content,
+    this.url,
   });
 
   /// A unique identifier for the ad.
@@ -18,17 +19,21 @@ class PublicAd {
   /// The content of the message.
   final String? content;
 
+  /// The URL of the ad, if applicable.
+  final String? url;
+
   factory PublicAd.fromJson(Map<String, dynamic> json) {
     return PublicAd(
       id: json['id'] as String,
       code: json['code'] as String,
       messageId: json['messageId'] as String?,
       content: json['content'] as String?,
+      url: json['url'] as String?,
     );
   }
 
   @override
   String toString() {
-    return 'PublicAd(id: $id, code: $code, messageId: $messageId, content: $content)';
+    return 'PublicAd(id: $id, code: $code, messageId: $messageId, content: $content, url: $url)';
   }
 }
