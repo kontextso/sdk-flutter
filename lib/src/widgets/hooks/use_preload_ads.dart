@@ -10,7 +10,6 @@ import 'package:kontext_flutter_sdk/src/utils/extensions.dart';
 
 void usePreloadAds(
   BuildContext context, {
-  required String adServerUrl,
   required String publisherToken,
   required String userId,
   required String conversationId,

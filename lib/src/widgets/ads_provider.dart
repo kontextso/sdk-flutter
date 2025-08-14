@@ -141,7 +141,6 @@ class AdsProvider extends HookWidget {
 
     usePreloadAds(
       context,
-      adServerUrl: adServerUrl,
       publisherToken: publisherToken,
       userId: userId,
       conversationId: conversationId,
