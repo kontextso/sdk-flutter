@@ -11,18 +11,18 @@ void useLastMessages(
   required ValueChanged<String?> setLastUserMessageId,
   required ValueChanged<String?> setRelevantAssistantMessageId,
 }) {
-  if (messages.isEmpty) {
-    setReadyForStreamingAssistant(false);
-    setLastAssistantMessageId(null);
-    setLastUserMessageId(null);
-    setRelevantAssistantMessageId(null);
-    return;
-  }
-
   final messageHash = messages.deepHash;
 
   useEffect(
     () {
+      if (messages.isEmpty) {
+        setReadyForStreamingAssistant(false);
+        setLastAssistantMessageId(null);
+        setLastUserMessageId(null);
+        setRelevantAssistantMessageId(null);
+        return null;
+      }
+
       final lastUserMessage = messages.lastWhereOrElse((message) => message.isUser);
       setLastUserMessageId(lastUserMessage?.id);
 

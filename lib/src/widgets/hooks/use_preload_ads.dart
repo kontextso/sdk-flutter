@@ -31,13 +31,17 @@ void usePreloadAds(
   final prevUserMessageCount = useRef<int>(0);
   final userMessageCount = messages.where((message) => message.isUser).length;
 
-  if (messages.isEmpty) {
-    setBids([]);
-    setReadyForStreamingAssistant(false);
-    setReadyForStreamingUser(false);
-    prevUserMessageCount.value = 0;
-    return;
-  }
+  final hasMessages = messages.isNotEmpty;
+
+  useEffect(() {
+    if (!hasMessages) {
+      setBids([]);
+      setReadyForStreamingAssistant(false);
+      setReadyForStreamingUser(false);
+      prevUserMessageCount.value = 0;
+    }
+    return null;
+  }, [hasMessages]);
 
   useEffect(() {
     if (sessionId.value != null) {
@@ -59,6 +63,8 @@ void usePreloadAds(
   }, [sessionId.value, publisherToken, userId, conversationId, character, vendorId, variantId, advertisingId]);
 
   useEffect(() {
+    if (!hasMessages) return null;
+
     final isNewUserMessage = userMessageCount > prevUserMessageCount.value;
     prevUserMessageCount.value = userMessageCount;
 
@@ -71,7 +77,8 @@ void usePreloadAds(
     setReadyForStreamingUser(false);
 
     bool cancelled = false;
-    preload() async {
+
+    Future<void> preload() async {
       if (isDisabled || cancelled || sessionDisabled.value) return;
 
       Logger.log('Preload ads started');
@@ -90,9 +97,7 @@ void usePreloadAds(
         iosAppStoreId: iosAppStoreId,
       );
 
-      if (cancelled || !context.mounted) {
-        return;
-      }
+      if (cancelled || !context.mounted) return;
 
       if (response.statusCode == 204) {
         Logger.log('Preload ads finished (204)');
@@ -127,5 +132,5 @@ void usePreloadAds(
     return () {
       cancelled = true;
     };
-  }, [userMessageCount]);
+  }, [userMessageCount, hasMessages]);
 }
