@@ -127,6 +127,11 @@ class AdsProvider extends HookWidget {
     }, [adServerUrl]);
 
     useEffect(() {
+      resetAll();
+      return null;
+    }, [conversationId]);
+
+    useEffect(() {
       final logLevel = this.logLevel;
       if (logLevel != null) {
         Logger.setLocalLogLevel(logLevel);
