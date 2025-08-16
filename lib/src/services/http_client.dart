@@ -19,13 +19,19 @@ class HttpClient {
     _instance = null;
   }
 
-  Future<({http.Response response, Json data})> post(String path, {Json? body}) async {
+  Future<({http.Response response, Json data})> post(
+    String path, {
+    Duration timeout = const Duration(seconds: 60),
+    Json? body,
+  }) async {
     final url = Uri.parse('$baseUrl$path');
-    final response = await http.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(body ?? {}),
-    );
+    final response = await http
+        .post(
+          url,
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode(body ?? {}),
+        )
+        .timeout(timeout);
 
     return (response: response, data: jsonDecode(response.body) as Json);
   }
