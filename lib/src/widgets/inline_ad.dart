@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:kontext_flutter_sdk/src/widgets/ad_format.dart';
 
+/// A widget that displays an inline ad using a specific ad format.
 class InlineAd extends StatefulWidget {
   const InlineAd({
     super.key,

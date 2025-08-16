@@ -10,6 +10,7 @@ import 'package:kontext_flutter_sdk/src/utils/constants.dart';
 import 'package:kontext_flutter_sdk/src/widgets/hooks/use_last_messages.dart';
 import 'package:kontext_flutter_sdk/src/widgets/hooks/use_preload_ads.dart';
 
+/// [AdsProvider] handles data fetching and state management for ads.
 class AdsProvider extends HookWidget {
   const AdsProvider({
     super.key,

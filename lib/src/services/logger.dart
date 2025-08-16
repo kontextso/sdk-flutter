@@ -2,6 +2,7 @@ import 'dart:developer' as developer;
 import 'package:flutter/foundation.dart';
 import 'package:kontext_flutter_sdk/src/services/http_client.dart';
 
+/// Log levels for the logger.
 enum LogLevel {
   debug(0, 500),
   info(1, 800),

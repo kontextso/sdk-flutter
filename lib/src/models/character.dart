@@ -1,3 +1,5 @@
+
+/// The character object used in a conversation.
 class Character {
   Character({
     required this.name,

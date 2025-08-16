@@ -1,5 +1,6 @@
 enum MessageRole { user, assistant }
 
+/// A class representing a message in a conversation, either from the user or the assistant.
 class Message {
   Message({
     required this.id,

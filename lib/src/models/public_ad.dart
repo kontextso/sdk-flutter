@@ -1,3 +1,5 @@
+
+/// A model representing an ad that is returned by the ad server.
 class PublicAd {
   PublicAd({
     required this.id,
