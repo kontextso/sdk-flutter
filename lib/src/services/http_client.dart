@@ -37,8 +37,16 @@ class HttpClient {
         )
         .timeout(timeout);
 
-    final data = response.body.isEmpty ? '{}' : response.body;
+    final resBody = response.body;
+    if (resBody.isEmpty) {
+      return (response: response, data: <String, dynamic>{});
+    }
 
-    return (response: response, data: jsonDecode(data) as Json);
+    final decoded = jsonDecode(resBody);
+    if (decoded is! Json) {
+      throw FormatException('Expected JSON object, got: $decoded');
+    }
+
+    return (response: response, data: decoded);
   }
 }

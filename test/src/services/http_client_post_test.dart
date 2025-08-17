@@ -83,7 +83,7 @@ void main() {
       );
     });
 
-    test('throw TypeError for non-Map JSON', () async {
+    test('throw FormatException for non-Map JSON', () async {
       when(() => mock.post(
             any(),
             headers: any(named: 'headers'),
@@ -94,7 +94,7 @@ void main() {
 
       expect(
         () => client.post('/preload', body: {'key': 'value'}),
-        throwsA(isA<TypeError>()),
+        throwsA(isA<FormatException>()),
       );
     });
   });
