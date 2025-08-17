@@ -37,6 +37,8 @@ class HttpClient {
         )
         .timeout(timeout);
 
-    return (response: response, data: jsonDecode(response.body) as Json);
+    final data = response.body.isEmpty ? '{}' : response.body;
+
+    return (response: response, data: jsonDecode(data) as Json);
   }
 }

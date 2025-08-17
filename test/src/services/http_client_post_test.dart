@@ -98,4 +98,36 @@ void main() {
       );
     });
   });
+
+  group('non 200 responses', () {
+    test('returns response with non-200 status code', () async {
+      when(() => mock.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          )).thenAnswer((_) async {
+        return http.Response('{"error": "Not Found"}', 500);
+      });
+
+      final result = await client.post('/preload', body: {'key': 'value'});
+
+      expect(result.response.statusCode, 500);
+      expect(result.data, {'error': 'Not Found'});
+    });
+
+    test('204 response returns empty data', () async {
+      when(() => mock.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          )).thenAnswer((_) async {
+        return http.Response('', 204);
+      });
+
+      final result = await client.post('/preload', body: {'key': 'value'});
+
+      expect(result.response.statusCode, 204);
+      expect(result.data, isEmpty);
+    });
+  });
 }
