@@ -5,14 +5,18 @@ import 'package:kontext_flutter_sdk/src/utils/constants.dart';
 typedef Json = Map<String, dynamic>;
 
 class HttpClient {
-  HttpClient._internal(this.baseUrl);
+  HttpClient._internal(this.baseUrl, this._client);
 
   final String baseUrl;
+  final http.Client _client;
 
   static HttpClient? _instance;
 
-  factory HttpClient({String? baseUrl}) {
-    return _instance ??= HttpClient._internal(baseUrl ?? kDefaultAdServerUrl);
+  factory HttpClient({String? baseUrl, http.Client? client}) {
+    return _instance ??= HttpClient._internal(
+      baseUrl ?? kDefaultAdServerUrl,
+      client ?? http.Client(),
+    );
   }
 
   static void resetInstance() {
@@ -25,7 +29,7 @@ class HttpClient {
     Json? body,
   }) async {
     final url = Uri.parse('$baseUrl$path');
-    final response = await http
+    final response = await _client
         .post(
           url,
           headers: {'Content-Type': 'application/json'},
@@ -33,6 +37,16 @@ class HttpClient {
         )
         .timeout(timeout);
 
-    return (response: response, data: jsonDecode(response.body) as Json);
+    final resBody = response.body;
+    if (resBody.isEmpty) {
+      return (response: response, data: <String, dynamic>{});
+    }
+
+    final decoded = jsonDecode(resBody);
+    if (decoded is! Json) {
+      throw FormatException('Expected JSON object, got: $decoded');
+    }
+
+    return (response: response, data: decoded);
   }
 }
