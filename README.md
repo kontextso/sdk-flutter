@@ -35,6 +35,7 @@ AdsProvider(
   publisherToken: 'your_publisher_token',
   userId: 'user_id',
   conversationId: 'conversation_id',
+  enabledPlacementCodes: ['your_code'], // ad codes you received during onboarding
   messages: <Message>[], // keep this in sync with your chat
   child: YourChatWidget(),
 )

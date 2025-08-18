@@ -20,7 +20,7 @@ class AdsProvider extends HookWidget {
     required this.conversationId,
     required this.messages,
     this.isDisabled = false,
-    this.enabledPlacementCodes = const [],
+    required this.enabledPlacementCodes,
     this.character,
     this.vendorId,
     this.variantId,
