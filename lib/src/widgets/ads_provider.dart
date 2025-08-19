@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart' show HookWidget, useState, useEffect;
 import 'package:kontext_flutter_sdk/src/models/bid.dart';
+import 'package:kontext_flutter_sdk/src/services/api.dart';
 import 'package:kontext_flutter_sdk/src/services/http_client.dart';
 import 'package:kontext_flutter_sdk/src/services/logger.dart';
 import 'package:kontext_flutter_sdk/src/widgets/ads_provider_data.dart';
@@ -121,9 +122,12 @@ class AdsProvider extends HookWidget {
     }
 
     useEffect(() {
-      HttpClient.resetInstance();
-      HttpClient(baseUrl: adServerUrl);
       resetAll();
+      HttpClient.resetInstance();
+      Api.resetInstance();
+      Logger.resetInstance();
+
+      HttpClient(baseUrl: adServerUrl);
       return null;
     }, [adServerUrl]);
 

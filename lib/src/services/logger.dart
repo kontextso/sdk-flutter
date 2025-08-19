@@ -34,6 +34,10 @@ class Logger {
     return _instance ??= Logger._internal();
   }
 
+  static void resetInstance() {
+    _instance = null;
+  }
+
   static void debug(String message) {
     final instance = Logger();
     instance._logLocal(LogLevel.debug, message);

@@ -41,6 +41,10 @@ class Api {
     return _instance ??= Api._internal();
   }
 
+  static void resetInstance() {
+    _instance = null;
+  }
+
   Future<PreloadResponse> preload({
     required String publisherToken,
     required String userId,
