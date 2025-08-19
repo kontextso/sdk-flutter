@@ -1,5 +1,6 @@
 import 'dart:io' show Platform;
 import 'dart:math' as math show min;
+import 'dart:ui' show PlatformDispatcher, Brightness;
 
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -19,10 +20,14 @@ class DeviceAppInfo {
     this.systemVersion,
     this.model,
     this.brand,
+    this.deviceType,
     this.appBundleId,
     this.appVersion,
     this.appStoreUrl,
-    this.deviceType,
+    this.locale,
+    this.screenWidth,
+    this.screenHeight,
+    this.isDarkMode,
   });
 
   static DeviceAppInfo? _instance;
@@ -37,6 +42,11 @@ class DeviceAppInfo {
   final String? appVersion;
   final String? appStoreUrl;
 
+  final String? locale;
+  final int? screenWidth;
+  final int? screenHeight;
+  final bool? isDarkMode;
+
   Map<String, dynamic> toJson() {
     return {
       'os': os?.name,
@@ -47,6 +57,10 @@ class DeviceAppInfo {
       'appBundleId': appBundleId,
       'appVersion': appVersion,
       'appStoreUrl': appStoreUrl,
+      'locale': locale,
+      'screenWidth': screenWidth,
+      'screenHeight': screenHeight,
+      'isDarkMode': isDarkMode,
     };
   }
 
@@ -86,6 +100,8 @@ class DeviceAppInfo {
       final appBundleId = appInfo.packageName;
       final appVersion = '${appInfo.version}+${appInfo.buildNumber}';
 
+      final dispatcher = WidgetsBinding.instance.platformDispatcher;
+
       if (Platform.isIOS) {
         final iosInfo = await deviceInfo.iosInfo;
         os = DeviceOS.ios;
@@ -104,7 +120,7 @@ class DeviceAppInfo {
         model = androidInfo.model;
         brand = androidInfo.brand;
 
-        final shortestSide = _shortestSideDp();
+        final shortestSide = _shortestSideDp(dispatcher);
         deviceType = shortestSide != null && shortestSide >= 600 ? DeviceType.tablet : DeviceType.handset;
 
         appStoreUrl = 'https://play.google.com/store/apps/details?id=$appBundleId';
@@ -116,6 +132,10 @@ class DeviceAppInfo {
         );
       }
 
+      final locale = _currentLocale(dispatcher);
+      final screenSize = _screenSize(dispatcher);
+      final isDarkMode = _isDarkMode(dispatcher);
+
       return _instance = DeviceAppInfo(
         os: os,
         systemVersion: systemVersion,
@@ -125,6 +145,10 @@ class DeviceAppInfo {
         appBundleId: appBundleId,
         appVersion: appVersion,
         appStoreUrl: appStoreUrl,
+        locale: locale,
+        screenWidth: screenSize.width?.round(),
+        screenHeight: screenSize.height?.round(),
+        isDarkMode: isDarkMode,
       );
     } catch (e, stack) {
       Logger.exception(e, stack);
@@ -134,12 +158,42 @@ class DeviceAppInfo {
     }
   }
 
-  static double? _shortestSideDp() {
+  static double? _shortestSideDp(PlatformDispatcher dispatcher) {
     try {
-      final view = WidgetsBinding.instance.platformDispatcher.views.first;
+      final view = dispatcher.views.first;
       final w = view.physicalSize.width / view.devicePixelRatio;
       final h = view.physicalSize.height / view.devicePixelRatio;
       return math.min(w, h);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static ({double? width, double? height}) _screenSize(PlatformDispatcher dispatcher) {
+    try {
+      final physical = dispatcher.views.first.physicalSize;
+      final w = physical.width;
+      final h = physical.height;
+      return (width: w, height: h);
+    } catch (_) {
+      return (width: null, height: null);
+    }
+  }
+
+  static String? _currentLocale(PlatformDispatcher dispatcher) {
+    try {
+      final locale = dispatcher.locale;
+      final countryCode = locale.countryCode;
+      return [locale.languageCode, countryCode?.toUpperCase()].whereType<String>().join('-');
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static bool? _isDarkMode(PlatformDispatcher dispatcher) {
+    try {
+      final brightness = dispatcher.platformBrightness;
+      return brightness == Brightness.dark;
     } catch (_) {
       return null;
     }
