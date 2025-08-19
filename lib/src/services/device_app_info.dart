@@ -100,7 +100,7 @@ class DeviceAppInfo {
       final appBundleId = appInfo.packageName;
       final appVersion = '${appInfo.version}+${appInfo.buildNumber}';
 
-      final dispatcher = WidgetsBinding.instance.platformDispatcher;
+      final dispatcher = PlatformDispatcher.instance;;
 
       if (Platform.isIOS) {
         final iosInfo = await deviceInfo.iosInfo;
