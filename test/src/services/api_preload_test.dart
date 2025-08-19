@@ -1,4 +1,7 @@
+import 'dart:convert' show jsonDecode;
+
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kontext_flutter_sdk/src/models/bid.dart' show AdDisplayPosition;
 import 'package:kontext_flutter_sdk/src/services/api.dart';
 import 'package:kontext_flutter_sdk/src/services/http_client.dart';
 import 'package:mocktail/mocktail.dart';
@@ -13,7 +16,10 @@ void main() {
   setUp(() {
     registerFallbackValue(Uri.parse('https://dummy.local'));
     mock = MockHttp();
+
     HttpClient.resetInstance();
+    Api.resetInstance();
+
     HttpClient(baseUrl: 'https://api.test', client: mock);
     api = Api();
   });
@@ -25,7 +31,7 @@ void main() {
           body: any(named: 'body'),
         )).thenAnswer((_) async {
       return http.Response(
-        '{"sessionId": "123", "bids": []}',
+        '{"sessionId": "123", "bids": [{"bidId": "id1", "code": "code1", "adDisplayPosition": "afterAssistantMessage"}]}',
         200,
       );
     });
@@ -38,8 +44,49 @@ void main() {
       enabledPlacementCodes: [],
     );
 
+    expect(response, isA<PreloadResponse>());
     expect(response.sessionId, '123');
-    expect(response.bids, isEmpty);
+    expect(response.bids.first.id, 'id1');
+    expect(response.bids.first.code, 'code1');
+    expect(response.bids.first.position, AdDisplayPosition.afterAssistantMessage);
     expect(response.statusCode, 200);
+
+    verify(() => mock.post(
+          Uri.parse('https://api.test/preload'),
+          headers: {'Content-Type': 'application/json'},
+          body: any(
+            named: 'body',
+            that: predicate<String>((b) {
+              final body = jsonDecode(b) as Json;
+              return body['publisherToken'] == 'test-token' &&
+                  body['userId'] == 'user-123' &&
+                  body['conversationId'] == 'conv-456' &&
+                  body['messages'] is List &&
+                  body['enabledPlacementCodes'] is List;
+            }),
+          ),
+        )).called(1);
+  });
+
+  test('invalid response structure', () async {
+    when(() => mock.post(
+          any(),
+          headers: any(named: 'headers'),
+          body: any(named: 'body'),
+        )).thenAnswer((_) async {
+      return http.Response('{"invalid": "data"}', 200);
+    });
+
+    final response = await api.preload(
+      publisherToken: 'test-token',
+      userId: 'user-123',
+      conversationId: 'conv-456',
+      messages: [],
+      enabledPlacementCodes: [],
+    );
+
+    expect(response, isA<PreloadResponse>());
+    expect(response.sessionId, isNull);
+    expect(response.bids, isEmpty);
   });
 }
