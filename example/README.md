@@ -5,12 +5,11 @@ It supports light/dark mode toggling, inline ads under messages, and a simulated
 
 ## ✨ Features
 
-- 📱 iOS & Android support
-- 💡 Light/Dark theme toggle
-- 💬 Simple chat interface with user and assistant messages
-- 📢 Inline ads displayed using `InlineAd` widget from Kontext SDK
-- ⚡ Simulated assistant replies for testing
-- 📝 Clean, step-by-step architecture for learning
+- iOS & Android support
+- Light/Dark theme toggle
+- Simple chat interface with user and assistant messages
+- Inline ads displayed using `InlineAd` widget from Kontext SDK
+- Simulated assistant replies for testing
 
 ## 📂 Project Structure
 
