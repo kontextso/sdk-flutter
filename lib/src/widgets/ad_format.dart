@@ -139,6 +139,9 @@ class AdFormat extends HookWidget {
             url?.openUrl();
             return NavigationActionPolicy.CANCEL;
           },
+          onConsoleMessage: (controller, consoleMessage) {
+            Logger.info('WebView Console: ${consoleMessage.message}');
+          },
           onWebViewCreated: (controller) {
             webViewController.value = controller;
             controller.addJavaScriptHandler(
