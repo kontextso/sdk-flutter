@@ -31,7 +31,7 @@ void main() {
           body: any(named: 'body'),
         )).thenAnswer((_) async {
       return http.Response(
-        '{"sessionId": "123", "bids": [{"bidId": "id1", "code": "code1", "adDisplayPosition": "afterAssistantMessage"}]}',
+        '{"sessionId": "123", "remoteLogLevel": "unknown", "bids": [{"bidId": "id1", "code": "code1", "adDisplayPosition": "afterAssistantMessage"}]}',
         200,
       );
     });
@@ -46,6 +46,7 @@ void main() {
 
     expect(response, isA<PreloadResponse>());
     expect(response.sessionId, '123');
+    expect(response.remoteLogLevel, isNull);
     expect(response.bids.first.id, 'id1');
     expect(response.bids.first.code, 'code1');
     expect(response.bids.first.position, AdDisplayPosition.afterAssistantMessage);
@@ -88,5 +89,89 @@ void main() {
     expect(response, isA<PreloadResponse>());
     expect(response.sessionId, isNull);
     expect(response.bids, isEmpty);
+  });
+
+  test('http error in payload', () async {
+    when(() => mock.post(
+      any(),
+      headers: any(named: 'headers'),
+      body: any(named: 'body'),
+    )).thenAnswer((_) async {
+      return http.Response('{"error":"Bad","errCode":"X1","permanent":true}', 400);
+    });
+
+    final response = await api.preload(
+      publisherToken: 'test-token',
+      userId: 'user-123',
+      conversationId: 'conv-456',
+      messages: [],
+      enabledPlacementCodes: [],
+    );
+
+    expect(response, isA<PreloadResponse>());
+    expect(response.sessionId, isNull);
+    expect(response.bids, isEmpty);
+    expect(response.statusCode, 400);
+    expect(response.error, 'Bad');
+    expect(response.errorCode, 'X1');
+    expect(response.permanentError, true);
+  });
+
+  test('exception -> safe fallback', () async {
+    when(() => mock.post(
+      any(),
+      headers: any(named: 'headers'),
+      body: any(named: 'body'),
+    )).thenThrow(Exception('Network error'));
+
+    final response = await api.preload(
+      publisherToken: 'test-token',
+      userId: 'user-123',
+      conversationId: 'conv-456',
+      messages: [],
+      enabledPlacementCodes: [],
+    );
+
+    expect(response, isA<PreloadResponse>());
+    expect(response.sessionId, isNull);
+    expect(response.bids, isEmpty);
+  });
+
+  test('optional ids are null-stripped', () async {
+    when(() => mock.post(
+      any(),
+      headers: any(named: 'headers'),
+      body: any(named: 'body'),
+    )).thenAnswer((_) async {
+      return http.Response(
+        '{"sessionId": "123", "bids": []}',
+        200,
+      );
+    });
+
+    await api.preload(
+      publisherToken: 'test-token',
+      userId: 'user-123',
+      conversationId: 'conv-456',
+      messages: [],
+      enabledPlacementCodes: [],
+      vendorId: '',
+      variantId: '',
+      advertisingId: '',
+    );
+
+    verify(() => mock.post(
+      Uri.parse('https://api.test/preload'),
+      headers: {'Content-Type': 'application/json'},
+      body: any(
+        named: 'body',
+        that: predicate<String>((b) {
+          final body = jsonDecode(b) as Json;
+          return body['vendorId'] == null &&
+                 body['variantId'] == null &&
+                 body['advertisingId'] == null;
+        }),
+      ),
+    )).called(1);
   });
 }
