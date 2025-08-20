@@ -174,4 +174,41 @@ void main() {
       ),
     )).called(1);
   });
+
+  test('device provider throws exception', () async {
+    when(() => mock.post(
+      any(),
+      headers: any(named: 'headers'),
+      body: any(named: 'body'),
+    )).thenAnswer((_) async {
+      return http.Response(
+        '{"sessionId": "123", "bids": []}',
+        200,
+      );
+    });
+
+    api.deviceInfoProvider = ({String? iosAppStoreId}) async {
+      throw Exception('Device info error');
+    };
+
+    await api.preload(
+      publisherToken: 'test-token',
+      userId: 'user-123',
+      conversationId: 'conv-456',
+      messages: [],
+      enabledPlacementCodes: [],
+    );
+
+    verify(() => mock.post(
+      Uri.parse('https://api.test/preload'),
+      headers: {'Content-Type': 'application/json'},
+      body: any(
+        named: 'body',
+        that: predicate<String>((b) {
+          final body = jsonDecode(b) as Json;
+          return body.containsKey('device') && body['device'] == null;
+        }),
+      ),
+    )).called(1);
+  });
 }

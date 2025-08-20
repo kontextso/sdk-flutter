@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show MethodChannel, MissingPluginException;
 import 'package:kontext_flutter_sdk/src/models/bid.dart';
 import 'package:kontext_flutter_sdk/src/models/character.dart';
@@ -37,6 +38,9 @@ class Api {
 
   static Api? _instance;
 
+  @visibleForTesting
+  Future<Json?> Function({String? iosAppStoreId})? deviceInfoProvider;
+
   factory Api() {
     return _instance ??= Api._internal();
   }
@@ -58,8 +62,15 @@ class Api {
     String? advertisingId,
     String? iosAppStoreId,
   }) async {
+    Json? device;
     try {
-      final device = await _getDeviceAppInfo(iosAppStoreId: iosAppStoreId);
+      device = await (deviceInfoProvider ?? _getDeviceAppInfo)(iosAppStoreId: iosAppStoreId);
+    } catch (e, stack) {
+      Logger.exception(e, stack);
+      device = null;
+    }
+
+    try {
       final result = await _client.post(
         '/preload',
         body: {
