@@ -124,6 +124,7 @@ class AdFormat extends HookWidget {
             url: WebUri('${adsProviderData.adServerUrl}/api/frame/${bid.id}?code=$code&messageId=$messageId'),
           ),
           initialSettings: InAppWebViewSettings(
+            mixedContentMode: MixedContentMode.MIXED_CONTENT_ALWAYS_ALLOW,
             useShouldOverrideUrlLoading: true,
             mediaPlaybackRequiresUserGesture: false,
             allowsInlineMediaPlayback: true,
