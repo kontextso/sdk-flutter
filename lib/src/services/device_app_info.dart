@@ -4,7 +4,6 @@ import 'dart:ui' show PlatformDispatcher, Brightness;
 
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:flutter/widgets.dart';
 import 'package:kontext_flutter_sdk/src/services/apple_product_names.dart';
 import 'package:kontext_flutter_sdk/src/services/logger.dart';
 import 'package:kontext_flutter_sdk/src/utils/extensions.dart';
@@ -100,7 +99,7 @@ class DeviceAppInfo {
       final appBundleId = appInfo.packageName;
       final appVersion = '${appInfo.version}+${appInfo.buildNumber}';
 
-      final dispatcher = PlatformDispatcher.instance;;
+      final dispatcher = PlatformDispatcher.instance;
 
       if (Platform.isIOS) {
         final iosInfo = await deviceInfo.iosInfo;

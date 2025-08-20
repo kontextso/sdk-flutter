@@ -76,4 +76,7 @@ ListView.builder(
 ## Documentation
 
 For advanced usage, supported formats, and configuration details, see the docs:
-https://docs.kontext.so
+https://docs.kontext.so/sdk/flutter
+
+## License
+This project is licensed under the Apache License 2.0. See the [LICENSE](LICENSE) file for details.
