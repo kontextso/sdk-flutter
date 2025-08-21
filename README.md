@@ -14,23 +14,44 @@ The official Flutter SDK for integrating Kontext.so ads into your mobile applica
 
 Add the package to your `pubspec.yaml`:
 
-~~~yaml
+```yaml
 dependencies:
   kontext_flutter_sdk: ^<latest_version>
-~~~
+```
 
 Then install:
 
-~~~bash
+```bash
 flutter pub get
-~~~
+```
+
+## WebView prerequisites (`flutter_inappwebview`)
+
+This SDK renders ads inside a WebView using [flutter_inappwebview](https://pub.dev/packages/flutter_inappwebview).
+To avoid initialization issues, add this to your app entry point:
+
+```dart
+import 'package:flutter/widgets.dart';
+
+void main() {
+  // Must be first so plugins are ready.
+  WidgetsFlutterBinding.ensureInitialized();
+
+  runApp(const MyApp());
+}
+```
+
+Make sure your project meets the Android min/compile SDK and iOS/Xcode requirements listed above.
+If you run into other issues, verify your project meets the plugin’s platform requirements: [https://inappwebview.dev/docs/intro/](https://inappwebview.dev/docs/intro/)
 
 ## Quick start
 
 Wrap your app (or the subtree that contains ad placements) with `AdsProvider`.
 `AdsProvider` handles data fetching and needs access to the list of chat `messages`.
 
-~~~dart
+```dart
+import 'package:kontext_flutter_sdk/kontext_flutter_sdk.dart';
+
 AdsProvider(
   publisherToken: 'your_publisher_token',
   userId: 'user_id',
@@ -39,7 +60,7 @@ AdsProvider(
   messages: <Message>[], // keep this in sync with your chat
   child: YourChatWidget(),
 )
-~~~
+```
 
 ## Display your first ad
 
@@ -49,7 +70,7 @@ During onboarding, you receive a `code` for each ad slot or ad format you want t
 
 Example using the `InlineAd` format:
 
-~~~dart
+```dart
 ListView.builder(
   itemCount: messages.length,
   itemBuilder: (context, index) {
@@ -66,7 +87,7 @@ ListView.builder(
     );
   },
 )
-~~~
+```
 
 ## Integration notes
 
