@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.1
+
+* Remove unnecessary comments.
+* Add platform support for Android and iOS in pubspec.yaml
+
 ## 1.0.0
 
 * Initial public release of `kontext_flutter_sdk`.
