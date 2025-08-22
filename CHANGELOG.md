@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.2
+
+* Add optional regulatory-related parameters to `AdsProvider`.
+* Update URLs and description in `pubspec.yaml`.
+
 ## 1.0.1
 
 * Remove unnecessary comments.
