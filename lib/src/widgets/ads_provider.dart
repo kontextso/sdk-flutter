@@ -28,11 +28,18 @@ class AdsProvider extends HookWidget {
     this.advertisingId,
     this.logLevel,
     this.iosAppStoreId,
+    this.gdpr,
+    this.gdprConsent,
+    this.coppa,
+    this.gpp,
+    this.gppSid,
+    this.usPrivacy,
     this.onAdView,
     this.onAdClick,
     this.onAdDone,
     required this.child,
-  });
+  })  : assert(gdpr == null || gdpr == 0 || gdpr == 1, 'gdpr must be 0 or 1'),
+        assert(coppa == null || coppa == 0 || coppa == 1, 'coppa must be 0 or 1');
 
   /// The URL of the ad server.
   ///
@@ -83,6 +90,32 @@ class AdsProvider extends HookWidget {
   ///
   /// Ignored on Android.
   final String? iosAppStoreId;
+
+  /// Flag that indicates whether or not the request is subject to GDPR regulations (0 = No, 1 = Yes, null = Unknown).
+  final int? gdpr;
+
+  /// When GDPR regulations are in effect this attribute contains the Transparency and Consent Framework's Consent String data structure
+  ///
+  /// https://github.com/InteractiveAdvertisingBureau/GDPR-Transparency-and-Consent-Framework/blob/master/TCFv2/IAB%20Tech%20Lab%20-%20Consent%20string%20and%20vendor%20list%20formats%20v2.md#about-the-transparency--consent-string-tc-string
+  final String? gdprConsent;
+
+  /// Flag whether the request is subject to COPPA (0 = No, 1 = Yes, null = Unknown).
+  ///
+  /// https://www.ftc.gov/legal-library/browse/rules/childrens-online-privacy-protection-rule-coppa
+  final int? coppa;
+
+  /// Global Privacy Platform (GPP) consent string.
+  ///
+  /// https://github.com/InteractiveAdvertisingBureau/Global-Privacy-Platform
+  final String? gpp;
+
+  /// Comma-separated list of the section(s) of the GPP string which should be applied for this transaction.
+  final String? gppSid;
+
+  /// Communicates signals regarding consumer privacy under US privacy regulation under CCPA and LSPA.
+  ///
+  /// https://github.com/InteractiveAdvertisingBureau/USPrivacy/blob/master/CCPA/US%20Privacy%20String.md
+  final String? usPrivacy;
 
   /// Callback when an ad is viewed.
   final AdCallback? onAdView;
@@ -157,6 +190,12 @@ class AdsProvider extends HookWidget {
       variantId: variantId,
       advertisingId: advertisingId,
       iosAppStoreId: iosAppStoreId,
+      gdpr: gdpr,
+      gdprConsent: gdprConsent,
+      coppa: coppa,
+      usPrivacy: usPrivacy,
+      gpp: gpp,
+      gppSid: gppSid,
       setBids: setBids,
       setReadyForStreamingAssistant: setReadyForStreamingAssistant,
       setReadyForStreamingUser: setReadyForStreamingUser,

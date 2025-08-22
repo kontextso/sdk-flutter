@@ -61,6 +61,12 @@ class Api {
     String? variantId,
     String? advertisingId,
     String? iosAppStoreId,
+    int? gdpr,
+    String? gdprConsent,
+    int? coppa,
+    String? usPrivacy,
+    String? gpp,
+    String? gppSid,
   }) async {
     Json? device;
     try {
@@ -87,6 +93,14 @@ class Api {
           'vendorId': vendorId?.nullIfEmpty,
           'variantId': variantId?.nullIfEmpty,
           'advertisingId': advertisingId?.nullIfEmpty,
+          'regulatory': {
+            'gdpr': gdpr,
+            'gdprConsent': gdprConsent?.nullIfEmpty,
+            'coppa': coppa,
+            'usPrivacy': usPrivacy?.nullIfEmpty,
+            'gpp': gpp?.nullIfEmpty,
+            'gppSid': gppSid?.nullIfEmpty,
+          },
         },
       );
 
