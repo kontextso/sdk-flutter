@@ -93,10 +93,10 @@ void main() {
 
   test('http error in payload', () async {
     when(() => mock.post(
-      any(),
-      headers: any(named: 'headers'),
-      body: any(named: 'body'),
-    )).thenAnswer((_) async {
+          any(),
+          headers: any(named: 'headers'),
+          body: any(named: 'body'),
+        )).thenAnswer((_) async {
       return http.Response('{"error":"Bad","errCode":"X1","permanent":true}', 400);
     });
 
@@ -119,10 +119,10 @@ void main() {
 
   test('exception -> safe fallback', () async {
     when(() => mock.post(
-      any(),
-      headers: any(named: 'headers'),
-      body: any(named: 'body'),
-    )).thenThrow(Exception('Network error'));
+          any(),
+          headers: any(named: 'headers'),
+          body: any(named: 'body'),
+        )).thenThrow(Exception('Network error'));
 
     final response = await api.preload(
       publisherToken: 'test-token',
@@ -139,10 +139,10 @@ void main() {
 
   test('optional ids are null-stripped', () async {
     when(() => mock.post(
-      any(),
-      headers: any(named: 'headers'),
-      body: any(named: 'body'),
-    )).thenAnswer((_) async {
+          any(),
+          headers: any(named: 'headers'),
+          body: any(named: 'body'),
+        )).thenAnswer((_) async {
       return http.Response(
         '{"sessionId": "123", "bids": []}',
         200,
@@ -158,29 +158,38 @@ void main() {
       vendorId: '',
       variantId: '',
       advertisingId: '',
+      gdprConsent: '',
+      usPrivacy: '',
+      gpp: '',
+      gppSid: '',
     );
 
     verify(() => mock.post(
-      Uri.parse('https://api.test/preload'),
-      headers: {'Content-Type': 'application/json'},
-      body: any(
-        named: 'body',
-        that: predicate<String>((b) {
-          final body = jsonDecode(b) as Json;
-          return body['vendorId'] == null &&
-                 body['variantId'] == null &&
-                 body['advertisingId'] == null;
-        }),
-      ),
-    )).called(1);
+          Uri.parse('https://api.test/preload'),
+          headers: {'Content-Type': 'application/json'},
+          body: any(
+            named: 'body',
+            that: predicate<String>((b) {
+              final body = jsonDecode(b) as Json;
+              final regulatory = body['regulatory'] as Json;
+              return body['vendorId'] == null &&
+                  body['variantId'] == null &&
+                  body['advertisingId'] == null &&
+                  regulatory['gdprConsent'] == null &&
+                  regulatory['usPrivacy'] == null &&
+                  regulatory['gpp'] == null &&
+                  regulatory['gppSid'] == null;
+            }),
+          ),
+        )).called(1);
   });
 
   test('device provider throws exception', () async {
     when(() => mock.post(
-      any(),
-      headers: any(named: 'headers'),
-      body: any(named: 'body'),
-    )).thenAnswer((_) async {
+          any(),
+          headers: any(named: 'headers'),
+          body: any(named: 'body'),
+        )).thenAnswer((_) async {
       return http.Response(
         '{"sessionId": "123", "bids": []}',
         200,
@@ -200,15 +209,15 @@ void main() {
     );
 
     verify(() => mock.post(
-      Uri.parse('https://api.test/preload'),
-      headers: {'Content-Type': 'application/json'},
-      body: any(
-        named: 'body',
-        that: predicate<String>((b) {
-          final body = jsonDecode(b) as Json;
-          return body.containsKey('device') && body['device'] == null;
-        }),
-      ),
-    )).called(1);
+          Uri.parse('https://api.test/preload'),
+          headers: {'Content-Type': 'application/json'},
+          body: any(
+            named: 'body',
+            that: predicate<String>((b) {
+              final body = jsonDecode(b) as Json;
+              return body.containsKey('device') && body['device'] == null;
+            }),
+          ),
+        )).called(1);
   });
 }

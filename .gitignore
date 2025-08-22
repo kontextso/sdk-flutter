@@ -29,3 +29,6 @@
 build/
 .flutter-plugins
 .flutter-plugins-dependencies
+
+# User-specific files
+kontext_sample_app/
