@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.3
+
+* Refactor `gppSid` parameter to use `List<int>` instead of `String` in `AdsProvider`.
+
 ## 1.0.2
 
 * Add optional regulatory-related parameters to `AdsProvider`.
