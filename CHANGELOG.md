@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.4
+
+* Removed assertions for `gdpr` and `coppa` parameters
+
 ## 1.0.3
 
 * Refactored `gppSid` parameter to use `List<int>` instead of `String` in `AdsProvider`.
