@@ -38,8 +38,7 @@ class AdsProvider extends HookWidget {
     this.onAdClick,
     this.onAdDone,
     required this.child,
-  })  : assert(gdpr == null || gdpr == 0 || gdpr == 1, 'gdpr must be 0 or 1'),
-        assert(coppa == null || coppa == 0 || coppa == 1, 'coppa must be 0 or 1');
+  });
 
   /// The URL of the ad server.
   ///

@@ -4,6 +4,8 @@ import 'package:kontext_flutter_sdk/kontext_flutter_sdk.dart';
 import 'constants.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+
   runApp(const DemoApp());
 }
 
