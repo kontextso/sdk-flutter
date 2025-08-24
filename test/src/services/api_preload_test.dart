@@ -161,7 +161,7 @@ void main() {
       gdprConsent: '',
       usPrivacy: '',
       gpp: '',
-      gppSid: '',
+      gppSid: [],
     );
 
     verify(() => mock.post(

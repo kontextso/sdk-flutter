@@ -64,9 +64,9 @@ class Api {
     int? gdpr,
     String? gdprConsent,
     int? coppa,
-    String? usPrivacy,
     String? gpp,
-    String? gppSid,
+    List<int>? gppSid,
+    String? usPrivacy,
   }) async {
     Json? device;
     try {
@@ -97,9 +97,9 @@ class Api {
             'gdpr': gdpr,
             'gdprConsent': gdprConsent?.nullIfEmpty,
             'coppa': coppa,
-            'usPrivacy': usPrivacy?.nullIfEmpty,
             'gpp': gpp?.nullIfEmpty,
             'gppSid': gppSid?.nullIfEmpty,
+            'usPrivacy': usPrivacy?.nullIfEmpty,
           },
         },
       );

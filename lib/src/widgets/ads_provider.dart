@@ -109,8 +109,8 @@ class AdsProvider extends HookWidget {
   /// https://github.com/InteractiveAdvertisingBureau/Global-Privacy-Platform
   final String? gpp;
 
-  /// Comma-separated list of the section(s) of the GPP string which should be applied for this transaction.
-  final String? gppSid;
+  /// List of the section(s) of the GPP string which should be applied for this transaction.
+  final List<int>? gppSid;
 
   /// Communicates signals regarding consumer privacy under US privacy regulation under CCPA and LSPA.
   ///
@@ -193,9 +193,9 @@ class AdsProvider extends HookWidget {
       gdpr: gdpr,
       gdprConsent: gdprConsent,
       coppa: coppa,
-      usPrivacy: usPrivacy,
       gpp: gpp,
       gppSid: gppSid,
+      usPrivacy: usPrivacy,
       setBids: setBids,
       setReadyForStreamingAssistant: setReadyForStreamingAssistant,
       setReadyForStreamingUser: setReadyForStreamingUser,
