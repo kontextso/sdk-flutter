@@ -24,9 +24,9 @@ void usePreloadAds(
   required int? gdpr,
   required String? gdprConsent,
   required int? coppa,
-  required String? usPrivacy,
   required String? gpp,
-  required String? gppSid,
+  required List<int>? gppSid,
+  required String? usPrivacy,
   required ValueChanged<List<Bid>> setBids,
   required ValueChanged<bool> setReadyForStreamingAssistant,
   required ValueChanged<bool> setReadyForStreamingUser,
@@ -104,9 +104,9 @@ void usePreloadAds(
         gdpr: gdpr,
         gdprConsent: gdprConsent,
         coppa: coppa,
-        usPrivacy: usPrivacy,
         gpp: gpp,
         gppSid: gppSid,
+        usPrivacy: usPrivacy,
       );
 
       if (cancelled || !context.mounted) return;

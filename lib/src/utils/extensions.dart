@@ -20,6 +20,10 @@ extension ListExtension<E> on List<E> {
     }
     return orElse?.call();
   }
+
+  List<E>? get nullIfEmpty {
+    return isEmpty ? null : this;
+  }
 }
 
 extension MessageListExtension on List<Message> {
