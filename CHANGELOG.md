@@ -2,17 +2,17 @@
 
 ## 1.0.3
 
-* Refactor `gppSid` parameter to use `List<int>` instead of `String` in `AdsProvider`.
+* Refactored `gppSid` parameter to use `List<int>` instead of `String` in `AdsProvider`.
 
 ## 1.0.2
 
-* Add optional regulatory-related parameters to `AdsProvider`.
-* Update URLs and description in `pubspec.yaml`.
+* Added optional regulatory-related parameters to `AdsProvider`.
+* Updated URLs and description in `pubspec.yaml`.
 
 ## 1.0.1
 
-* Remove unnecessary comments.
-* Add platform support for Android and iOS in pubspec.yaml
+* Removed unnecessary comments.
+* Added platform support for Android and iOS in pubspec.yaml.
 
 ## 1.0.0
 
