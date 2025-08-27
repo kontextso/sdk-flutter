@@ -149,6 +149,7 @@ class AdFormat extends HookWidget {
 
     final webViewController = useRef<InAppWebViewController?>(null);
 
+    final otherParamsHash = otherParams?.deepHash;
     useEffect(() {
       if (!iframeLoaded.value || webViewController.value == null) {
         return null;
@@ -161,7 +162,7 @@ class AdFormat extends HookWidget {
       );
 
       return null;
-    }, [iframeLoaded.value, webViewController.value, otherParams]);
+    }, [iframeLoaded.value, webViewController.value, otherParamsHash]);
 
     void resetIframe() {
       iframeLoaded.value = false;
