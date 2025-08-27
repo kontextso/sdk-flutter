@@ -10,7 +10,7 @@ import 'package:kontext_flutter_sdk/src/services/http_client.dart';
 import 'package:kontext_flutter_sdk/src/utils/constants.dart';
 import 'package:kontext_flutter_sdk/src/utils/extensions.dart';
 import 'package:kontext_flutter_sdk/src/widgets/ads_provider_data.dart';
-import 'package:kontext_flutter_sdk/src/widgets/hooks/use_bid.dart';
+import 'package:kontext_flutter_sdk/src/widgets/hooks/select_bid.dart';
 import 'package:kontext_flutter_sdk/src/widgets/kontext_webview.dart';
 
 class AdFormat extends HookWidget {
@@ -127,7 +127,7 @@ class AdFormat extends HookWidget {
       return const SizedBox.shrink();
     }
 
-    final bid = useBid(adsProviderData, code: code, messageId: messageId);
+    final bid = selectBid(adsProviderData, code: code, messageId: messageId);
     if (bid == null) {
       return const SizedBox.shrink();
     }
