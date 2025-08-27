@@ -11,6 +11,7 @@ import 'package:kontext_flutter_sdk/src/utils/constants.dart';
 import 'package:kontext_flutter_sdk/src/utils/extensions.dart';
 import 'package:kontext_flutter_sdk/src/widgets/ads_provider_data.dart';
 import 'package:kontext_flutter_sdk/src/widgets/hooks/select_bid.dart';
+import 'package:kontext_flutter_sdk/src/widgets/interstitial_overlay.dart';
 import 'package:kontext_flutter_sdk/src/widgets/kontext_webview.dart';
 
 class AdFormat extends HookWidget {
@@ -25,8 +26,7 @@ class AdFormat extends HookWidget {
   final String messageId;
   final Map<String, dynamic>? otherParams;
 
-  void _postUpdateIframe(
-    InAppWebViewController controller, {
+  void _postUpdateIframe(InAppWebViewController controller, {
     required String adServerUrl,
     required List<Message> messages,
   }) {
@@ -60,8 +60,8 @@ class AdFormat extends HookWidget {
     }
   }
 
-  void _handleWebViewCreated(
-    InAppWebViewController controller, {
+  void _handleWebViewCreated(BuildContext context, {
+    required InAppWebViewController controller,
     required ValueNotifier<bool> iframeLoaded,
     required ValueNotifier<bool> showIframe,
     required ValueNotifier<double> height,
@@ -102,15 +102,19 @@ class AdFormat extends HookWidget {
             _handleAdCallback(adsProviderData.onAdClick, data);
             break;
           case 'ad-done-iframe':
-            // To ensure the ad is fully processed
+          // To ensure the ad is fully processed
             Future.delayed(const Duration(milliseconds: 300), () {
               _handleAdCallback(adsProviderData.onAdDone, data);
             });
             break;
+          case 'open-component-iframe':
+            InterstitialOverlay.show(context);
           case 'error-iframe':
             resetIframe();
             break;
           default:
+            print('Unknown message type from iframe: $messageType');
+            print('data: $data');
         }
       },
     );
@@ -185,7 +189,8 @@ class AdFormat extends HookWidget {
           onWebViewCreated: (controller) {
             webViewController.value = controller;
             _handleWebViewCreated(
-              controller,
+              context,
+              controller: controller,
               iframeLoaded: iframeLoaded,
               showIframe: showIframe,
               height: height,
