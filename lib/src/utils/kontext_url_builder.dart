@@ -1,4 +1,3 @@
-import 'package:flutter_inappwebview/flutter_inappwebview.dart' show WebUri;
 import 'package:kontext_flutter_sdk/src/services/logger.dart' show Logger;
 
 class KontextUrlBuilder {
@@ -33,13 +32,5 @@ class KontextUrlBuilder {
     final resolved = _path != null ? base.resolve(_path!) : base;
     final merged = {...resolved.queryParameters, ..._params};
     return resolved.replace(queryParameters: merged.isEmpty ? null : merged);
-  }
-
-  WebUri? buildWebUri() {
-    final uri = buildUri();
-    if (uri == null) {
-      return null;
-    }
-    return WebUri.uri(uri);
   }
 }
