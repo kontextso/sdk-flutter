@@ -55,13 +55,18 @@ class AdFormat extends HookWidget {
       return;
     }
 
-    final validPath = path.startsWith('/') ? path : '/$path';
-    final fullUrl = '$adServerUrl$validPath';
+    final uri = KontextUrlBuilder(baseUrl: adServerUrl, path: path).buildUri();
+    if (uri == null) {
+      Logger.error('Ad click URL is invalid: $path');
+      return;
+    }
 
-    fullUrl.openUrl();
+    uri.openUri();
 
-    final updatedData = {...data!};
-    updatedData['url'] = fullUrl;
+    final updatedData = {
+      ...data!,
+      'url': uri.toString(),
+    };
 
     _handleAdCallback(callback, updatedData);
   }

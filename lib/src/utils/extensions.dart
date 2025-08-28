@@ -49,17 +49,11 @@ extension StringExtension on String {
   }
 }
 
-extension StringUrlExtension on String {
-  Future<bool> openUrl({bool useExternalApplication = true}) async {
-    final url = Uri.tryParse(this);
-    if (url == null) {
-      Logger.error('Invalid URL: $this');
-      return false;
-    }
-
+extension UriExtension on Uri {
+  Future<bool> openUri({bool useExternalApplication = true}) async {
     try {
       return await launchUrl(
-        url,
+        this,
         mode: useExternalApplication ? LaunchMode.externalApplication : LaunchMode.platformDefault,
       );
     } catch (e, stack) {
@@ -67,9 +61,7 @@ extension StringUrlExtension on String {
       return false;
     }
   }
-}
 
-extension UriExtension on Uri {
   Uri replacePath(String newPath) {
     final params = queryParameters;
     return replace(path: newPath, queryParameters: params.isEmpty ? null : params);
