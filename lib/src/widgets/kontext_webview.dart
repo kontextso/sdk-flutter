@@ -50,8 +50,8 @@ class KontextWebview extends StatelessWidget {
 
         Logger.exception('HTTP error received in InAppWebView: $error, request: $request');
       },
-      onLoadStop: (controller, url) async {
-        await controller.evaluateJavascript(source: '''
+      onLoadStart: (controller, url) async {
+      await controller.evaluateJavascript(source: '''
                   if (!window.__flutterSdkBridgeReady) {
                     window.__flutterSdkBridgeReady = true;
                     window.addEventListener('message', event => {
