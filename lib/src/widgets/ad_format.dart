@@ -11,7 +11,7 @@ import 'package:kontext_flutter_sdk/src/utils/constants.dart';
 import 'package:kontext_flutter_sdk/src/utils/extensions.dart';
 import 'package:kontext_flutter_sdk/src/widgets/ads_provider_data.dart';
 import 'package:kontext_flutter_sdk/src/widgets/hooks/select_bid.dart';
-import 'package:kontext_flutter_sdk/src/widgets/interstitial_overlay.dart';
+import 'package:kontext_flutter_sdk/src/widgets/interstitial_modal.dart';
 import 'package:kontext_flutter_sdk/src/widgets/kontext_webview.dart';
 
 class AdFormat extends HookWidget {
@@ -102,7 +102,7 @@ class AdFormat extends HookWidget {
         });
         break;
       case 'open-component-iframe':
-        InterstitialOverlay.show(
+        InterstitialModal.show(
           context,
           adServerUrl: adServerUrl,
           component: data?['component'],

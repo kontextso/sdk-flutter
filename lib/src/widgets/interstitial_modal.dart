@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart' show URLRequest, WebUri;
 import 'package:kontext_flutter_sdk/src/widgets/kontext_webview.dart';
 
-class InterstitialOverlay {
+class InterstitialModal {
   static OverlayEntry? _entry;
   static Timer? _initTimer;
 
