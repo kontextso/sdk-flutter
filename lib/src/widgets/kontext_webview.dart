@@ -64,10 +64,19 @@ class KontextWebview extends StatelessWidget {
                 ''');
       },
       onConsoleMessage: (controller, consoleMessage) {
-        Logger.info('WebView Console: ${consoleMessage.message}');
+        final message = consoleMessage.message;
+        final level = consoleMessage.messageLevel;
+
+        if (level == ConsoleMessageLevel.ERROR) {
+          Logger.error('WebView Console $level: $message');
+        } else if (level == ConsoleMessageLevel.WARNING) {
+          Logger.warn('WebView Console $level: $message');
+        } else {
+          Logger.info('WebView Console: $message');
+        }
       },
       onReceivedError: (controller, request, error) {
-        Logger.exception('Error received in InAppWebView: $error, request: $request');
+        Logger.error('Error received in InAppWebView: $error, request: $request');
       },
       onReceivedHttpError: (controller, request, error) {
         // Ignore favicon 404 errors as they're not critical
@@ -75,7 +84,7 @@ class KontextWebview extends StatelessWidget {
           return;
         }
 
-        Logger.exception('HTTP error received in InAppWebView: $error, request: $request');
+        Logger.error('HTTP error received in InAppWebView: $error, request: $request');
       },
     );
   }
