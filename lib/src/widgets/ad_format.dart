@@ -9,6 +9,7 @@ import 'package:kontext_flutter_sdk/src/services/logger.dart';
 import 'package:kontext_flutter_sdk/src/services/http_client.dart';
 import 'package:kontext_flutter_sdk/src/utils/constants.dart';
 import 'package:kontext_flutter_sdk/src/utils/extensions.dart';
+import 'package:kontext_flutter_sdk/src/utils/kontext_url_builder.dart';
 import 'package:kontext_flutter_sdk/src/widgets/ads_provider_data.dart';
 import 'package:kontext_flutter_sdk/src/widgets/hooks/select_bid.dart';
 import 'package:kontext_flutter_sdk/src/widgets/interstitial_modal.dart';
@@ -120,13 +121,24 @@ class AdFormat extends HookWidget {
         });
         break;
       case 'open-component-iframe':
+        final component = data?['component'];
+        if (component is! String || component.isEmpty) {
+          Logger.error('Ad component is missing or invalid. Data: $data');
+          return;
+        }
+
+        final uri = KontextUrlBuilder(
+          baseUrl: adServerUrl,
+          path: '/api/$component/$bidId',
+        ).addParam('code', code).addParam('messageId', messageId).addParam('sdk', kSdkLabel).buildUri();
+        if (uri == null) {
+          return;
+        }
+
         InterstitialModal.show(
           context,
           adServerUrl: adServerUrl,
-          component: data?['component'],
-          bidId: bidId,
-          code: code,
-          messageId: messageId,
+          uri: uri,
           onAdClick: (data) => _onAdClick(adServerUrl, adsProviderData.onAdClick, data),
         );
       case 'error-iframe':
@@ -149,6 +161,15 @@ class AdFormat extends HookWidget {
 
     final bid = selectBid(adsProviderData, code: code, messageId: messageId);
     if (bid == null) {
+      return const SizedBox.shrink();
+    }
+
+    final adServerUrl = adsProviderData.adServerUrl;
+    final uri = KontextUrlBuilder(
+      baseUrl: adServerUrl,
+      path: '/api/frame/${bid.id}',
+    ).addParam('code', code).addParam('messageId', messageId).addParam('sdk', kSdkLabel).buildUri();
+    if (uri == null) {
       return const SizedBox.shrink();
     }
 
@@ -192,18 +213,14 @@ class AdFormat extends HookWidget {
       adsProviderData.resetAll();
     }
 
-    final adServerUrl = adsProviderData.adServerUrl;
-
     return Offstage(
       offstage: !iframeLoaded.value || !showIframe.value,
       child: SizedBox(
         height: height.value,
         width: double.infinity,
         child: KontextWebview(
-          urlRequest: URLRequest(
-            url: WebUri('$adServerUrl/api/frame/${bid.id}?code=$code&messageId=$messageId'),
-          ),
-          allowedUrlSubstrings: [adServerUrl],
+          uri: uri,
+          allowedOrigins: [adServerUrl],
           onMessageReceived: (controller, messageType, data) {
             webViewController.value = controller;
             _handleWebViewCreated(

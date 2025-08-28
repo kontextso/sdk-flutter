@@ -1,7 +1,6 @@
 import 'dart:async' show Timer;
 
 import 'package:flutter/material.dart';
-import 'package:flutter_inappwebview/flutter_inappwebview.dart' show URLRequest, WebUri;
 import 'package:kontext_flutter_sdk/src/services/http_client.dart' show Json;
 import 'package:kontext_flutter_sdk/src/widgets/kontext_webview.dart';
 
@@ -12,10 +11,7 @@ class InterstitialModal {
   static void show(
     BuildContext context, {
     required String adServerUrl,
-    required String component,
-    required String bidId,
-    required String code,
-    required String messageId,
+    required Uri uri,
     required void Function(Json? data) onAdClick,
     Duration initTimeout = const Duration(seconds: 20),
   }) {
@@ -40,10 +36,8 @@ class InterstitialModal {
                     width: double.infinity,
                     height: double.infinity,
                     child: KontextWebview(
-                      urlRequest: URLRequest(
-                        url: WebUri('$adServerUrl/api/$component/$bidId?code=$code&messageId=$messageId'),
-                      ),
-                      allowedUrlSubstrings: [adServerUrl],
+                      uri: uri,
+                      allowedOrigins: [adServerUrl],
                       onMessageReceived: (controller, messageType, data) {
                         switch (messageType) {
                           case 'init-component-iframe':

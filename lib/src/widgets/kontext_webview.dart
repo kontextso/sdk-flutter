@@ -6,20 +6,20 @@ import 'package:kontext_flutter_sdk/src/services/logger.dart' show Logger;
 class KontextWebview extends StatelessWidget {
   const KontextWebview({
     super.key,
-    required this.urlRequest,
-    required this.allowedUrlSubstrings,
+    required this.uri,
+    required this.allowedOrigins,
     required this.onMessageReceived,
   });
 
-  final URLRequest urlRequest;
-  final List<String> allowedUrlSubstrings;
+  final Uri uri;
+  final List<String> allowedOrigins;
 
   final void Function(InAppWebViewController controller, String messageType, Json? data) onMessageReceived;
 
   @override
   Widget build(BuildContext context) {
     return InAppWebView(
-      initialUrlRequest: urlRequest,
+      initialUrlRequest: URLRequest(url: WebUri.uri(uri)),
       initialSettings: InAppWebViewSettings(
         mixedContentMode: MixedContentMode.MIXED_CONTENT_ALWAYS_ALLOW,
         useShouldOverrideUrlLoading: true,
@@ -29,7 +29,7 @@ class KontextWebview extends StatelessWidget {
       shouldOverrideUrlLoading: (controller, navigationAction) async {
         final url = navigationAction.request.url?.toString();
 
-        if (url != null && allowedUrlSubstrings.any((substring) => url.contains(substring))) {
+        if (url != null && allowedOrigins.any((origin) => url.contains(origin))) {
           return NavigationActionPolicy.ALLOW;
         }
 
