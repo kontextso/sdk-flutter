@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:kontext_flutter_sdk/src/services/http_client.dart' show Json;
 import 'package:kontext_flutter_sdk/src/services/logger.dart' show Logger;
 import 'package:kontext_flutter_sdk/src/utils/extensions.dart';
 
@@ -8,12 +9,13 @@ class KontextWebview extends StatelessWidget {
     super.key,
     required this.urlRequest,
     required this.allowedUrlSubstrings,
-    required this.onWebViewCreated,
+    required this.onMessageReceived,
   });
 
   final URLRequest urlRequest;
   final List<String> allowedUrlSubstrings;
-  final void Function(InAppWebViewController controller) onWebViewCreated;
+
+  final void Function(InAppWebViewController controller, String messageType, Json? data) onMessageReceived;
 
   @override
   Widget build(BuildContext context) {
@@ -35,10 +37,37 @@ class KontextWebview extends StatelessWidget {
         url?.openUrl();
         return NavigationActionPolicy.CANCEL;
       },
+      onWebViewCreated: (controller) {
+        controller.addJavaScriptHandler(
+          handlerName: 'postMessage',
+          callback: (args) {
+            final postMessage = args.firstOrNull;
+            if (postMessage == null || postMessage is! Json) {
+              return;
+            }
+
+            final messageType = postMessage['type'];
+            final data = postMessage['data'];
+
+            if (messageType is String && (data == null || data is Json)) {
+              onMessageReceived(controller, messageType, data as Json?);
+            }
+          },
+        );
+      },
+      onLoadStart: (controller, url) async {
+        await controller.evaluateJavascript(source: '''
+                  if (!window.__flutterSdkBridgeReady) {
+                    window.__flutterSdkBridgeReady = true;
+                    window.addEventListener('message', event => {
+                      window.flutter_inappwebview.callHandler('postMessage', event.data);
+                    });
+                  }
+                ''');
+      },
       onConsoleMessage: (controller, consoleMessage) {
         Logger.info('WebView Console: ${consoleMessage.message}');
       },
-      onWebViewCreated: onWebViewCreated,
       onReceivedError: (controller, request, error) {
         Logger.exception('Error received in InAppWebView: $error, request: $request');
       },
@@ -49,16 +78,6 @@ class KontextWebview extends StatelessWidget {
         }
 
         Logger.exception('HTTP error received in InAppWebView: $error, request: $request');
-      },
-      onLoadStart: (controller, url) async {
-      await controller.evaluateJavascript(source: '''
-                  if (!window.__flutterSdkBridgeReady) {
-                    window.__flutterSdkBridgeReady = true;
-                    window.addEventListener('message', event => {
-                      window.flutter_inappwebview.callHandler('postMessage', event.data);
-                    });
-                  }
-                ''');
       },
     );
   }

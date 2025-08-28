@@ -1,6 +1,8 @@
 import 'dart:async' show Timer;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart' show URLRequest, WebUri;
+import 'package:kontext_flutter_sdk/src/widgets/kontext_webview.dart';
 
 class InterstitialOverlay {
   static OverlayEntry? _entry;
@@ -8,11 +10,16 @@ class InterstitialOverlay {
 
   static void show(
     BuildContext context, {
-    Duration initTimeout = const Duration(seconds: 5),
+    required String adServerUrl,
+    required String component,
+    required String bidId,
+    required String code,
+    required String messageId,
+    Duration initTimeout = const Duration(seconds: 20),
   }) {
     close();
 
-    final visible = ValueNotifier<bool>(true);
+    final visible = ValueNotifier<bool>(false);
 
     _entry = OverlayEntry(
       builder: (context) {
@@ -30,6 +37,25 @@ class InterstitialOverlay {
                     color: Colors.black,
                     width: double.infinity,
                     height: double.infinity,
+                    child: KontextWebview(
+                      urlRequest: URLRequest(
+                        url: WebUri('$adServerUrl/api/$component/$bidId?code=$code&messageId=$messageId'),
+                      ),
+                      allowedUrlSubstrings: [adServerUrl],
+                      onMessageReceived: (controller, messageType, data) {
+                        switch (messageType) {
+                          case 'init-component-iframe':
+                            _initTimer?.cancel();
+                            visible.value = true;
+                            break;
+                          case 'close-component-iframe':
+                          case 'error-component-iframe':
+                            close();
+                            break;
+                          default:
+                        }
+                      },
+                    ),
                   ),
                 ),
               ),

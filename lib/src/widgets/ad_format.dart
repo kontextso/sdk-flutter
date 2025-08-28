@@ -26,7 +26,8 @@ class AdFormat extends HookWidget {
   final String messageId;
   final Map<String, dynamic>? otherParams;
 
-  void _postUpdateIframe(InAppWebViewController controller, {
+  void _postUpdateIframe(
+    InAppWebViewController controller, {
     required String adServerUrl,
     required List<Message> messages,
   }) {
@@ -60,64 +61,60 @@ class AdFormat extends HookWidget {
     }
   }
 
-  void _handleWebViewCreated(BuildContext context, {
-    required InAppWebViewController controller,
+  void _handleWebViewCreated(
+    BuildContext context, {
+    required String messageType,
+    Json? data,
+    required String adServerUrl,
+    required String bidId,
     required ValueNotifier<bool> iframeLoaded,
     required ValueNotifier<bool> showIframe,
     required ValueNotifier<double> height,
     required VoidCallback resetIframe,
     required AdsProviderData adsProviderData,
   }) {
-    controller.addJavaScriptHandler(
-      handlerName: 'postMessage',
-      callback: (args) {
-        final postMessage = args.firstOrNull;
-        if (postMessage == null || postMessage is! Json) {
-          return;
+    switch (messageType) {
+      case 'init-iframe':
+        iframeLoaded.value = true;
+        break;
+      case 'show-iframe':
+        showIframe.value = true;
+        break;
+      case 'hide-iframe':
+        showIframe.value = false;
+        break;
+      case 'resize-iframe':
+        final dataHeight = data?['height'];
+        if (dataHeight is num) {
+          height.value = dataHeight.toDouble();
         }
-
-        final messageType = postMessage['type'];
-        final data = postMessage['data'];
-
-        switch (messageType) {
-          case 'init-iframe':
-            iframeLoaded.value = true;
-            break;
-          case 'show-iframe':
-            showIframe.value = true;
-            break;
-          case 'hide-iframe':
-            showIframe.value = false;
-            break;
-          case 'resize-iframe':
-            final dataHeight = data['height'];
-            if (dataHeight is num) {
-              height.value = dataHeight.toDouble();
-            }
-            break;
-          case 'view-iframe':
-            _handleAdCallback(adsProviderData.onAdView, data);
-            break;
-          case 'click-iframe':
-            _handleAdCallback(adsProviderData.onAdClick, data);
-            break;
-          case 'ad-done-iframe':
-          // To ensure the ad is fully processed
-            Future.delayed(const Duration(milliseconds: 300), () {
-              _handleAdCallback(adsProviderData.onAdDone, data);
-            });
-            break;
-          case 'open-component-iframe':
-            InterstitialOverlay.show(context);
-          case 'error-iframe':
-            resetIframe();
-            break;
-          default:
-            print('Unknown message type from iframe: $messageType');
-            print('data: $data');
-        }
-      },
-    );
+        break;
+      case 'view-iframe':
+        _handleAdCallback(adsProviderData.onAdView, data);
+        break;
+      case 'click-iframe':
+        _handleAdCallback(adsProviderData.onAdClick, data);
+        break;
+      case 'ad-done-iframe':
+        // To ensure the ad is fully processed
+        Future.delayed(const Duration(milliseconds: 300), () {
+          _handleAdCallback(adsProviderData.onAdDone, data);
+        });
+        break;
+      case 'open-component-iframe':
+        InterstitialOverlay.show(
+          context,
+          adServerUrl: adServerUrl,
+          component: data?['component'],
+          bidId: bidId,
+          code: code,
+          messageId: messageId,
+        );
+      case 'error-iframe':
+        resetIframe();
+        break;
+      default:
+    }
   }
 
   @override
@@ -176,6 +173,8 @@ class AdFormat extends HookWidget {
       adsProviderData.resetAll();
     }
 
+    final adServerUrl = adsProviderData.adServerUrl;
+
     return Offstage(
       offstage: !iframeLoaded.value || !showIframe.value,
       child: SizedBox(
@@ -183,14 +182,17 @@ class AdFormat extends HookWidget {
         width: double.infinity,
         child: KontextWebview(
           urlRequest: URLRequest(
-            url: WebUri('${adsProviderData.adServerUrl}/api/frame/${bid.id}?code=$code&messageId=$messageId'),
+            url: WebUri('$adServerUrl/api/frame/${bid.id}?code=$code&messageId=$messageId'),
           ),
-          allowedUrlSubstrings: [adsProviderData.adServerUrl],
-          onWebViewCreated: (controller) {
+          allowedUrlSubstrings: [adServerUrl],
+          onMessageReceived: (controller, messageType, data) {
             webViewController.value = controller;
             _handleWebViewCreated(
               context,
-              controller: controller,
+              messageType: messageType,
+              data: data,
+              adServerUrl: adServerUrl,
+              bidId: bid.id,
               iframeLoaded: iframeLoaded,
               showIframe: showIframe,
               height: height,
