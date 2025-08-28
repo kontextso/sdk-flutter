@@ -85,6 +85,7 @@ class AdFormat extends HookWidget {
     required String messageType,
     Json? data,
     required String adServerUrl,
+    required Uri inlineUri,
     required String bidId,
     required ValueNotifier<bool> iframeLoaded,
     required ValueNotifier<bool> showIframe,
@@ -127,18 +128,11 @@ class AdFormat extends HookWidget {
           return;
         }
 
-        final uri = KontextUrlBuilder(
-          baseUrl: adServerUrl,
-          path: '/api/$component/$bidId',
-        ).addParam('code', code).addParam('messageId', messageId).addParam('sdk', kSdkLabel).buildUri();
-        if (uri == null) {
-          return;
-        }
-
+        final modalUri = inlineUri.replacePath('/api/$component/$bidId');
         InterstitialModal.show(
           context,
           adServerUrl: adServerUrl,
-          uri: uri,
+          uri: modalUri,
           onAdClick: (data) => _onAdClick(adServerUrl, adsProviderData.onAdClick, data),
         );
       case 'error-iframe':
@@ -228,6 +222,7 @@ class AdFormat extends HookWidget {
               messageType: messageType,
               data: data,
               adServerUrl: adServerUrl,
+              inlineUri: uri,
               bidId: bid.id,
               iframeLoaded: iframeLoaded,
               showIframe: showIframe,

@@ -68,3 +68,10 @@ extension StringUrlExtension on String {
     }
   }
 }
+
+extension UriExtension on Uri {
+  Uri replacePath(String newPath) {
+    final params = queryParameters;
+    return replace(path: newPath, queryParameters: params.isEmpty ? null : params);
+  }
+}
