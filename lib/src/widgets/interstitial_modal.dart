@@ -2,6 +2,7 @@ import 'dart:async' show Timer;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart' show URLRequest, WebUri;
+import 'package:kontext_flutter_sdk/src/services/http_client.dart' show Json;
 import 'package:kontext_flutter_sdk/src/widgets/kontext_webview.dart';
 
 class InterstitialModal {
@@ -15,6 +16,7 @@ class InterstitialModal {
     required String bidId,
     required String code,
     required String messageId,
+    required void Function(Json? data) onAdClick,
     Duration initTimeout = const Duration(seconds: 20),
   }) {
     close();
@@ -47,6 +49,9 @@ class InterstitialModal {
                           case 'init-component-iframe':
                             _initTimer?.cancel();
                             visible.value = true;
+                            break;
+                          case 'click-iframe':
+                            onAdClick(data);
                             break;
                           case 'close-component-iframe':
                           case 'error-component-iframe':

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:kontext_flutter_sdk/src/services/http_client.dart' show Json;
 import 'package:kontext_flutter_sdk/src/services/logger.dart' show Logger;
-import 'package:kontext_flutter_sdk/src/utils/extensions.dart';
 
 class KontextWebview extends StatelessWidget {
   const KontextWebview({
@@ -34,7 +33,6 @@ class KontextWebview extends StatelessWidget {
           return NavigationActionPolicy.ALLOW;
         }
 
-        url?.openUrl();
         return NavigationActionPolicy.CANCEL;
       },
       onWebViewCreated: (controller) {

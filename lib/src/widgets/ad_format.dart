@@ -47,6 +47,24 @@ class AdFormat extends HookWidget {
     ''');
   }
 
+  void _onAdClick(String adServerUrl, AdCallback? callback, Json? data) {
+    final path = data?['url'];
+    if (path is! String) {
+      Logger.error('Ad click URL is missing or invalid. Data: $data');
+      return;
+    }
+
+    final validPath = path.startsWith('/') ? path : '/$path';
+    final fullUrl = '$adServerUrl$validPath';
+
+    fullUrl.openUrl();
+
+    final updatedData = {...data!};
+    updatedData['url'] = fullUrl;
+
+    _handleAdCallback(callback, updatedData);
+  }
+
   void _handleAdCallback(AdCallback? callback, Json? data) {
     if (callback == null || data == null) {
       return;
@@ -93,7 +111,7 @@ class AdFormat extends HookWidget {
         _handleAdCallback(adsProviderData.onAdView, data);
         break;
       case 'click-iframe':
-        _handleAdCallback(adsProviderData.onAdClick, data);
+        _onAdClick(adServerUrl, adsProviderData.onAdClick, data);
         break;
       case 'ad-done-iframe':
         // To ensure the ad is fully processed
@@ -109,6 +127,7 @@ class AdFormat extends HookWidget {
           bidId: bidId,
           code: code,
           messageId: messageId,
+          onAdClick: (data) => _onAdClick(adServerUrl, adsProviderData.onAdClick, data),
         );
       case 'error-iframe':
         resetIframe();
