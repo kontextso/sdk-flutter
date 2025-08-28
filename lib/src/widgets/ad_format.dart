@@ -9,8 +9,11 @@ import 'package:kontext_flutter_sdk/src/services/logger.dart';
 import 'package:kontext_flutter_sdk/src/services/http_client.dart';
 import 'package:kontext_flutter_sdk/src/utils/constants.dart';
 import 'package:kontext_flutter_sdk/src/utils/extensions.dart';
+import 'package:kontext_flutter_sdk/src/utils/kontext_url_builder.dart';
 import 'package:kontext_flutter_sdk/src/widgets/ads_provider_data.dart';
-import 'package:kontext_flutter_sdk/src/widgets/hooks/use_bid.dart';
+import 'package:kontext_flutter_sdk/src/widgets/hooks/select_bid.dart';
+import 'package:kontext_flutter_sdk/src/widgets/interstitial_modal.dart';
+import 'package:kontext_flutter_sdk/src/widgets/kontext_webview.dart';
 
 class AdFormat extends HookWidget {
   const AdFormat({
@@ -45,6 +48,24 @@ class AdFormat extends HookWidget {
     ''');
   }
 
+  void _onAdClick(String adServerUrl, AdCallback? callback, Json? data) {
+    final path = data?['url'];
+    if (path is! String) {
+      Logger.error('Ad click URL is missing or invalid. Data: $data');
+      return;
+    }
+
+    final validPath = path.startsWith('/') ? path : '/$path';
+    final fullUrl = '$adServerUrl$validPath';
+
+    fullUrl.openUrl();
+
+    final updatedData = {...data!};
+    updatedData['url'] = fullUrl;
+
+    _handleAdCallback(callback, updatedData);
+  }
+
   void _handleAdCallback(AdCallback? callback, Json? data) {
     if (callback == null || data == null) {
       return;
@@ -59,6 +80,68 @@ class AdFormat extends HookWidget {
     }
   }
 
+  void _handleWebViewCreated(
+    BuildContext context, {
+    required String messageType,
+    Json? data,
+    required String adServerUrl,
+    required Uri inlineUri,
+    required String bidId,
+    required ValueNotifier<bool> iframeLoaded,
+    required ValueNotifier<bool> showIframe,
+    required ValueNotifier<double> height,
+    required VoidCallback resetIframe,
+    required AdsProviderData adsProviderData,
+  }) {
+    switch (messageType) {
+      case 'init-iframe':
+        iframeLoaded.value = true;
+        break;
+      case 'show-iframe':
+        showIframe.value = true;
+        break;
+      case 'hide-iframe':
+        showIframe.value = false;
+        break;
+      case 'resize-iframe':
+        final dataHeight = data?['height'];
+        if (dataHeight is num) {
+          height.value = dataHeight.toDouble();
+        }
+        break;
+      case 'view-iframe':
+        _handleAdCallback(adsProviderData.onAdView, data);
+        break;
+      case 'click-iframe':
+        _onAdClick(adServerUrl, adsProviderData.onAdClick, data);
+        break;
+      case 'ad-done-iframe':
+        // To ensure the ad is fully processed
+        Future.delayed(const Duration(milliseconds: 300), () {
+          _handleAdCallback(adsProviderData.onAdDone, data);
+        });
+        break;
+      case 'open-component-iframe':
+        final component = data?['component'];
+        if (component is! String || component.isEmpty) {
+          Logger.error('Ad component is missing or invalid. Data: $data');
+          return;
+        }
+
+        final modalUri = inlineUri.replacePath('/api/$component/$bidId');
+        InterstitialModal.show(
+          context,
+          adServerUrl: adServerUrl,
+          uri: modalUri,
+          onAdClick: (data) => _onAdClick(adServerUrl, adsProviderData.onAdClick, data),
+        );
+      case 'error-iframe':
+        resetIframe();
+        break;
+      default:
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final adsProviderData = AdsProviderData.of(context);
@@ -70,8 +153,17 @@ class AdFormat extends HookWidget {
       return const SizedBox.shrink();
     }
 
-    final bid = useBid(adsProviderData, code: code, messageId: messageId);
-    if (bid == null) {
+    final bidId = selectBid(adsProviderData, code: code, messageId: messageId)?.id;
+    if (bidId == null) {
+      return const SizedBox.shrink();
+    }
+
+    final adServerUrl = adsProviderData.adServerUrl;
+    final inlineUri = KontextUrlBuilder(
+      baseUrl: adServerUrl,
+      path: '/api/frame/$bidId',
+    ).addParam('code', code).addParam('messageId', messageId).addParam('sdk', kSdkLabel).buildUri();
+    if (inlineUri == null) {
       return const SizedBox.shrink();
     }
 
@@ -92,6 +184,7 @@ class AdFormat extends HookWidget {
 
     final webViewController = useRef<InAppWebViewController?>(null);
 
+    final otherParamsHash = otherParams?.deepHash;
     useEffect(() {
       if (!iframeLoaded.value || webViewController.value == null) {
         return null;
@@ -104,7 +197,7 @@ class AdFormat extends HookWidget {
       );
 
       return null;
-    }, [iframeLoaded.value, webViewController.value, otherParams]);
+    }, [iframeLoaded.value, webViewController.value, otherParamsHash]);
 
     void resetIframe() {
       iframeLoaded.value = false;
@@ -119,98 +212,24 @@ class AdFormat extends HookWidget {
       child: SizedBox(
         height: height.value,
         width: double.infinity,
-        child: InAppWebView(
-          initialUrlRequest: URLRequest(
-            url: WebUri('${adsProviderData.adServerUrl}/api/frame/${bid.id}?code=$code&messageId=$messageId'),
-          ),
-          initialSettings: InAppWebViewSettings(
-            mixedContentMode: MixedContentMode.MIXED_CONTENT_ALWAYS_ALLOW,
-            useShouldOverrideUrlLoading: true,
-            mediaPlaybackRequiresUserGesture: false,
-            allowsInlineMediaPlayback: true,
-          ),
-          shouldOverrideUrlLoading: (controller, navigationAction) async {
-            final url = navigationAction.request.url?.toString();
-
-            if (url != null && url.contains(adsProviderData.adServerUrl)) {
-              return NavigationActionPolicy.ALLOW;
-            }
-
-            url?.openUrl();
-            return NavigationActionPolicy.CANCEL;
-          },
-          onConsoleMessage: (controller, consoleMessage) {
-            Logger.info('WebView Console: ${consoleMessage.message}');
-          },
-          onWebViewCreated: (controller) {
+        child: KontextWebview(
+          uri: inlineUri,
+          allowedOrigins: [adServerUrl],
+          onMessageReceived: (controller, messageType, data) {
             webViewController.value = controller;
-            controller.addJavaScriptHandler(
-              handlerName: 'postMessage',
-              callback: (args) {
-                final postMessage = args.firstOrNull;
-                if (postMessage == null || postMessage is! Json) {
-                  return;
-                }
-
-                final messageType = postMessage['type'];
-                final data = postMessage['data'];
-
-                switch (messageType) {
-                  case 'init-iframe':
-                    iframeLoaded.value = true;
-                    break;
-                  case 'show-iframe':
-                    showIframe.value = true;
-                    break;
-                  case 'hide-iframe':
-                    showIframe.value = false;
-                    break;
-                  case 'resize-iframe':
-                    final dataHeight = data['height'];
-                    if (dataHeight is num) {
-                      height.value = dataHeight.toDouble();
-                    }
-                    break;
-                  case 'view-iframe':
-                    _handleAdCallback(adsProviderData.onAdView, data);
-                    break;
-                  case 'click-iframe':
-                    _handleAdCallback(adsProviderData.onAdClick, data);
-                    break;
-                  case 'ad-done-iframe':
-                    // To ensure the ad is fully processed
-                    Future.delayed(const Duration(milliseconds: 300), () {
-                      _handleAdCallback(adsProviderData.onAdDone, data);
-                    });
-                    break;
-                  case 'error-iframe':
-                    resetIframe();
-                    break;
-                  default:
-                }
-              },
+            _handleWebViewCreated(
+              context,
+              messageType: messageType,
+              data: data,
+              adServerUrl: adServerUrl,
+              inlineUri: inlineUri,
+              bidId: bidId,
+              iframeLoaded: iframeLoaded,
+              showIframe: showIframe,
+              height: height,
+              resetIframe: resetIframe,
+              adsProviderData: adsProviderData,
             );
-          },
-          onReceivedError: (controller, request, error) {
-            Logger.exception('Error received in InAppWebView: $error, request: $request');
-          },
-          onReceivedHttpError: (controller, request, error) {
-            // Ignore favicon 404 errors as they're not critical
-            if (request.url.toString().endsWith('/favicon.ico')) {
-              return;
-            }
-
-            Logger.exception('HTTP error received in InAppWebView: $error, request: $request');
-          },
-          onLoadStop: (controller, url) async {
-            await controller.evaluateJavascript(source: '''
-                  if (!window.__flutterSdkBridgeReady) {
-                    window.__flutterSdkBridgeReady = true;
-                    window.addEventListener('message', event => {
-                      window.flutter_inappwebview.callHandler('postMessage', event.data);
-                    });
-                  }
-                ''');
           },
         ),
       ),
