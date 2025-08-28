@@ -153,15 +153,15 @@ class AdFormat extends HookWidget {
       return const SizedBox.shrink();
     }
 
-    final bid = selectBid(adsProviderData, code: code, messageId: messageId);
-    if (bid == null) {
+    final bidId = selectBid(adsProviderData, code: code, messageId: messageId)?.id;
+    if (bidId == null) {
       return const SizedBox.shrink();
     }
 
     final adServerUrl = adsProviderData.adServerUrl;
     final inlineUri = KontextUrlBuilder(
       baseUrl: adServerUrl,
-      path: '/api/frame/${bid.id}',
+      path: '/api/frame/$bidId',
     ).addParam('code', code).addParam('messageId', messageId).addParam('sdk', kSdkLabel).buildUri();
     if (inlineUri == null) {
       return const SizedBox.shrink();
@@ -223,7 +223,7 @@ class AdFormat extends HookWidget {
               data: data,
               adServerUrl: adServerUrl,
               inlineUri: inlineUri,
-              bidId: bid.id,
+              bidId: bidId,
               iframeLoaded: iframeLoaded,
               showIframe: showIframe,
               height: height,
