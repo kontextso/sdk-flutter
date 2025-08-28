@@ -159,11 +159,11 @@ class AdFormat extends HookWidget {
     }
 
     final adServerUrl = adsProviderData.adServerUrl;
-    final uri = KontextUrlBuilder(
+    final inlineUri = KontextUrlBuilder(
       baseUrl: adServerUrl,
       path: '/api/frame/${bid.id}',
     ).addParam('code', code).addParam('messageId', messageId).addParam('sdk', kSdkLabel).buildUri();
-    if (uri == null) {
+    if (inlineUri == null) {
       return const SizedBox.shrink();
     }
 
@@ -213,7 +213,7 @@ class AdFormat extends HookWidget {
         height: height.value,
         width: double.infinity,
         child: KontextWebview(
-          uri: uri,
+          uri: inlineUri,
           allowedOrigins: [adServerUrl],
           onMessageReceived: (controller, messageType, data) {
             webViewController.value = controller;
@@ -222,7 +222,7 @@ class AdFormat extends HookWidget {
               messageType: messageType,
               data: data,
               adServerUrl: adServerUrl,
-              inlineUri: uri,
+              inlineUri: inlineUri,
               bidId: bid.id,
               iframeLoaded: iframeLoaded,
               showIframe: showIframe,
