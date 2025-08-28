@@ -64,7 +64,7 @@ class InterstitialModal {
       },
     );
 
-    Overlay.of(context).insert(_entry!);
+    Overlay.of(context, rootOverlay: true).insert(_entry!);
     _initTimer = Timer(initTimeout, () => close());
   }
 
