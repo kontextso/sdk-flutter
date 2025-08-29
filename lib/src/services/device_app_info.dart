@@ -9,9 +9,138 @@ import 'package:kontext_flutter_sdk/src/services/logger.dart';
 import 'package:kontext_flutter_sdk/src/utils/extensions.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
-enum DeviceOS { android, ios }
+enum DeviceOS { android, ios, unknown }
 
-enum DeviceType { handset, tablet, desktop }
+enum DeviceType { handset, tablet, desktop, unknown }
+
+enum ScreenOrientation { portrait, landscape, unknown }
+
+enum BatteryState { charging, full, unplugged, unknown }
+
+enum AudioOutputType { wired, hdmi, bluetooth, usb, unknown }
+
+enum NetworkType { wifi, cellular, ethernet, unknown }
+
+enum NetworkDetail {
+  twoG('2g'),
+  threeG('3g'),
+  fourG('4g'),
+  fiveG('5g'),
+  lte('lte'),
+  nr('nr'),
+  hspa('hspa'),
+  edge('edge'),
+  gprs('gprs'),
+  unknown('unknown');
+
+  const NetworkDetail(this.name);
+
+  final String name;
+}
+
+class AppInfo {
+  AppInfo({
+    required this.appBundleId,
+    required this.appVersion,
+    required this.appStoreUrl,
+    required this.firstInstallTime,
+    required this.lastUpdateTime,
+    required this.startTime,
+  });
+
+  final String? appBundleId;
+  final String? appVersion;
+  final String? appStoreUrl;
+  final int? firstInstallTime;
+  final int? lastUpdateTime;
+  final bool? startTime;
+}
+
+class Hardware {
+  Hardware({
+    required this.brand,
+    required this.model,
+    required this.type,
+    required this.bootTime,
+    required this.sdCardAvailable,
+  });
+
+  final String? brand;
+  final String? model;
+  final DeviceType? type;
+  final int? bootTime;
+  final bool? sdCardAvailable;
+}
+
+class OS {
+  OS({
+    required this.name,
+    required this.version,
+    required this.locale,
+    required this.timezone,
+  });
+
+  final String? name;
+  final String? version;
+  final String? locale;
+  final String? timezone;
+}
+
+class Screen {
+  Screen({
+    required this.width,
+    required this.height,
+    required this.dpr,
+    required this.orientation,
+    required this.darkMode,
+  });
+
+  final double? width;
+  final double? height;
+  final double? dpr;
+  final ScreenOrientation? orientation;
+  final bool? darkMode;
+}
+
+class Power {
+  Power({
+    required this.batteryLevel,
+    required this.batteryState,
+    required this.lowerPowerMode,
+  });
+
+  final double? batteryLevel;
+  final BatteryState? batteryState;
+  final bool? lowerPowerMode;
+}
+
+class Audio {
+  Audio({
+    required this.volume,
+    required this.muted,
+    required this.outputPluggedIn,
+    required this.outputType,
+  });
+
+  final double? volume;
+  final bool? muted;
+  final bool? outputPluggedIn;
+  final List<AudioOutputType>? outputType;
+}
+
+class Network {
+  Network({
+    required this.userAgent,
+    required this.type,
+    required this.detail,
+    required this.carrier,
+  });
+
+  final String? userAgent;
+  final NetworkType? type;
+  final NetworkDetail? detail;
+  final String? carrier;
+}
 
 class DeviceAppInfo {
   DeviceAppInfo({
