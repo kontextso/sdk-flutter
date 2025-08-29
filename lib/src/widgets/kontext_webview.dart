@@ -1,7 +1,60 @@
+import 'dart:collection' show UnmodifiableListView;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:kontext_flutter_sdk/src/services/http_client.dart' show Json;
 import 'package:kontext_flutter_sdk/src/services/logger.dart' show Logger;
+
+final _earlyBridge = UserScript(
+  source: '''
+    (function() {
+      if (window.__flutterSdkBridgeReady) return;
+      window.__flutterSdkBridgeReady = true;
+      
+      // Messages buffered before the bridge is ready
+      window.__kontextMsgQueue = [];
+      
+      function postToFlutter(data) {
+        try {
+          if (window.flutter_inappwebview && window.flutter_inappwebview.callHandler) {
+            window.flutter_inappwebview.callHandler('postMessage', data);
+          } else {
+            window.__kontextMsgQueue.push(data);
+          }
+        } catch (e) {
+          console.error('Error posting message to Flutter: ', e);
+        }
+      }
+      
+      window.addEventListener('message', event => {
+        postToFlutter(event.data);
+      });
+    })();
+  ''',
+  injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
+  forMainFrameOnly: false,
+);
+
+final _flushMsgQueue = '''
+  (function() {
+    try {
+      var queue = window.__kontextMsgQueue || [];
+      if (queue.length === 0) return;
+      window.__kontextMsgQueue = [];
+      
+      for (var i = 0; i < queue.length; i++) {
+        var msg = queue[i];
+        try {
+          window.flutter_inappwebview.callHandler('postMessage', msg);
+        } catch (e) {
+          console.error('Error posting queued message to Flutter: ', e);
+        }
+      }
+    } catch (e) {
+      console.error('Error flushing message queue to Flutter: ', e);
+    }
+  })();
+''';
 
 class KontextWebview extends StatelessWidget {
   const KontextWebview({
@@ -20,6 +73,7 @@ class KontextWebview extends StatelessWidget {
   Widget build(BuildContext context) {
     return InAppWebView(
       initialUrlRequest: URLRequest(url: WebUri.uri(uri)),
+      initialUserScripts: UnmodifiableListView([_earlyBridge]),
       initialSettings: InAppWebViewSettings(
         mixedContentMode: MixedContentMode.MIXED_CONTENT_ALWAYS_ALLOW,
         useShouldOverrideUrlLoading: true,
@@ -45,6 +99,7 @@ class KontextWebview extends StatelessWidget {
             }
 
             final messageType = postMessage['type'];
+            print('messageType: $messageType');
             final data = postMessage['data'];
 
             if (messageType is String && (data == null || data is Json)) {
@@ -52,16 +107,8 @@ class KontextWebview extends StatelessWidget {
             }
           },
         );
-      },
-      onLoadStart: (controller, url) async {
-        await controller.evaluateJavascript(source: '''
-                  if (!window.__flutterSdkBridgeReady) {
-                    window.__flutterSdkBridgeReady = true;
-                    window.addEventListener('message', event => {
-                      window.flutter_inappwebview.callHandler('postMessage', event.data);
-                    });
-                  }
-                ''');
+
+        controller.evaluateJavascript(source: _flushMsgQueue);
       },
       onConsoleMessage: (controller, consoleMessage) {
         final message = consoleMessage.message;
