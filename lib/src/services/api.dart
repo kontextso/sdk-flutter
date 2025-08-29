@@ -6,6 +6,7 @@ import 'package:kontext_flutter_sdk/src/services/device_app_info.dart';
 import 'package:kontext_flutter_sdk/src/services/logger.dart';
 import 'package:kontext_flutter_sdk/src/services/http_client.dart';
 import 'package:kontext_flutter_sdk/src/models/message.dart';
+import 'package:kontext_flutter_sdk/src/models/regulatory.dart';
 import 'package:kontext_flutter_sdk/src/utils/constants.dart';
 import 'package:kontext_flutter_sdk/src/utils/extensions.dart';
 
@@ -61,12 +62,7 @@ class Api {
     String? variantId,
     String? advertisingId,
     String? iosAppStoreId,
-    int? gdpr,
-    String? gdprConsent,
-    int? coppa,
-    String? gpp,
-    List<int>? gppSid,
-    String? usPrivacy,
+    Regulatory? regulatory,
   }) async {
     Json? device;
     try {
@@ -94,12 +90,12 @@ class Api {
           'variantId': variantId?.nullIfEmpty,
           'advertisingId': advertisingId?.nullIfEmpty,
           'regulatory': {
-            'gdpr': gdpr,
-            'gdprConsent': gdprConsent?.nullIfEmpty,
-            'coppa': coppa,
-            'gpp': gpp?.nullIfEmpty,
-            'gppSid': gppSid?.nullIfEmpty,
-            'usPrivacy': usPrivacy?.nullIfEmpty,
+            'gdpr': regulatory?.gdpr,
+            'gdprConsent': regulatory?.gdprConsent?.nullIfEmpty,
+            'coppa': regulatory?.coppa,
+            'gpp': regulatory?.gpp?.nullIfEmpty,
+            'gppSid': regulatory?.gppSid?.nullIfEmpty,
+            'usPrivacy': regulatory?.usPrivacy?.nullIfEmpty,
           },
         },
       );

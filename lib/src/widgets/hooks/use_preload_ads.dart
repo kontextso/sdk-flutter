@@ -3,6 +3,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kontext_flutter_sdk/src/models/bid.dart';
 import 'package:kontext_flutter_sdk/src/models/character.dart';
 import 'package:kontext_flutter_sdk/src/models/message.dart';
+import 'package:kontext_flutter_sdk/src/models/regulatory.dart';
 import 'package:kontext_flutter_sdk/src/services/api.dart';
 import 'package:kontext_flutter_sdk/src/services/logger.dart';
 import 'package:kontext_flutter_sdk/src/utils/constants.dart';
@@ -21,12 +22,7 @@ void usePreloadAds(
   required String? variantId,
   required String? advertisingId,
   required String? iosAppStoreId,
-  required int? gdpr,
-  required String? gdprConsent,
-  required int? coppa,
-  required String? gpp,
-  required List<int>? gppSid,
-  required String? usPrivacy,
+  required Regulatory? regulatory,
   required ValueChanged<List<Bid>> setBids,
   required ValueChanged<bool> setReadyForStreamingAssistant,
   required ValueChanged<bool> setReadyForStreamingUser,
@@ -101,12 +97,7 @@ void usePreloadAds(
         variantId: variantId,
         advertisingId: advertisingId,
         iosAppStoreId: iosAppStoreId,
-        gdpr: gdpr,
-        gdprConsent: gdprConsent,
-        coppa: coppa,
-        gpp: gpp,
-        gppSid: gppSid,
-        usPrivacy: usPrivacy,
+        regulatory: regulatory,
       );
 
       if (cancelled || !context.mounted) return;

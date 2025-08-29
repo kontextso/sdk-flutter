@@ -2,6 +2,7 @@ import 'dart:convert' show jsonDecode;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kontext_flutter_sdk/src/models/bid.dart' show AdDisplayPosition;
+import 'package:kontext_flutter_sdk/src/models/regulatory.dart';
 import 'package:kontext_flutter_sdk/src/services/api.dart';
 import 'package:kontext_flutter_sdk/src/services/http_client.dart';
 import 'package:mocktail/mocktail.dart';
@@ -158,10 +159,13 @@ void main() {
       vendorId: '',
       variantId: '',
       advertisingId: '',
-      gdprConsent: '',
-      usPrivacy: '',
-      gpp: '',
-      gppSid: [],
+      regulatory: Regulatory(
+        gdpr: 1,
+        gdprConsent: '',
+        usPrivacy: '',
+        gpp: '',
+        gppSid: [],
+      ),
     );
 
     verify(() => mock.post(
@@ -175,6 +179,7 @@ void main() {
               return body['vendorId'] == null &&
                   body['variantId'] == null &&
                   body['advertisingId'] == null &&
+                  regulatory['gdpr'] == 1 &&
                   regulatory['gdprConsent'] == null &&
                   regulatory['usPrivacy'] == null &&
                   regulatory['gpp'] == null &&
