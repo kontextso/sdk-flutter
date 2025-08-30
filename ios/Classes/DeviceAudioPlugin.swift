@@ -20,55 +20,49 @@ public class DeviceAudioPlugin: NSObject, FlutterPlugin {
         }
     }
 
-    private func onMain<T>(_ work: @escaping () -> T) -> T {
-        if Thread.isMainThread {
-            return work()
-        }
-        var value: T?
-        let sem = DispatchSemaphore(value: 0)
-        DispatchQueue.main.async {
-            value = work()
-            sem.signal()
-        }
-        sem.wait()
-        return value!
-    }
-
+    // Runs a closure while the audio session is briefly active.
     private func withActivatedSession<T>(_ body: @escaping (AVAudioSession) -> T) -> T {
-        return onMain {
-            let session = AVAudioSession.sharedInstance()
+        let session = AVAudioSession.sharedInstance()
 
+        let run: () -> T = {
             let prevCategory = session.category
             let prevMode = session.mode
             let prevPolicy = session.routeSharingPolicy
             let prevOptions = session.categoryOptions
 
-            try? session.setCategory(
-                .ambient,
-                mode: .default,
-                policy: prevPolicy,
-                options: [.mixWithOthers]
-            )
-            try? session.setActive(true)
+            var didActivate = false
+            do {
+                try session.setActive(true, options: [])
+                didActivate = true
+            } catch {
+				// Ignore
+			}
 
-            let output = body(session)
+            let out = body(session)
 
-            try? session.setActive(false, options: [.notifyOthersOnDeactivation])
-            try? session.setCategory(
+            if didActivate {
+                _ = try? session.setActive(false, options: [.notifyOthersOnDeactivation])
+            }
+            _ = try? session.setCategory(
                 prevCategory,
                 mode: prevMode,
                 policy: prevPolicy,
                 options: prevOptions
             )
 
-            return output
+            return out
         }
+
+        if Thread.isMainThread { return run() }
+        return DispatchQueue.main.sync(execute: run)
     }
 
     private func readAudioInfo() -> [String: Any] {
         return withActivatedSession { session in
             let vol01 = session.outputVolume
-            let volume = Int((vol01 * 100.0).rounded())
+            var volume = Int((vol01 * 100.0).rounded())
+            if volume < 0 { volume = 0 }
+            if volume > 100 { volume = 100 }
             let muted = vol01 <= 0.0001
 
             var kinds = [String]()
