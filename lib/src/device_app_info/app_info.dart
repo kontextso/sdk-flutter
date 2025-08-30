@@ -53,13 +53,13 @@ class AppInfo {
         final times = await _ch.invokeMapMethod('getInstallUpdateTimes');
         firstInstall = (times?['firstInstall'] as num?)?.toInt();
         lastUpdate  = (times?['lastUpdate']  as num?)?.toInt();
-      } catch (e, stack) {
-        Logger.exception(e, stack);
+      } catch (e) {
+        Logger.error(e.toString());
       }
       try {
         processStart = await _ch.invokeMethod<int>('getProcessStartEpochMs');
-      } catch (e, stack) {
-        Logger.exception(e, stack);
+      } catch (e) {
+        Logger.error(e.toString());
       }
     }
 
