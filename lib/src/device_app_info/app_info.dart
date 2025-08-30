@@ -70,7 +70,7 @@ class AppInfo {
         firstInstall = (times?['firstInstall'] as num?)?.toInt();
         lastUpdate  = (times?['lastUpdate']  as num?)?.toInt();
       } catch (e) {
-        Logger.error(e.toString());
+        Logger.error('Failed to get install and update times: $e');
       }
     }
     return (firstInstall: firstInstall, lastUpdate: lastUpdate);
@@ -80,9 +80,9 @@ class AppInfo {
     int? processStart;
     if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
       try {
-        processStart = await _ch.invokeMethod<int>('getProcessStartEpochMs');
+        return await _ch.invokeMethod<int>('getProcessStartEpochMs');
       } catch (e) {
-        Logger.error(e.toString());
+        Logger.error('Failed to get process start time: $e');
       }
     }
     return processStart;

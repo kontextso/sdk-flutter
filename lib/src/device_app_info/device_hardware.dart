@@ -67,7 +67,7 @@ class DeviceHardware {
       final h = view.physicalSize.height / view.devicePixelRatio;
       return math.min(w, h);
     } catch (e) {
-      Logger.error(e.toString());
+      Logger.error('Failed to get screen size: $e');
       return null;
     }
   }
@@ -78,7 +78,7 @@ class DeviceHardware {
       try {
         bootEpochMs = await _ch.invokeMethod<int>('getBootEpochMs');
       } catch (e) {
-        Logger.error(e.toString());
+        Logger.error('Failed to get boot time: $e');
       }
     }
     return bootEpochMs;
@@ -90,7 +90,7 @@ class DeviceHardware {
       try {
         hasSd = await _ch.invokeMethod<bool>('hasRemovableSdCard');
       } catch (e) {
-        Logger.error(e.toString());
+        Logger.error('Failed to check for SD card: $e');
       }
     } else {
       hasSd = false;
