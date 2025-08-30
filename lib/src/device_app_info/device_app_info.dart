@@ -66,7 +66,7 @@ class DeviceAppInfo {
       final hardware = await DeviceHardware.init(dispatcher);
       final os = await OperationSystem.init(dispatcher);
       final screen = await DeviceScreen.init(dispatcher);
-      // final power = await DevicePower.init(dispatcher);
+      final power = await DevicePower.init(dispatcher);
       // final audio = await DeviceAudio.init();
       // final network = await DeviceNetwork.init();
 
@@ -76,7 +76,7 @@ class DeviceAppInfo {
         hardware: hardware,
         os: os,
         screen: screen,
-        // power: power,
+        power: power,
         // audio: audio,
         // network: network,
       );

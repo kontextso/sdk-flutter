@@ -1,5 +1,9 @@
 import 'dart:ui' show PlatformDispatcher;
 
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/services.dart' show MethodChannel;
+import 'package:kontext_flutter_sdk/src/services/logger.dart' show Logger;
+
 enum BatteryState { charging, full, unplugged, unknown }
 
 class DevicePower {
@@ -13,11 +17,38 @@ class DevicePower {
   final BatteryState? batteryState;
   final bool? lowerPowerMode;
 
+  static const _ch = MethodChannel('kontext_flutter_sdk/device_power');
+
   static Future<DevicePower> init(PlatformDispatcher dispatcher) async {
+    if (kIsWeb) {
+      return DevicePower._(batteryLevel: null, batteryState: null, lowerPowerMode: null);
+    }
+
+    double? batteryLevel;
+    BatteryState? batteryState;
+    bool? lowerPowerMode;
+    try {
+      final m = await _ch.invokeMapMethod<String, dynamic>('getPowerInfo');
+      batteryLevel = (m?['level'] as num?)?.toDouble();
+      batteryState = _parse(m?['state'] as String?);
+      lowerPowerMode = m?['lowPower'] as bool?;
+    } catch (e) {
+      Logger.error('Failed to get power info: $e');
+    }
+
     return DevicePower._(
-      batteryLevel: null, // TODO
-      batteryState: null, // TODO
-      lowerPowerMode: null, // TODO
+      batteryLevel: batteryLevel,
+      batteryState: batteryState,
+      lowerPowerMode: lowerPowerMode,
     );
+  }
+
+  static BatteryState? _parse(String? state) {
+    return switch (state) {
+      'charging' => BatteryState.charging,
+      'full' => BatteryState.full,
+      'unplugged' => BatteryState.unplugged,
+      _ => BatteryState.unknown
+    };
   }
 }

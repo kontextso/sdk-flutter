@@ -6,5 +6,6 @@ public class KontextSdkPlugin: NSObject, FlutterPlugin {
         AppInfoPlugin.register(with: registrar)
         DeviceHardwarePlugin.register(with: registrar)
         OperationSystemPlugin.register(with: registrar)
+        DevicePowerPlugin.register(with: registrar)
     }
 }
