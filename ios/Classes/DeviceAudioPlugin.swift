@@ -34,9 +34,39 @@ public class DeviceAudioPlugin: NSObject, FlutterPlugin {
         return value!
     }
 
-    private func readAudioInfo() -> [String: Any] {
-        onMain {
+    private func withActivatedSession<T>(_ body: @escaping (AVAudioSession) -> T) -> T {
+        return onMain {
             let session = AVAudioSession.sharedInstance()
+
+            let prevCategory = session.category
+            let prevMode = session.mode
+            let prevPolicy = session.routeSharingPolicy
+            let prevOptions = session.categoryOptions
+
+            try? session.setCategory(
+                .ambient,
+                mode: .default,
+                policy: prevPolicy,
+                options: [.mixWithOthers]
+            )
+            try? session.setActive(true)
+
+            let output = body(session)
+
+            try? session.setActive(false, options: [.notifyOthersOnDeactivation])
+            try? session.setCategory(
+                prevCategory,
+                mode: prevMode,
+                policy: prevPolicy,
+                options: prevOptions
+            )
+
+            return output
+        }
+    }
+
+    private func readAudioInfo() -> [String: Any] {
+        return withActivatedSession { session in
             let vol01 = session.outputVolume
             let volume = Int((vol01 * 100.0).rounded())
             let muted = vol01 <= 0.0001
