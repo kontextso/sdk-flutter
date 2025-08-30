@@ -1,4 +1,7 @@
-enum AudioOutputType { wired, hdmi, bluetooth, usb, unknown }
+import 'package:flutter/services.dart' show MethodChannel;
+import 'package:kontext_flutter_sdk/src/services/logger.dart' show Logger;
+
+enum AudioOutputType { wired, hdmi, bluetooth, usb, other }
 
 class DeviceAudio {
   DeviceAudio._({
@@ -8,17 +11,49 @@ class DeviceAudio {
     required this.outputType,
   });
 
-  final double? volume;
+  final int? volume;
   final bool? muted;
   final bool? outputPluggedIn;
   final List<AudioOutputType>? outputType;
 
+  static const _ch = MethodChannel('kontext_flutter_sdk/device_audio');
+
   static Future<DeviceAudio> init() async {
+    int? volume;
+    bool? muted;
+    bool? outputPluggedIn;
+    List<AudioOutputType>? outputType;
+
+    try {
+      final m = await _ch.invokeMapMethod<String, dynamic>('getAudioInfo');
+      volume = (m?['volume'] as num?)?.round();
+      muted = m?['muted'] as bool?;
+      outputPluggedIn = m?['outputPluggedIn'] as bool?;
+      outputType = _parseTypes(m?['outputType'] as List<dynamic>?);
+    } catch (e) {
+      Logger.error('Error fetching device audio info: $e');
+    }
+
     return DeviceAudio._(
-      volume: null, // TODO
-      muted: null, // TODO
-      outputPluggedIn: null, // TODO
-      outputType: null, // TODO
+      volume: volume,
+      muted: muted,
+      outputPluggedIn: outputPluggedIn,
+      outputType: outputType,
     );
+  }
+
+  static List<AudioOutputType>? _parseTypes(List<dynamic>? types) {
+    if (types == null) {
+      return null;
+    }
+    return types.map((type) {
+      return switch (type) {
+        'wired' => AudioOutputType.wired,
+        'hdmi' => AudioOutputType.hdmi,
+        'bluetooth' => AudioOutputType.bluetooth,
+        'usb' => AudioOutputType.usb,
+        _ => AudioOutputType.other,
+      };
+    }).toList();
   }
 }

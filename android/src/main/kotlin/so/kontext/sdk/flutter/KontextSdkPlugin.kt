@@ -8,6 +8,7 @@ class KontextSdkPlugin : FlutterPlugin {
     private val hardware = DeviceHardwarePlugin()
     private val os = OperationSystemPlugin()
     private val power = DevicePowerPlugin()
+    private val audio = DeviceAudioPlugin()
 
     override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         sound.onAttachedToEngine(binding)
@@ -15,6 +16,7 @@ class KontextSdkPlugin : FlutterPlugin {
         hardware.onAttachedToEngine(binding)
         os.onAttachedToEngine(binding)
         power.onAttachedToEngine(binding)
+        audio.onAttachedToEngine(binding)
     }
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
@@ -23,5 +25,6 @@ class KontextSdkPlugin : FlutterPlugin {
         hardware.onDetachedFromEngine(binding)
         os.onDetachedFromEngine(binding)
         power.onDetachedFromEngine(binding)
+        audio.onDetachedFromEngine(binding)
     }
 }
