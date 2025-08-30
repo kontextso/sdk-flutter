@@ -9,35 +9,31 @@
 
   <key>NSPrivacyCollectedDataTypes</key>
   <array>
-    <!-- Install / update timestamps, app version, etc. -->
     <dict>
       <key>NSPrivacyCollectedDataType</key>
-      <string>Other App Info</string>
+      <string>NSPrivacyCollectedDataTypeOtherAppInfo</string>
       <key>NSPrivacyCollectedDataTypeLinked</key><false/>
       <key>NSPrivacyCollectedDataTypeTracking</key><false/>
       <key>NSPrivacyCollectedDataTypePurposes</key>
       <array>
-        <string>Analytics</string>
+        <string>NSPrivacyCollectedDataTypePurposeAnalytics</string>
       </array>
     </dict>
 
-    <!-- Process start timestamp -->
     <dict>
       <key>NSPrivacyCollectedDataType</key>
-      <string>Other Diagnostic Data</string>
+      <string>NSPrivacyCollectedDataTypeOtherDiagnosticData</string>
       <key>NSPrivacyCollectedDataTypeLinked</key><false/>
       <key>NSPrivacyCollectedDataTypeTracking</key><false/>
       <key>NSPrivacyCollectedDataTypePurposes</key>
       <array>
-        <string>Analytics</string>
+        <string>NSPrivacyCollectedDataTypePurposeAnalytics</string>
       </array>
     </dict>
   </array>
 
-  <!-- Required Reason APIs -->
   <key>NSPrivacyAccessedAPITypes</key>
   <array>
-    <!-- File creation/modification dates -->
     <dict>
       <key>NSPrivacyAccessedAPIType</key>
       <string>NSPrivacyAccessedAPICategoryFileTimestamp</string>
@@ -47,7 +43,6 @@
       </array>
     </dict>
 
-    <!-- Process start time derived from uptime -->
     <dict>
       <key>NSPrivacyAccessedAPIType</key>
       <string>NSPrivacyAccessedAPICategorySystemBootTime</string>

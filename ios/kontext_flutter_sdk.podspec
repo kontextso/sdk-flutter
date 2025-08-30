@@ -16,7 +16,7 @@ Kontext Flutter SDK: sound status, app info, hardware, power, network, etc.
   s.platform            = :ios, '12.0'
   s.swift_version       = '5.0'
 
-  s.frameworks = 'AVFoundation', 'SystemConfiguration'
+  s.frameworks = 'AVFoundation', 'SystemConfiguration', 'CoreTelephony', 'WebKit'
 
   s.resources = ['PrivacyInfo.xcprivacy']
 
