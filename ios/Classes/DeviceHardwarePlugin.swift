@@ -15,9 +15,8 @@ public class DeviceHardwarePlugin: NSObject, FlutterPlugin {
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         switch call.method {
         case "getBootEpochMs":
-            let nowMs = Date().timeIntervalSince1970 * 1000.0
-            let uptimeMs = ProcessInfo.processInfo.systemUptime * 1000.0
-            result(Int64(nowMs - uptimeMs))
+            // Apple’s 8FFB.1 explicitly disallows transmitting boot time.
+            result(nil)
         case "hasRemovableSdCard":
             result(false)
         default:
