@@ -1,10 +1,7 @@
 import 'dart:io' show Platform;
 import 'dart:math' as math show min;
-
 import 'package:device_info_plus/device_info_plus.dart' show DeviceInfoPlugin;
 import 'package:flutter/foundation.dart';
-import 'dart:ui' show PlatformDispatcher;
-
 import 'package:flutter/services.dart' show MethodChannel;
 import 'package:kontext_flutter_sdk/src/services/logger.dart' show Logger;
 
@@ -51,20 +48,8 @@ class DeviceHardware {
       deviceType = DeviceType.desktop;
     }
 
-    int? bootEpochMs;
-    try {
-      bootEpochMs =
-          (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) ? await _ch.invokeMethod<int>('getBootEpochMs') : null;
-    } catch (e) {
-      Logger.error(e.toString());
-    }
-
-    bool? hasSd;
-    try {
-      hasSd = Platform.isAndroid ? ((await _ch.invokeMethod<bool>('hasRemovableSdCard')) ?? false) : false;
-    } catch (e) {
-      Logger.error(e.toString());
-    }
+    final bootEpochMs = await _getBootTime();
+    final hasSd = await _hasSdCard();
 
     return DeviceHardware._(
       brand: brand,
@@ -81,8 +66,35 @@ class DeviceHardware {
       final w = view.physicalSize.width / view.devicePixelRatio;
       final h = view.physicalSize.height / view.devicePixelRatio;
       return math.min(w, h);
-    } catch (_) {
+    } catch (e) {
+      Logger.error(e.toString());
       return null;
     }
+  }
+
+  static Future<int?> _getBootTime() async {
+    int? bootEpochMs;
+    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+      try {
+        bootEpochMs = await _ch.invokeMethod<int>('getBootEpochMs');
+      } catch (e) {
+        Logger.error(e.toString());
+      }
+    }
+    return bootEpochMs;
+  }
+
+  static Future<bool?> _hasSdCard() async {
+    bool? hasSd;
+    if (!kIsWeb && Platform.isAndroid) {
+      try {
+        hasSd = await _ch.invokeMethod<bool>('hasRemovableSdCard');
+      } catch (e) {
+        Logger.error(e.toString());
+      }
+    } else {
+      hasSd = false;
+    }
+    return hasSd;
   }
 }

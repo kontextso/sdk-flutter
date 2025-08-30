@@ -47,7 +47,23 @@ class AppInfo {
       appStoreUrl = 'https://play.google.com/store/apps/details?id=$appBundleId';
     }
 
-    int? firstInstall, lastUpdate, processStart;
+    final installUpdate = await _getInstallAndUpdateTimes();
+    final install = installUpdate.firstInstall;
+    final lastUpdate = installUpdate.lastUpdate;
+    final processStart = await _getProcessStartTime();
+
+    return AppInfo._(
+      appBundleId: appBundleId,
+      appVersion: appVersion,
+      appStoreUrl: appStoreUrl,
+      firstInstallTime: install,
+      lastUpdateTime: lastUpdate,
+      startTime: processStart,
+    );
+  }
+
+  static Future<({int? firstInstall, int? lastUpdate})> _getInstallAndUpdateTimes() async {
+    int? firstInstall, lastUpdate;
     if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
       try {
         final times = await _ch.invokeMapMethod('getInstallUpdateTimes');
@@ -56,20 +72,19 @@ class AppInfo {
       } catch (e) {
         Logger.error(e.toString());
       }
+    }
+    return (firstInstall: firstInstall, lastUpdate: lastUpdate);
+  }
+
+  static Future<int?> _getProcessStartTime() async {
+    int? processStart;
+    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
       try {
         processStart = await _ch.invokeMethod<int>('getProcessStartEpochMs');
       } catch (e) {
         Logger.error(e.toString());
       }
     }
-
-    return AppInfo._(
-      appBundleId: appBundleId,
-      appVersion: appVersion,
-      appStoreUrl: appStoreUrl,
-      firstInstallTime: firstInstall,
-      lastUpdateTime: lastUpdate,
-      startTime: processStart,
-    );
+    return processStart;
   }
 }
