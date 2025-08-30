@@ -48,7 +48,7 @@ public class DeviceAudioPlugin: NSObject, FlutterPlugin {
                     kinds.append("wired")
                 case .bluetoothA2DP, .bluetoothHFP, .bluetoothLE:
                     kinds.append("bluetooth")
-                case .hdmi:
+                case .HDMI:
                     kinds.append("hdmi")
                 case .usbAudio:
                     kinds.append("usb")
