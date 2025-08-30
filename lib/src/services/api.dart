@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart' show MethodChannel, MissingPluginException;
 import 'package:kontext_flutter_sdk/src/models/bid.dart';
 import 'package:kontext_flutter_sdk/src/models/character.dart';
 import 'package:kontext_flutter_sdk/src/device_app_info/device_app_info.dart';
@@ -9,8 +8,6 @@ import 'package:kontext_flutter_sdk/src/models/message.dart';
 import 'package:kontext_flutter_sdk/src/models/regulatory.dart';
 import 'package:kontext_flutter_sdk/src/utils/constants.dart';
 import 'package:kontext_flutter_sdk/src/utils/extensions.dart';
-
-const MethodChannel _soundChannel = MethodChannel('kontext_flutter_sdk/device_sound');
 
 class PreloadResponse {
   const PreloadResponse({
@@ -145,19 +142,6 @@ class Api {
     } catch (e, stack) {
       Logger.exception(e, stack);
       return null;
-    }
-  }
-
-  Future<bool> _isSoundOn() async {
-    try {
-      final isSoundOn = await _soundChannel.invokeMethod<bool>('isSoundOn');
-      return isSoundOn ?? true;
-    } on MissingPluginException catch (e) {
-      Logger.info(e.toString());
-      return true;
-    } catch (e, stack) {
-      Logger.exception(e, stack);
-      return true;
     }
   }
 }
