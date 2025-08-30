@@ -68,7 +68,7 @@ class DeviceAppInfo {
       final screen = await DeviceScreen.init(dispatcher);
       final power = await DevicePower.init(dispatcher);
       final audio = await DeviceAudio.init();
-      // final network = await DeviceNetwork.init();
+      final network = await DeviceNetwork.init();
 
 
       return _instance = DeviceAppInfo(
@@ -78,7 +78,7 @@ class DeviceAppInfo {
         screen: screen,
         power: power,
         audio: audio,
-        // network: network,
+        network: network,
       );
     } catch (e, stack) {
       Logger.exception(e, stack);

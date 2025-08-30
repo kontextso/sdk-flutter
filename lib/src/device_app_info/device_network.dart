@@ -1,4 +1,9 @@
-enum NetworkType { wifi, cellular, ethernet, unknown }
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart' show MethodChannel;
+import 'package:kontext_flutter_sdk/src/services/logger.dart' show Logger;
+import 'package:kontext_flutter_sdk/src/utils/extensions.dart';
+
+enum NetworkType { wifi, cellular, ethernet, other }
 
 enum NetworkDetail {
   twoG('2g'),
@@ -10,7 +15,7 @@ enum NetworkDetail {
   hspa('hspa'),
   edge('edge'),
   gprs('gprs'),
-  unknown('unknown');
+  other('other');
 
   const NetworkDetail(this.name);
 
@@ -30,12 +35,41 @@ class DeviceNetwork {
   final NetworkDetail? detail;
   final String? carrier;
 
+  static const _ch = MethodChannel('kontext_flutter_sdk/device_network');
+
   static Future<DeviceNetwork> init() async {
+    if (kIsWeb) {
+      return DeviceNetwork._(userAgent: null, type: null, detail: null, carrier: null);
+    }
+
+    String? userAgent;
+    NetworkType? type;
+    NetworkDetail? detail;
+    String? carrier;
+
+    try {
+      final m = await _ch.invokeMapMethod<String, dynamic>('getNetworkInfo');
+      userAgent = m?['userAgent'] as String?;
+      type = _getNetworkType(m?['type'] as String?);
+      detail = _getNetworkDetail(m?['detail'] as String?);
+      carrier = m?['carrier'] as String?;
+    } catch (e) {
+      Logger.error('Failed to get network info: $e');
+    }
+
     return DeviceNetwork._(
-      userAgent: null, // TODO
-      type: null, // TODO
-      detail: null, // TODO
-      carrier: null, // TODO
+      userAgent: userAgent,
+      type: type,
+      detail: detail,
+      carrier: carrier,
     );
+  }
+
+  static NetworkType? _getNetworkType(String? type) {
+    return NetworkType.values.firstWhereOrElse((t) => t.name == type);
+  }
+
+  static NetworkDetail? _getNetworkDetail(String? detail) {
+    return NetworkDetail.values.firstWhereOrElse((d) => d.name == detail);
   }
 }
