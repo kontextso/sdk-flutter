@@ -42,6 +42,6 @@ flutter:
     platforms:
       android:
         package: so.kontext.sdk.flutter
-        pluginClass: DeviceSoundPlugin
+        pluginClass: KontextSdkPlugin
       ios:
         pluginClass: DeviceSoundPlugin

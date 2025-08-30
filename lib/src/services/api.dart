@@ -40,7 +40,7 @@ class Api {
   static Api? _instance;
 
   @visibleForTesting
-  Future<Json?> Function({String? iosAppStoreId})? deviceInfoProvider;
+  Future<DeviceAppInfo?> Function({String? iosAppStoreId})? deviceInfoProvider;
 
   factory Api() {
     return _instance ??= Api._internal();
@@ -64,7 +64,7 @@ class Api {
     String? iosAppStoreId,
     Regulatory? regulatory,
   }) async {
-    Json? device;
+    DeviceAppInfo? device;
     try {
       device = await (deviceInfoProvider ?? _getDeviceAppInfo)(iosAppStoreId: iosAppStoreId);
     } catch (e, stack) {
@@ -82,7 +82,7 @@ class Api {
           'userId': userId,
           'conversationId': conversationId,
           'sessionId': sessionId,
-          'device': device,
+          // 'device': device,
           'messages': messages.map((message) => message.toJson()).toList(),
           'enabledPlacementCodes': enabledPlacementCodes,
           'character': character?.toJson(),
@@ -132,16 +132,16 @@ class Api {
     }
   }
 
-  Future<Json?> _getDeviceAppInfo({String? iosAppStoreId}) async {
+  Future<DeviceAppInfo?> _getDeviceAppInfo({String? iosAppStoreId}) async {
     try {
-      await DeviceAppInfo.init(iosAppStoreId: iosAppStoreId);
-      final device = DeviceAppInfo.instance?.toJson();
+      final deviceAppInfo = await DeviceAppInfo.init(iosAppStoreId: iosAppStoreId);
+      // final device = DeviceAppInfo.instance?.toJson();
+      //
+      // if (device != null) {
+      //   device['soundOn'] = await _isSoundOn();
+      // }
 
-      if (device != null) {
-        device['soundOn'] = await _isSoundOn();
-      }
-
-      return device;
+      return deviceAppInfo;
     } catch (e, stack) {
       Logger.exception(e, stack);
       return null;

@@ -34,6 +34,7 @@ class DeviceAppInfo {
 
   Map<String, dynamic> toJson() {
     return {
+
     };
   }
 
@@ -62,22 +63,22 @@ class DeviceAppInfo {
 
       final dispatcher = PlatformDispatcher.instance;
       final appInfo = await AppInfo.init(iosAppStoreId: iosAppStoreId);
-      final hardware = await DeviceHardware.init(dispatcher);
-      final os = await OperationSystem.init(dispatcher);
-      final screen = await DeviceScreen.init(dispatcher);
-      final power = await DevicePower.init(dispatcher);
-      final audio = await DeviceAudio.init();
-      final network = await DeviceNetwork.init();
+      // final hardware = await DeviceHardware.init(dispatcher);
+      // final os = await OperationSystem.init(dispatcher);
+      // final screen = await DeviceScreen.init(dispatcher);
+      // final power = await DevicePower.init(dispatcher);
+      // final audio = await DeviceAudio.init();
+      // final network = await DeviceNetwork.init();
 
 
       return _instance = DeviceAppInfo(
         appInfo: appInfo,
-        hardware: hardware,
-        os: os,
-        screen: screen,
-        power: power,
-        audio: audio,
-        network: network,
+        // hardware: hardware,
+        // os: os,
+        // screen: screen,
+        // power: power,
+        // audio: audio,
+        // network: network,
       );
     } catch (e, stack) {
       Logger.exception(e, stack);

@@ -1,4 +1,7 @@
 import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/services.dart' show MethodChannel;
+import 'package:kontext_flutter_sdk/src/services/logger.dart' show Logger;
 import 'package:package_info_plus/package_info_plus.dart' show PackageInfo;
 
 class AppInfo {
@@ -16,7 +19,18 @@ class AppInfo {
   final String? appStoreUrl;
   final int? firstInstallTime;
   final int? lastUpdateTime;
-  final bool? startTime;
+  final int? startTime;
+
+  static const _ch = MethodChannel('kontext_flutter_sdk/app_info');
+
+  Map<String, dynamic> toJson() => {
+    'appBundleId': appBundleId,
+    'appVersion': appVersion,
+    'appStoreUrl': appStoreUrl,
+    'firstInstallTime': firstInstallTime,
+    'lastUpdateTime': lastUpdateTime,
+    'startTime': startTime,
+  };
 
   static Future<AppInfo> init({String? iosAppStoreId}) async {
     final appInfo = await PackageInfo.fromPlatform();
@@ -33,13 +47,29 @@ class AppInfo {
       appStoreUrl = 'https://play.google.com/store/apps/details?id=$appBundleId';
     }
 
+    int? firstInstall, lastUpdate, processStart;
+    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+      try {
+        final times = await _ch.invokeMapMethod('getInstallUpdateTimes');
+        firstInstall = (times?['firstInstall'] as num?)?.toInt();
+        lastUpdate  = (times?['lastUpdate']  as num?)?.toInt();
+      } catch (e, stack) {
+        Logger.exception(e, stack);
+      }
+      try {
+        processStart = await _ch.invokeMethod<int>('getProcessStartEpochMs');
+      } catch (e, stack) {
+        Logger.exception(e, stack);
+      }
+    }
+
     return AppInfo._(
       appBundleId: appBundleId,
       appVersion: appVersion,
       appStoreUrl: appStoreUrl,
-      firstInstallTime: null, // TODO:
-      lastUpdateTime: null, // TODO:
-      startTime: null, // TODO:
+      firstInstallTime: firstInstall,
+      lastUpdateTime: lastUpdate,
+      startTime: processStart,
     );
   }
 }
