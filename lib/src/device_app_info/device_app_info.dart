@@ -65,7 +65,7 @@ class DeviceAppInfo {
       final appInfo = await AppInfo.init(iosAppStoreId: iosAppStoreId);
       final hardware = await DeviceHardware.init(dispatcher);
       final os = await OperationSystem.init(dispatcher);
-      // final screen = await DeviceScreen.init(dispatcher);
+      final screen = await DeviceScreen.init(dispatcher);
       // final power = await DevicePower.init(dispatcher);
       // final audio = await DeviceAudio.init();
       // final network = await DeviceNetwork.init();
@@ -75,7 +75,7 @@ class DeviceAppInfo {
         appInfo: appInfo,
         hardware: hardware,
         os: os,
-        // screen: screen,
+        screen: screen,
         // power: power,
         // audio: audio,
         // network: network,
