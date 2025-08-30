@@ -63,7 +63,7 @@ class DeviceAppInfo {
 
       final dispatcher = PlatformDispatcher.instance;
       final appInfo = await AppInfo.init(iosAppStoreId: iosAppStoreId);
-      // final hardware = await DeviceHardware.init(dispatcher);
+      final hardware = await DeviceHardware.init(dispatcher);
       // final os = await OperationSystem.init(dispatcher);
       // final screen = await DeviceScreen.init(dispatcher);
       // final power = await DevicePower.init(dispatcher);
@@ -73,7 +73,7 @@ class DeviceAppInfo {
 
       return _instance = DeviceAppInfo(
         appInfo: appInfo,
-        // hardware: hardware,
+        hardware: hardware,
         // os: os,
         // screen: screen,
         // power: power,

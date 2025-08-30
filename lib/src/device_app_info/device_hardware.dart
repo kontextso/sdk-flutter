@@ -2,7 +2,11 @@ import 'dart:io' show Platform;
 import 'dart:math' as math show min;
 
 import 'package:device_info_plus/device_info_plus.dart' show DeviceInfoPlugin;
+import 'package:flutter/foundation.dart';
 import 'dart:ui' show PlatformDispatcher;
+
+import 'package:flutter/services.dart' show MethodChannel;
+import 'package:kontext_flutter_sdk/src/services/logger.dart' show Logger;
 
 enum DeviceType { handset, tablet, desktop, unknown }
 
@@ -20,6 +24,8 @@ class DeviceHardware {
   final DeviceType? type;
   final int? bootTime;
   final bool? sdCardAvailable;
+
+  static const _ch = MethodChannel('kontext_flutter_sdk/device_hardware');
 
   static Future<DeviceHardware> init(PlatformDispatcher dispatcher) async {
     final deviceInfo = DeviceInfoPlugin();
@@ -41,14 +47,31 @@ class DeviceHardware {
 
       final shortestSide = _shortestSideDp(dispatcher);
       deviceType = shortestSide != null && shortestSide >= 600 ? DeviceType.tablet : DeviceType.handset;
+    } else if (kIsWeb || Platform.isMacOS || Platform.isWindows || Platform.isLinux) {
+      deviceType = DeviceType.desktop;
+    }
+
+    int? bootEpochMs;
+    try {
+      bootEpochMs =
+          (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) ? await _ch.invokeMethod<int>('getBootEpochMs') : null;
+    } catch (e) {
+      Logger.error(e.toString());
+    }
+
+    bool? hasSd;
+    try {
+      hasSd = Platform.isAndroid ? ((await _ch.invokeMethod<bool>('hasRemovableSdCard')) ?? false) : false;
+    } catch (e) {
+      Logger.error(e.toString());
     }
 
     return DeviceHardware._(
       brand: brand,
       model: model,
       type: deviceType ?? DeviceType.unknown,
-      bootTime: null, // TODO
-      sdCardAvailable: null, // TODO
+      bootTime: bootEpochMs,
+      sdCardAvailable: hasSd,
     );
   }
 
