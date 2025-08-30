@@ -2,6 +2,8 @@ import 'dart:io' show Platform;
 import 'dart:ui' show PlatformDispatcher;
 
 import 'package:device_info_plus/device_info_plus.dart' show DeviceInfoPlugin;
+import 'package:flutter/services.dart' show MethodChannel;
+import 'package:kontext_flutter_sdk/src/services/logger.dart' show Logger;
 
 enum DeviceOS { android, ios, unknown }
 
@@ -18,12 +20,13 @@ class OperationSystem {
   final String? locale;
   final String? timezone;
 
+  static const _ch = MethodChannel('kontext_flutter_sdk/operation_system');
+
   static Future<OperationSystem> init(PlatformDispatcher dispatcher) async {
     final deviceInfo = DeviceInfoPlugin();
 
     DeviceOS? os;
     String? systemVersion;
-    final locale = _currentLocale(dispatcher);
 
     if (Platform.isIOS) {
       final iosInfo = await deviceInfo.iosInfo;
@@ -35,11 +38,14 @@ class OperationSystem {
       systemVersion = androidInfo.version.release;
     }
 
+    final locale = _currentLocale(dispatcher);
+    final timezone = await _getTimezone();
+
     return OperationSystem._(
       name: os?.name,
       version: systemVersion,
       locale: locale,
-      timezone: null, // TODO:
+      timezone: timezone,
     );
   }
 
@@ -48,8 +54,18 @@ class OperationSystem {
       final locale = dispatcher.locale;
       final countryCode = locale.countryCode;
       return [locale.languageCode, countryCode?.toUpperCase()].whereType<String>().join('-');
-    } catch (_) {
-      return null;
+    } catch (e) {
+      Logger.error('Failed to get locale: $e');
     }
+    return null;
+  }
+
+  static Future<String?> _getTimezone() async {
+    try {
+      return await _ch.invokeMethod<String>('getTimezone');
+    } catch (e) {
+      Logger.error('Failed to get timezone: $e');
+    }
+    return null;
   }
 }
