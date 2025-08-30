@@ -44,4 +44,4 @@ flutter:
         package: so.kontext.sdk.flutter
         pluginClass: KontextSdkPlugin
       ios:
-        pluginClass: DeviceSoundPlugin
+        pluginClass: KontextSdkPlugin
