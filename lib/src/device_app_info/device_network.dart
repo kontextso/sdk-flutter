@@ -37,6 +37,13 @@ class DeviceNetwork {
 
   static const _ch = MethodChannel('kontext_flutter_sdk/device_network');
 
+  Map<String, dynamic> toJson() => {
+        if (userAgent != null) 'userAgent': userAgent,
+        if (type != null) 'type': type!.name,
+        if (detail != null) 'detail': detail!.name,
+        if (carrier != null) 'carrier': carrier,
+      };
+
   static Future<DeviceNetwork> init() async {
     if (kIsWeb) {
       return DeviceNetwork._(userAgent: null, type: null, detail: null, carrier: null);
