@@ -1,12 +1,16 @@
 import 'dart:async' show Timer;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show DeviceOrientation, SystemChrome;
 import 'package:kontext_flutter_sdk/src/services/http_client.dart' show Json;
 import 'package:kontext_flutter_sdk/src/widgets/kontext_webview.dart';
 
 class InterstitialModal {
   static OverlayEntry? _entry;
   static Timer? _initTimer;
+
+  static bool _orientationLocked = false;
+  static List<DeviceOrientation>? _restoreOrientations;
 
   static void show(
     BuildContext context, {
@@ -39,6 +43,12 @@ class InterstitialModal {
                     onMessageReceived: (controller, messageType, data) {
                       switch (messageType) {
                         case 'init-component-iframe':
+                          if (!_orientationLocked) {
+                            _restoreOrientations ??= DeviceOrientation.values;
+                            _orientationLocked = true;
+                            SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+                          }
+
                           _initTimer?.cancel();
                           visible.value = true;
                           break;
@@ -70,5 +80,13 @@ class InterstitialModal {
     _initTimer = null;
     _entry?.remove();
     _entry = null;
+
+    if (_orientationLocked) {
+      final toRestore = _restoreOrientations ?? DeviceOrientation.values;
+      SystemChrome.setPreferredOrientations(toRestore).whenComplete(() {
+        _orientationLocked = false;
+        _restoreOrientations = null;
+      });
+    }
   }
 }
