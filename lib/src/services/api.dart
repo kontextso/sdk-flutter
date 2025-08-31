@@ -63,9 +63,12 @@ class Api {
     String? variantId,
     String? iosAppStoreId,
   }) async {
-    final init = (deviceInfoProvider ?? DeviceAppInfo.init);
-    final device = await init(iosAppStoreId: iosAppStoreId)
-        .catchError((_) => DeviceAppInfo.empty());
+    late final DeviceAppInfo device;
+    try {
+      device = await (deviceInfoProvider ?? DeviceAppInfo.init)(iosAppStoreId: iosAppStoreId);
+    } catch (_) {
+      device = DeviceAppInfo.empty();
+    }
     final deviceJson = await device.toJsonFresh();
 
     final vendor = vendorId?.nullIfEmpty;
