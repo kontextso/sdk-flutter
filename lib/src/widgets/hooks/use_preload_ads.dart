@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kontext_flutter_sdk/src/models/bid.dart';
 import 'package:kontext_flutter_sdk/src/models/character.dart';
+import 'package:kontext_flutter_sdk/src/models/regulatory.dart';
 import 'package:kontext_flutter_sdk/src/models/message.dart';
 import 'package:kontext_flutter_sdk/src/services/api.dart';
 import 'package:kontext_flutter_sdk/src/services/logger.dart';
@@ -17,16 +18,11 @@ void usePreloadAds(
   required bool isDisabled,
   required List<String> enabledPlacementCodes,
   required Character? character,
+  required Regulatory? regulatory,
   required String? vendorId,
   required String? variantId,
   required String? advertisingId,
   required String? iosAppStoreId,
-  required int? gdpr,
-  required String? gdprConsent,
-  required int? coppa,
-  required String? gpp,
-  required List<int>? gppSid,
-  required String? usPrivacy,
   required ValueChanged<List<Bid>> setBids,
   required ValueChanged<bool> setReadyForStreamingAssistant,
   required ValueChanged<bool> setReadyForStreamingUser,
@@ -59,6 +55,7 @@ void usePreloadAds(
         'userId': userId,
         'conversationId': conversationId,
         'character': character?.toJson(),
+        'regulatory': regulatory?.toJson(),
         'vendorId': vendorId,
         'variantId': variantId,
         'advertisingId': advertisingId,
@@ -89,6 +86,7 @@ void usePreloadAds(
 
       Logger.log('Preload ads started');
       final api = Api();
+
       final response = await api.preload(
         publisherToken: publisherToken,
         userId: userId,
@@ -97,16 +95,11 @@ void usePreloadAds(
         messages: messages.getLastMessages(),
         enabledPlacementCodes: enabledPlacementCodes,
         character: character,
+        regulatory: regulatory,
         vendorId: vendorId,
         variantId: variantId,
         advertisingId: advertisingId,
-        iosAppStoreId: iosAppStoreId,
-        gdpr: gdpr,
-        gdprConsent: gdprConsent,
-        coppa: coppa,
-        gpp: gpp,
-        gppSid: gppSid,
-        usPrivacy: usPrivacy,
+        iosAppStoreId: iosAppStoreId
       );
 
       if (cancelled || !context.mounted) return;

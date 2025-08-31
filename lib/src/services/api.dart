@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show MethodChannel, MissingPluginException;
 import 'package:kontext_flutter_sdk/src/models/bid.dart';
 import 'package:kontext_flutter_sdk/src/models/character.dart';
+import 'package:kontext_flutter_sdk/src/models/regulatory.dart';
 import 'package:kontext_flutter_sdk/src/services/device_app_info.dart';
 import 'package:kontext_flutter_sdk/src/services/logger.dart';
 import 'package:kontext_flutter_sdk/src/services/http_client.dart';
@@ -57,16 +58,11 @@ class Api {
     required List<Message> messages,
     required List<String> enabledPlacementCodes,
     Character? character,
+    Regulatory? regulatory,
     String? vendorId,
     String? variantId,
     String? advertisingId,
-    String? iosAppStoreId,
-    int? gdpr,
-    String? gdprConsent,
-    int? coppa,
-    String? gpp,
-    List<int>? gppSid,
-    String? usPrivacy,
+    String? iosAppStoreId
   }) async {
     Json? device;
     try {
@@ -90,17 +86,10 @@ class Api {
           'messages': messages.map((message) => message.toJson()).toList(),
           'enabledPlacementCodes': enabledPlacementCodes,
           'character': character?.toJson(),
+          'regulatory': regulatory?.toJson(),
           'vendorId': vendorId?.nullIfEmpty,
           'variantId': variantId?.nullIfEmpty,
-          'advertisingId': advertisingId?.nullIfEmpty,
-          'regulatory': {
-            'gdpr': gdpr,
-            'gdprConsent': gdprConsent?.nullIfEmpty,
-            'coppa': coppa,
-            'gpp': gpp?.nullIfEmpty,
-            'gppSid': gppSid?.nullIfEmpty,
-            'usPrivacy': usPrivacy?.nullIfEmpty,
-          },
+          'advertisingId': advertisingId?.nullIfEmpty
         },
       );
 

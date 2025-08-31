@@ -7,6 +7,7 @@ import 'package:kontext_flutter_sdk/src/services/logger.dart';
 import 'package:kontext_flutter_sdk/src/widgets/ads_provider_data.dart';
 import 'package:kontext_flutter_sdk/src/models/message.dart';
 import 'package:kontext_flutter_sdk/src/models/character.dart';
+import 'package:kontext_flutter_sdk/src/models/regulatory.dart';
 import 'package:kontext_flutter_sdk/src/utils/constants.dart';
 import 'package:kontext_flutter_sdk/src/widgets/hooks/use_last_messages.dart';
 import 'package:kontext_flutter_sdk/src/widgets/hooks/use_preload_ads.dart';
@@ -23,6 +24,7 @@ class AdsProvider extends HookWidget {
     this.isDisabled = false,
     required this.enabledPlacementCodes,
     this.character,
+    this.regulatory,
     this.vendorId,
     this.variantId,
     this.advertisingId,
@@ -66,6 +68,9 @@ class AdsProvider extends HookWidget {
 
   /// The character object used in this conversation.
   final Character? character;
+
+  /// The regulatory object used in this conversation.
+  final Regulatory? regulatory;
 
   /// Vendor-specific ID.
   final String? vendorId;
@@ -176,6 +181,15 @@ class AdsProvider extends HookWidget {
       return null;
     }, [logLevel]);
 
+    final reg = Regulatory(
+      gdpr: regulatory?.gdpr ?? gdpr,
+      gdprConsent: regulatory?.gdprConsent ?? gdprConsent,
+      coppa: regulatory?.coppa ?? coppa,
+      gpp: regulatory?.gpp ?? gpp,
+      gppSid: regulatory?.gppSid ?? gppSid,
+      usPrivacy: regulatory?.usPrivacy ?? usPrivacy,
+    );
+
     usePreloadAds(
       context,
       publisherToken: publisherToken,
@@ -185,16 +199,11 @@ class AdsProvider extends HookWidget {
       enabledPlacementCodes: enabledPlacementCodes,
       isDisabled: isDisabled,
       character: character,
+      regulatory: reg,
       vendorId: vendorId,
       variantId: variantId,
       advertisingId: advertisingId,
       iosAppStoreId: iosAppStoreId,
-      gdpr: gdpr,
-      gdprConsent: gdprConsent,
-      coppa: coppa,
-      gpp: gpp,
-      gppSid: gppSid,
-      usPrivacy: usPrivacy,
       setBids: setBids,
       setReadyForStreamingAssistant: setReadyForStreamingAssistant,
       setReadyForStreamingUser: setReadyForStreamingUser,
