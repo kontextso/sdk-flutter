@@ -24,6 +24,14 @@ class DeviceHardware {
 
   static const _ch = MethodChannel('kontext_flutter_sdk/device_hardware');
 
+  factory DeviceHardware.empty() => DeviceHardware._(
+        brand: null,
+        model: null,
+        type: DeviceType.other,
+        bootTime: null,
+        sdCardAvailable: null,
+      );
+
   Map<String, dynamic> toJson() => {
         if (brand != null) 'brand': brand,
         if (model != null) 'model': model,

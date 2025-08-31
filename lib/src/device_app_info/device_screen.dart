@@ -18,6 +18,14 @@ class DeviceScreen {
   final ScreenOrientation orientation;
   final bool darkMode;
 
+  factory DeviceScreen.empty() => DeviceScreen._(
+        width: 0,
+        height: 0,
+        dpr: 0,
+        orientation: ScreenOrientation.portrait,
+        darkMode: false,
+      );
+
   Map<String, dynamic> toJson() => {
         'width': width,
         'height': height,

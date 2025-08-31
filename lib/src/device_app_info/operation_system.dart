@@ -22,6 +22,13 @@ class OperationSystem {
 
   static const _ch = MethodChannel('kontext_flutter_sdk/operation_system');
 
+  factory OperationSystem.empty() => OperationSystem._(
+        name: '',
+        version: '',
+        locale: '',
+        timezone: '',
+      );
+
   Map<String, dynamic> toJson() => {
         'name': name,
         'version': version,

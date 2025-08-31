@@ -23,6 +23,15 @@ class AppInfo {
 
   static const _ch = MethodChannel('kontext_flutter_sdk/app_info');
 
+  factory AppInfo.empty() => AppInfo._(
+        bundleId: '',
+        version: '',
+        storeUrl: null,
+        firstInstallTime: 0,
+        lastUpdateTime: 0,
+        startTime: 0,
+      );
+
   Map<String, dynamic> toJson() => {
         'bundleId': bundleId,
         'version': version,

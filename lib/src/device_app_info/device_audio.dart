@@ -19,6 +19,13 @@ class DeviceAudio {
 
   static const _ch = MethodChannel('kontext_flutter_sdk/device_audio');
 
+  factory DeviceAudio.empty() => DeviceAudio._(
+        volume: null,
+        muted: null,
+        outputPluggedIn: null,
+        outputType: null,
+      );
+
   Map<String, dynamic> toJson() => {
         if (volume != null) 'volume': volume,
         if (muted != null) 'muted': muted,

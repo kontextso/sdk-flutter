@@ -19,6 +19,12 @@ class DevicePower {
 
   static const _ch = MethodChannel('kontext_flutter_sdk/device_power');
 
+  factory DevicePower.empty() => DevicePower._(
+        batteryLevel: null,
+        batteryState: null,
+        lowerPowerMode: null,
+      );
+
   Map<String, dynamic> toJson() => {
         if (batteryLevel != null) 'batteryLevel': batteryLevel,
         if (batteryState != null) 'batteryState': batteryState!.name,
