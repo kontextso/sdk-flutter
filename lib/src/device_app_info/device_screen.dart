@@ -34,20 +34,26 @@ class DeviceScreen {
         'darkMode': darkMode,
       };
 
-  static Future<DeviceScreen> init(PlatformDispatcher dispatcher) async {
-    final view = _primaryView(dispatcher);
-    final physical = view?.physicalSize;
-    final dpr = view?.devicePixelRatio;
-    final orientation = _getOrientation(physical);
-    final isDarkMode = _isDarkMode(dispatcher);
+  static DeviceScreen init() {
+    try {
+      final dispatcher = PlatformDispatcher.instance;
+      final view = _primaryView(dispatcher);
+      final physical = view?.physicalSize;
+      final dpr = view?.devicePixelRatio;
+      final orientation = _getOrientation(physical);
+      final isDarkMode = _isDarkMode(dispatcher);
 
-    return DeviceScreen._(
-      width: physical?.width ?? 0,
-      height: physical?.height ?? 0,
-      dpr: dpr ?? 0,
-      orientation: orientation ?? ScreenOrientation.portrait,
-      darkMode: isDarkMode ?? false,
-    );
+      return DeviceScreen._(
+        width: physical?.width ?? 0,
+        height: physical?.height ?? 0,
+        dpr: dpr ?? 0,
+        orientation: orientation ?? ScreenOrientation.portrait,
+        darkMode: isDarkMode ?? false,
+      );
+    } catch (e) {
+      Logger.error('Failed to get screen info: $e');
+      return DeviceScreen.empty();
+    }
   }
 
   static FlutterView? _primaryView(PlatformDispatcher dispatcher) {
@@ -60,9 +66,7 @@ class DeviceScreen {
   }
 
   static ScreenOrientation? _getOrientation(Size? physical) {
-    if (physical == null) {
-      return null;
-    }
+    if (physical == null) return null;
 
     final w = physical.width;
     final h = physical.height;
