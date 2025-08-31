@@ -19,6 +19,12 @@ class DevicePower {
 
   static const _ch = MethodChannel('kontext_flutter_sdk/device_power');
 
+  Map<String, dynamic> toJson() => {
+        if (batteryLevel != null) 'batteryLevel': batteryLevel,
+        if (batteryState != null) 'batteryState': batteryState!.name,
+        if (lowerPowerMode != null) 'lowerPowerMode': lowerPowerMode,
+      };
+
   static Future<DevicePower> init(PlatformDispatcher dispatcher) async {
     if (kIsWeb) {
       return DevicePower._(batteryLevel: null, batteryState: null, lowerPowerMode: null);
