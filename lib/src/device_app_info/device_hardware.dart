@@ -41,39 +41,44 @@ class DeviceHardware {
       };
 
   static Future<DeviceHardware> init(PlatformDispatcher dispatcher) async {
-    final deviceInfo = DeviceInfoPlugin();
+    try {
+      final deviceInfo = DeviceInfoPlugin();
 
-    String? model;
-    String? brand;
-    DeviceType? deviceType;
+      String? model;
+      String? brand;
+      DeviceType? deviceType;
 
-    if (Platform.isIOS) {
-      final iosInfo = await deviceInfo.iosInfo;
-      final machine = iosInfo.utsname.machine;
-      model = machine;
-      brand = 'Apple';
-      deviceType = machine.toLowerCase().contains('ipad') ? DeviceType.tablet : DeviceType.handset;
-    } else if (Platform.isAndroid) {
-      final androidInfo = await deviceInfo.androidInfo;
-      model = androidInfo.model;
-      brand = androidInfo.brand;
+      if (Platform.isIOS) {
+        final iosInfo = await deviceInfo.iosInfo;
+        final machine = iosInfo.utsname.machine;
+        model = machine;
+        brand = 'Apple';
+        deviceType = machine.toLowerCase().contains('ipad') ? DeviceType.tablet : DeviceType.handset;
+      } else if (Platform.isAndroid) {
+        final androidInfo = await deviceInfo.androidInfo;
+        model = androidInfo.model;
+        brand = androidInfo.brand;
 
-      final shortestSide = _shortestSideDp(dispatcher);
-      deviceType = shortestSide != null && shortestSide >= 600 ? DeviceType.tablet : DeviceType.handset;
-    } else if (kIsWeb || Platform.isMacOS || Platform.isWindows || Platform.isLinux) {
-      deviceType = DeviceType.desktop;
+        final shortestSide = _shortestSideDp(dispatcher);
+        deviceType = shortestSide != null && shortestSide >= 600 ? DeviceType.tablet : DeviceType.handset;
+      } else if (kIsWeb || Platform.isMacOS || Platform.isWindows || Platform.isLinux) {
+        deviceType = DeviceType.desktop;
+      }
+
+      final bootEpochMs = await _getBootTime();
+      final hasSd = await _hasSdCard();
+
+      return DeviceHardware._(
+        brand: brand,
+        model: model,
+        type: deviceType ?? DeviceType.other,
+        bootTime: bootEpochMs,
+        sdCardAvailable: hasSd,
+      );
+    } catch (e) {
+      Logger.error('Error fetching device hardware info: $e');
+      return DeviceHardware.empty();
     }
-
-    final bootEpochMs = await _getBootTime();
-    final hasSd = await _hasSdCard();
-
-    return DeviceHardware._(
-      brand: brand,
-      model: model,
-      type: deviceType ?? DeviceType.other,
-      bootTime: bootEpochMs,
-      sdCardAvailable: hasSd,
-    );
   }
 
   static double? _shortestSideDp(PlatformDispatcher dispatcher) {

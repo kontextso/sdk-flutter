@@ -52,31 +52,28 @@ class DeviceNetwork {
       };
 
   static Future<DeviceNetwork> init() async {
+    final empty = DeviceNetwork.empty();
     if (kIsWeb) {
-      return DeviceNetwork._(userAgent: null, type: null, detail: null, carrier: null);
+      return empty;
     }
-
-    String? userAgent;
-    NetworkType? type;
-    NetworkDetail? detail;
-    String? carrier;
 
     try {
       final m = await _ch.invokeMapMethod<String, dynamic>('getNetworkInfo');
-      userAgent = m?['userAgent'] as String?;
-      type = _getNetworkType(m?['type'] as String?);
-      detail = _getNetworkDetail(m?['detail'] as String?);
-      carrier = m?['carrier'] as String?;
+      final userAgent = m?['userAgent'] as String?;
+      final type = _getNetworkType(m?['type'] as String?);
+      final detail = _getNetworkDetail(m?['detail'] as String?);
+      final carrier = m?['carrier'] as String?;
+
+      return DeviceNetwork._(
+        userAgent: userAgent,
+        type: type,
+        detail: detail,
+        carrier: carrier,
+      );
     } catch (e) {
       Logger.error('Failed to get network info: $e');
+      return empty;
     }
-
-    return DeviceNetwork._(
-      userAgent: userAgent,
-      type: type,
-      detail: detail,
-      carrier: carrier,
-    );
   }
 
   static NetworkType? _getNetworkType(String? type) {

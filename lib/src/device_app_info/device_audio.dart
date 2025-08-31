@@ -34,27 +34,23 @@ class DeviceAudio {
       };
 
   static Future<DeviceAudio> init() async {
-    int? volume;
-    bool? muted;
-    bool? outputPluggedIn;
-    List<AudioOutputType>? outputType;
-
     try {
       final m = await _ch.invokeMapMethod<String, dynamic>('getAudioInfo');
-      volume = (m?['volume'] as num?)?.round();
-      muted = m?['muted'] as bool?;
-      outputPluggedIn = m?['outputPluggedIn'] as bool?;
-      outputType = _parseTypes(m?['outputType'] as List<dynamic>?);
+      final volume = (m?['volume'] as num?)?.round();
+      final muted = m?['muted'] as bool?;
+      final outputPluggedIn = m?['outputPluggedIn'] as bool?;
+      final outputType = _parseTypes(m?['outputType'] as List<dynamic>?);
+
+      return DeviceAudio._(
+        volume: volume,
+        muted: muted,
+        outputPluggedIn: outputPluggedIn,
+        outputType: outputType,
+      );
     } catch (e) {
       Logger.error('Error fetching device audio info: $e');
+      return DeviceAudio.empty();
     }
-
-    return DeviceAudio._(
-      volume: volume,
-      muted: muted,
-      outputPluggedIn: outputPluggedIn,
-      outputType: outputType,
-    );
   }
 
   static List<AudioOutputType>? _parseTypes(List<dynamic>? types) {

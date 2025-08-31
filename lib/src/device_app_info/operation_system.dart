@@ -37,30 +37,35 @@ class OperationSystem {
       };
 
   static Future<OperationSystem> init(PlatformDispatcher dispatcher) async {
-    final deviceInfo = DeviceInfoPlugin();
+    try {
+      final deviceInfo = DeviceInfoPlugin();
 
-    DeviceOS? os;
-    String? systemVersion;
+      DeviceOS? os;
+      String? systemVersion;
 
-    if (Platform.isIOS) {
-      final iosInfo = await deviceInfo.iosInfo;
-      os = DeviceOS.ios;
-      systemVersion = iosInfo.systemVersion;
-    } else if (Platform.isAndroid) {
-      final androidInfo = await deviceInfo.androidInfo;
-      os = DeviceOS.android;
-      systemVersion = androidInfo.version.release;
+      if (Platform.isIOS) {
+        final iosInfo = await deviceInfo.iosInfo;
+        os = DeviceOS.ios;
+        systemVersion = iosInfo.systemVersion;
+      } else if (Platform.isAndroid) {
+        final androidInfo = await deviceInfo.androidInfo;
+        os = DeviceOS.android;
+        systemVersion = androidInfo.version.release;
+      }
+
+      final locale = _currentLocale(dispatcher);
+      final timezone = await _getTimezone();
+
+      return OperationSystem._(
+        name: os?.name ?? '',
+        version: systemVersion ?? '',
+        locale: locale ?? '',
+        timezone: timezone ?? '',
+      );
+    }  catch (e) {
+      Logger.error('Failed to get OS info: $e');
+      return OperationSystem.empty();
     }
-
-    final locale = _currentLocale(dispatcher);
-    final timezone = await _getTimezone();
-
-    return OperationSystem._(
-      name: os?.name ?? '',
-      version: systemVersion ?? '',
-      locale: locale ?? '',
-      timezone: timezone ?? '',
-    );
   }
 
   static String? _currentLocale(PlatformDispatcher dispatcher) {

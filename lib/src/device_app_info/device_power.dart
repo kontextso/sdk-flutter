@@ -32,27 +32,26 @@ class DevicePower {
       };
 
   static Future<DevicePower> init(PlatformDispatcher dispatcher) async {
+    final empty = DevicePower.empty();
     if (kIsWeb) {
-      return DevicePower._(batteryLevel: null, batteryState: null, lowerPowerMode: null);
+      return empty;
     }
 
-    double? batteryLevel;
-    BatteryState? batteryState;
-    bool? lowerPowerMode;
     try {
       final m = await _ch.invokeMapMethod<String, dynamic>('getPowerInfo');
-      batteryLevel = (m?['level'] as num?)?.toDouble();
-      batteryState = _parse(m?['state'] as String?);
-      lowerPowerMode = m?['lowPower'] as bool?;
+      final batteryLevel = (m?['level'] as num?)?.toDouble();
+      final batteryState = _parse(m?['state'] as String?);
+      final lowerPowerMode = m?['lowPower'] as bool?;
+
+      return DevicePower._(
+        batteryLevel: batteryLevel,
+        batteryState: batteryState,
+        lowerPowerMode: lowerPowerMode,
+      );
     } catch (e) {
       Logger.error('Failed to get power info: $e');
+      return empty;
     }
-
-    return DevicePower._(
-      batteryLevel: batteryLevel,
-      batteryState: batteryState,
-      lowerPowerMode: lowerPowerMode,
-    );
   }
 
   static BatteryState? _parse(String? state) {
