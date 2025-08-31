@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show MethodChannel;
 import 'package:kontext_flutter_sdk/src/services/logger.dart' show Logger;
 
-enum DeviceType { handset, tablet, desktop, unknown }
+enum DeviceType { handset, tablet, desktop, other }
 
 class DeviceHardware {
   DeviceHardware._({
@@ -18,11 +18,19 @@ class DeviceHardware {
 
   final String? brand;
   final String? model;
-  final DeviceType? type;
+  final DeviceType type;
   final int? bootTime;
   final bool? sdCardAvailable;
 
   static const _ch = MethodChannel('kontext_flutter_sdk/device_hardware');
+
+  Map<String, dynamic> toJson() => {
+        if (brand != null) 'brand': brand,
+        if (model != null) 'model': model,
+        'type': type.name,
+        if (bootTime != null) 'bootTime': bootTime,
+        if (sdCardAvailable != null) 'sdCardAvailable': sdCardAvailable,
+      };
 
   static Future<DeviceHardware> init(PlatformDispatcher dispatcher) async {
     final deviceInfo = DeviceInfoPlugin();
@@ -54,7 +62,7 @@ class DeviceHardware {
     return DeviceHardware._(
       brand: brand,
       model: model,
-      type: deviceType ?? DeviceType.unknown,
+      type: deviceType ?? DeviceType.other,
       bootTime: bootEpochMs,
       sdCardAvailable: hasSd,
     );
@@ -74,7 +82,7 @@ class DeviceHardware {
 
   static Future<int?> _getBootTime() async {
     int? bootEpochMs;
-    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+    if (!kIsWeb && Platform.isAndroid) {
       try {
         bootEpochMs = await _ch.invokeMethod<int>('getBootEpochMs');
       } catch (e) {
