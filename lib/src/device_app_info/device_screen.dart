@@ -1,7 +1,7 @@
 import 'dart:ui' show PlatformDispatcher, Brightness, FlutterView, Size;
 import 'package:kontext_flutter_sdk/src/services/logger.dart' show Logger;
 
-enum ScreenOrientation { portrait, landscape, unknown }
+enum ScreenOrientation { portrait, landscape }
 
 class DeviceScreen {
   DeviceScreen._({
@@ -12,11 +12,19 @@ class DeviceScreen {
     required this.darkMode,
   });
 
-  final double? width;
-  final double? height;
-  final double? dpr;
-  final ScreenOrientation? orientation;
-  final bool? darkMode;
+  final double width;
+  final double height;
+  final double dpr;
+  final ScreenOrientation orientation;
+  final bool darkMode;
+
+  Map<String, dynamic> toJson() => {
+        'width': width,
+        'height': height,
+        'dpr': dpr,
+        'orientation': orientation.name,
+        'darkMode': darkMode,
+      };
 
   static Future<DeviceScreen> init(PlatformDispatcher dispatcher) async {
     final view = _primaryView(dispatcher);
@@ -26,11 +34,11 @@ class DeviceScreen {
     final isDarkMode = _isDarkMode(dispatcher);
 
     return DeviceScreen._(
-      width: physical?.width,
-      height: physical?.height,
-      dpr: dpr,
-      orientation: orientation,
-      darkMode: isDarkMode,
+      width: physical?.width ?? 0,
+      height: physical?.height ?? 0,
+      dpr: dpr ?? 0,
+      orientation: orientation ?? ScreenOrientation.portrait,
+      darkMode: isDarkMode ?? false,
     );
   }
 
@@ -50,12 +58,6 @@ class DeviceScreen {
 
     final w = physical.width;
     final h = physical.height;
-    if (w <= 0 || h <= 0) {
-      return ScreenOrientation.unknown;
-    }
-    if (w == h) {
-      return ScreenOrientation.unknown;
-    }
     return w > h ? ScreenOrientation.landscape : ScreenOrientation.portrait;
   }
 
