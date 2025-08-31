@@ -15,12 +15,19 @@ class OperationSystem {
     required this.timezone,
   });
 
-  final String? name;
-  final String? version;
-  final String? locale;
-  final String? timezone;
+  final String name;
+  final String version;
+  final String locale;
+  final String timezone;
 
   static const _ch = MethodChannel('kontext_flutter_sdk/operation_system');
+
+  Map<String, dynamic> toJson() => {
+        'name': name,
+        'version': version,
+        'locale': locale,
+        'timezone': timezone,
+      };
 
   static Future<OperationSystem> init(PlatformDispatcher dispatcher) async {
     final deviceInfo = DeviceInfoPlugin();
@@ -42,10 +49,10 @@ class OperationSystem {
     final timezone = await _getTimezone();
 
     return OperationSystem._(
-      name: os?.name,
-      version: systemVersion,
-      locale: locale,
-      timezone: timezone,
+      name: os?.name ?? '',
+      version: systemVersion ?? '',
+      locale: locale ?? '',
+      timezone: timezone ?? '',
     );
   }
 
