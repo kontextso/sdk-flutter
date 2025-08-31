@@ -34,9 +34,7 @@ public class DeviceAudioPlugin: NSObject, FlutterPlugin {
             do {
                 try session.setActive(true, options: [])
                 didActivate = true
-            } catch {
-				// Ignore
-			}
+            } catch {/** Ignore **/}
 
             let out = body(session)
 

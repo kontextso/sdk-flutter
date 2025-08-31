@@ -18,6 +18,7 @@ public class DeviceHardwarePlugin: NSObject, FlutterPlugin {
             // Apple’s 8FFB.1 explicitly disallows transmitting boot time.
             result(nil)
         case "hasRemovableSdCard":
+            // iPhones and iPads do not have removable SD cards
             result(false)
         default:
             result(FlutterMethodNotImplemented)
