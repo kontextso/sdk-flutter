@@ -40,21 +40,8 @@ class DeviceAppInfo {
   }
 
   Future<Map<String, dynamic>> toJsonFresh() async {
-    DeviceScreen screen;
-    try {
-      screen = DeviceScreen.init();
-    } catch (e) {
-      Logger.error('Failed to get screen info: $e');
-      screen = DeviceScreen.empty();
-    }
-
-    DeviceAudio audio;
-    try {
-      audio = await DeviceAudio.init();
-    } catch (e) {
-      Logger.error('Failed to get audio info: $e');
-      audio = DeviceAudio.empty();
-    }
+    final screen = DeviceScreen.init();
+    final audio = await DeviceAudio.init();
     return toJson(screen: screen, audio: audio);
   }
 
