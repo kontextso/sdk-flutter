@@ -68,18 +68,22 @@ class Api {
         .catchError((_) => DeviceAppInfo.empty());
     final deviceJson = await device.toJsonFresh();
 
+    final vendor = vendorId?.nullIfEmpty;
+    final advertising = advertisingId?.nullIfEmpty;
+    final variant = variantId?.nullIfEmpty;
+
     try {
       final result = await _client.post(
         '/preload',
         body: {
           'publisherToken': publisherToken,
-          'userId': userId,
           'conversationId': conversationId,
-          'sessionId': sessionId,
-          'messages': messages.map((message) => message.toJson()).toList(),
+          'userId': userId,
           'enabledPlacementCodes': enabledPlacementCodes,
-          'vendorId': vendorId?.nullIfEmpty,
-          'advertisingId': advertisingId?.nullIfEmpty,
+          'messages': messages.map((message) => message.toJson()).toList(),
+          if (sessionId != null) 'sessionId': sessionId,
+          if (vendor != null) 'vendorId': vendor,
+          if (advertising != null) 'advertisingId': advertising,
           'sdk': {
             'name': kSdkLabel,
             'version': kSdkVersion,
@@ -89,7 +93,7 @@ class Api {
           'device': deviceJson,
           if (regulatory != null) 'regulatory': regulatory.toJson(),
           if (character != null) 'character': character.toJson(),
-          'variantId': variantId?.nullIfEmpty,
+          if (variant != null) 'variantId': variant,
         },
       );
 
