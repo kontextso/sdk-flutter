@@ -1,3 +1,5 @@
+import 'package:kontext_flutter_sdk/src/utils/extensions.dart';
+
 /// Regulatory compliance information.
 class Regulatory {
   Regulatory({
@@ -36,13 +38,16 @@ class Regulatory {
   final String? usPrivacy;
 
   Map<String, dynamic> toJson() {
+    final consent = gdprConsent?.nullIfEmpty;
+    final gppNullIfEmpty = gpp?.nullIfEmpty;
+    final privacy = usPrivacy?.nullIfEmpty;
     return {
       if (gdpr != null) 'gdpr': gdpr,
-      if (gdprConsent != null) 'gdprConsent': gdprConsent,
+      if (consent != null) 'gdprConsent': consent,
       if (coppa != null) 'coppa': coppa,
-      if (gpp != null) 'gpp': gpp,
+      if (gppNullIfEmpty != null) 'gpp': gppNullIfEmpty,
       if (gppSid != null) 'gppSid': gppSid,
-      if (usPrivacy != null) 'usPrivacy': usPrivacy,
+      if (privacy != null) 'usPrivacy': privacy,
     };
   }
 }
