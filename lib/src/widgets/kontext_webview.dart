@@ -99,7 +99,6 @@ class KontextWebview extends StatelessWidget {
             }
 
             final messageType = postMessage['type'];
-            print('messageType: $messageType');
             final data = postMessage['data'];
 
             if (messageType is String && (data == null || data is Json)) {
