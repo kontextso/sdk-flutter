@@ -44,6 +44,46 @@ void main() {
 Make sure your project meets the Android min/compile SDK and iOS/Xcode requirements listed above.
 If you run into other issues, verify your project meets the plugin’s platform requirements: [https://inappwebview.dev/docs/intro/](https://inappwebview.dev/docs/intro/)
 
+## Configuration
+
+### 1. Character
+
+Firstly, prepare information about assistant's Character if it is relevant for this conversation.
+
+```dart
+final character = Character(
+  id: 'character_id', // Unique identifier for the character.
+  name: 'character_name', // Name of the character.
+  avatarUrl: 'https://example.com/avatar.png', // URL of the character's avatar image.
+  isNsfw: false, // <bool> Whether the character is NSFW (Not Safe For Work).
+  greeting: 'character_greeting', // A greeting message from the character.
+  persona: 'character_persona', // A description of the character's persona.
+  tags: ['tag1', 'tag2'], // Tags associated with the character.
+  additionalProperties: {'key': 'value'}, // Additional properties that can be added to the character.
+);
+```
+
+### 2. Regulatory
+
+Secondly, prepare information about regulations.
+
+```dart
+final regulatory = Regulatory(
+  // <int> Flag that indicates whether or not the request is subject to GDPR regulations (0 = No, 1 = Yes, null = Unknown).
+  gdpr: 0,
+  // Transparency and Consent Framework's Consent String data structure
+  gdprConsent: 'gdpr_consent_string',
+  // <int> Flag whether the request is subject to COPPA (0 = No, 1 = Yes, null = Unknown).
+  coppa: 0,
+  // Global Privacy Platform (GPP) consent string.
+  gpp: 'gpp_consent_string',
+  // List of the section(s) of the GPP string which should be applied for this transaction.
+  gppSid: [1, 2],
+  // Communicates signals regarding consumer privacy under US privacy regulation under CCPA and LSPA.
+  usPrivacy: 'us_privacy_string',
+);
+```
+
 ## Quick start
 
 Wrap your app (or the subtree that contains ad placements) with `AdsProvider`.
@@ -53,11 +93,16 @@ Wrap your app (or the subtree that contains ad placements) with `AdsProvider`.
 import 'package:kontext_flutter_sdk/kontext_flutter_sdk.dart';
 
 AdsProvider(
-  publisherToken: 'your_publisher_token',
-  userId: 'user_id',
-  conversationId: 'conversation_id',
-  enabledPlacementCodes: ['your_code'], // ad codes you received during onboarding
-  messages: <Message>[], // keep this in sync with your chat
+  publisherToken: 'your_publisher_token', // Your unique publisher token.
+  userId: 'user_id', // A unique string that should remain the same during the user’s lifetime.
+  conversationId: 'conversation_id', // Unique identifier of the conversation.
+  enabledPlacementCodes: ['your_code'], // A list of enabled placement codes for the ads.
+  // A list of messages between the assistant and the user. Keep this in sync with your chat.
+  messages: <Message>[],
+  character: character, // Character information prepared earlier.
+  advertisingId: 'advertising_id', // Device-specific identifier provided by the operating systems (IDFA/GAID)
+  vendorId: 'vendor_id', // Vendor-specific ID.
+  regulatory: regulatory, // Regulatory information prepared earlier.
   child: YourChatWidget(),
 )
 ```
@@ -94,10 +139,23 @@ ListView.builder(
 - Place `AdsProvider` high enough in the widget tree to cover all screens/areas that can show ads.
 - Keep the `messages` list up to date so the SDK can determine when and where to render ads.
 
+## Troubleshooting
+
+### Missing plugin warnings
+
+If you see warnings like `MissingPluginException` or errors about a plugin not being registered, try the following:
+
+```bash
+flutter clean
+flutter pub get
+```
+
+This clears cached build artifacts and ensures plugins are re-registered.
+If the problem persists, try rebuilding your app `flutter run` or restarting your IDE.
+
 ## Documentation
 
-For advanced usage, supported formats, and configuration details, see the docs:
-https://docs.kontext.so/sdk/flutter
+For more information, see the documentation: [https://docs.kontext.so/sdk/flutter](https://docs.kontext.so/sdk/flutter)
 
 ## License
 This project is licensed under the Apache License 2.0. See the [LICENSE](LICENSE) file for details.
