@@ -3,11 +3,11 @@ class Character {
   Character({
     required this.id,
     required this.name,
+    this.avatarUrl,
+    this.isNsfw,
     this.greeting,
     this.persona,
     this.tags,
-    this.avatarUrl,
-    this.isNsfw,
     this.additionalProperties,
   });
 
