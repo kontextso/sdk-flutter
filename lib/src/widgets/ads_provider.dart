@@ -30,6 +30,7 @@ class AdsProvider extends HookWidget {
     this.logLevel,
     this.iosAppStoreId,
     this.regulatory,
+    this.otherParams,
     this.onAdView,
     this.onAdClick,
     this.onAdDone,
@@ -88,6 +89,9 @@ class AdsProvider extends HookWidget {
 
   /// Regulatory compliance information.
   final Regulatory? regulatory;
+
+  /// Used to pass publisher-specific information to Kontext. Contents will be discussed with your account manager if needed.
+  final Map<String, dynamic>? otherParams;
 
   /// Callback when an ad is viewed.
   final AdCallback? onAdView;
@@ -183,6 +187,7 @@ class AdsProvider extends HookWidget {
       bids: bids.value,
       isDisabled: isDisabled,
       enabledPlacementCodes: enabledPlacementCodes,
+      otherParams: otherParams,
       readyForStreamingAssistant: readyForStreamingAssistant.value,
       readyForStreamingUser: readyForStreamingUser.value,
       lastAssistantMessageId: lastAssistantMessageId.value,

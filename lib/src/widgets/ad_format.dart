@@ -20,17 +20,16 @@ class AdFormat extends HookWidget {
     super.key,
     required this.code,
     required this.messageId,
-    this.otherParams,
   });
 
   final String code;
   final String messageId;
-  final Map<String, dynamic>? otherParams;
 
   void _postUpdateIframe(
     InAppWebViewController controller, {
     required String adServerUrl,
     required List<Message> messages,
+    Map<String, dynamic>? otherParams,
   }) {
     final payload = {
       'type': 'update-iframe',
@@ -169,11 +168,18 @@ class AdFormat extends HookWidget {
       return const SizedBox.shrink();
     }
 
+    final otherParams = adsProviderData.otherParams;
     final adServerUrl = adsProviderData.adServerUrl;
+
     final inlineUri = KontextUrlBuilder(
       baseUrl: adServerUrl,
       path: '/api/frame/$bidId',
-    ).addParam('code', code).addParam('messageId', messageId).addParam('sdk', kSdkLabel).buildUri();
+    )
+        .addParam('code', code)
+        .addParam('messageId', messageId)
+        .addParam('sdk', kSdkLabel)
+        .addParam('theme', otherParams?['theme'])
+        .buildUri();
     if (inlineUri == null) {
       return const SizedBox.shrink();
     }
@@ -205,6 +211,7 @@ class AdFormat extends HookWidget {
         webViewController.value!,
         adServerUrl: adsProviderData.adServerUrl,
         messages: adsProviderData.messages.getLastMessages(),
+        otherParams: otherParams,
       );
 
       return null;

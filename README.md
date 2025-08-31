@@ -103,6 +103,8 @@ AdsProvider(
   advertisingId: 'advertising_id', // Device-specific identifier provided by the operating systems (IDFA/GAID)
   vendorId: 'vendor_id', // Vendor-specific ID.
   regulatory: regulatory, // Regulatory information prepared earlier.
+  // Used to pass publisher-specific information to Kontext. Contents will be discussed with your account manager if needed.
+  otherParams: {'theme': 'dark'},
   child: YourChatWidget(),
 )
 ```
