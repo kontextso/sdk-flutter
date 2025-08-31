@@ -34,4 +34,15 @@ class Regulatory {
   ///
   /// https://github.com/InteractiveAdvertisingBureau/USPrivacy/blob/master/CCPA/US%20Privacy%20String.md
   final String? usPrivacy;
+
+  Map<String, dynamic> toJson() {
+    return {
+      if (gdpr != null) 'gdpr': gdpr,
+      if (gdprConsent != null) 'gdprConsent': gdprConsent,
+      if (coppa != null) 'coppa': coppa,
+      if (gpp != null) 'gpp': gpp,
+      if (gppSid != null) 'gppSid': gppSid,
+      if (usPrivacy != null) 'usPrivacy': usPrivacy,
+    };
+  }
 }

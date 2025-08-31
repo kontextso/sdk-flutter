@@ -84,14 +84,7 @@ class Api {
           'advertisingId': advertisingId?.nullIfEmpty,
           'app': device.appInfo.toJson(),
           'device': deviceJson,
-          'regulatory': {
-            'gdpr': regulatory?.gdpr,
-            'gdprConsent': regulatory?.gdprConsent?.nullIfEmpty,
-            'coppa': regulatory?.coppa,
-            'gpp': regulatory?.gpp?.nullIfEmpty,
-            'gppSid': regulatory?.gppSid?.nullIfEmpty,
-            'usPrivacy': regulatory?.usPrivacy?.nullIfEmpty,
-          },
+          if (regulatory != null) 'regulatory': regulatory.toJson(),
         },
       );
 
