@@ -42,33 +42,38 @@ class AppInfo {
       };
 
   static Future<AppInfo> init({String? iosAppStoreId}) async {
-    final appInfo = await PackageInfo.fromPlatform();
+    try {
+      final appInfo = await PackageInfo.fromPlatform();
 
-    String? appStoreUrl;
-    final appBundleId = appInfo.packageName;
-    final appVersion = '${appInfo.version}+${appInfo.buildNumber}';
+      String? appStoreUrl;
+      final appBundleId = appInfo.packageName;
+      final appVersion = '${appInfo.version}+${appInfo.buildNumber}';
 
-    if (Platform.isIOS) {
-      if (iosAppStoreId != null) {
-        appStoreUrl = 'https://apps.apple.com/app/id$iosAppStoreId';
+      if (Platform.isIOS) {
+        if (iosAppStoreId != null) {
+          appStoreUrl = 'https://apps.apple.com/app/id$iosAppStoreId';
+        }
+      } else if (Platform.isAndroid) {
+        appStoreUrl = 'https://play.google.com/store/apps/details?id=$appBundleId';
       }
-    } else if (Platform.isAndroid) {
-      appStoreUrl = 'https://play.google.com/store/apps/details?id=$appBundleId';
+
+      final installUpdate = await _getInstallAndUpdateTimes();
+      final install = installUpdate.firstInstall;
+      final lastUpdate = installUpdate.lastUpdate;
+      final processStart = await _getProcessStartTime();
+
+      return AppInfo._(
+        bundleId: appBundleId,
+        version: appVersion,
+        storeUrl: appStoreUrl,
+        firstInstallTime: install ?? 0,
+        lastUpdateTime: lastUpdate ?? 0,
+        startTime: processStart ?? 0,
+      );
+    } catch (e) {
+      Logger.error('Failed to get app info: $e');
+      return AppInfo.empty();
     }
-
-    final installUpdate = await _getInstallAndUpdateTimes();
-    final install = installUpdate.firstInstall;
-    final lastUpdate = installUpdate.lastUpdate;
-    final processStart = await _getProcessStartTime();
-
-    return AppInfo._(
-      bundleId: appBundleId,
-      version: appVersion,
-      storeUrl: appStoreUrl,
-      firstInstallTime: install ?? 0,
-      lastUpdateTime: lastUpdate ?? 0,
-      startTime: processStart ?? 0,
-    );
   }
 
   static Future<({int? firstInstall, int? lastUpdate})> _getInstallAndUpdateTimes() async {
