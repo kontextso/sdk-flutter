@@ -133,11 +133,17 @@ class AdFormat extends HookWidget {
           return;
         }
 
+        final milliseconds = data?['timeout'];
+        final timeout = (milliseconds is int && milliseconds > 0)
+            ? Duration(milliseconds: milliseconds)
+            : const Duration(seconds: 5);
+
         final modalUri = inlineUri.replacePath('/api/$component/$bidId');
         InterstitialModal.show(
           context,
           adServerUrl: adServerUrl,
           uri: modalUri,
+          initTimeout: timeout,
           onAdClick: (data) => _onAdClick(adServerUrl, adsProviderData.onAdClick, data),
         );
       case 'error-iframe':

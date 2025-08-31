@@ -17,7 +17,7 @@ class InterstitialModal {
     required String adServerUrl,
     required Uri uri,
     required void Function(Json? data) onAdClick,
-    Duration initTimeout = const Duration(seconds: 20),
+    Duration initTimeout = const Duration(seconds: 5),
   }) {
     close();
 
