@@ -6,31 +6,31 @@ import 'package:package_info_plus/package_info_plus.dart' show PackageInfo;
 
 class AppInfo {
   AppInfo._({
-    required this.appBundleId,
-    required this.appVersion,
-    required this.appStoreUrl,
+    required this.bundleId,
+    required this.version,
+    required this.storeUrl,
     required this.firstInstallTime,
     required this.lastUpdateTime,
     required this.startTime,
   });
 
-  final String? appBundleId;
-  final String? appVersion;
-  final String? appStoreUrl;
-  final int? firstInstallTime;
-  final int? lastUpdateTime;
-  final int? startTime;
+  final String bundleId;
+  final String version;
+  final String? storeUrl;
+  final int firstInstallTime;
+  final int lastUpdateTime;
+  final int startTime;
 
   static const _ch = MethodChannel('kontext_flutter_sdk/app_info');
 
   Map<String, dynamic> toJson() => {
-    'appBundleId': appBundleId,
-    'appVersion': appVersion,
-    'appStoreUrl': appStoreUrl,
-    'firstInstallTime': firstInstallTime,
-    'lastUpdateTime': lastUpdateTime,
-    'startTime': startTime,
-  };
+        'bundleId': bundleId,
+        'version': version,
+        if (storeUrl != null) 'storeUrl': storeUrl,
+        'firstInstallTime': firstInstallTime,
+        'lastUpdateTime': lastUpdateTime,
+        'startTime': startTime,
+      };
 
   static Future<AppInfo> init({String? iosAppStoreId}) async {
     final appInfo = await PackageInfo.fromPlatform();
@@ -53,12 +53,12 @@ class AppInfo {
     final processStart = await _getProcessStartTime();
 
     return AppInfo._(
-      appBundleId: appBundleId,
-      appVersion: appVersion,
-      appStoreUrl: appStoreUrl,
-      firstInstallTime: install,
-      lastUpdateTime: lastUpdate,
-      startTime: processStart,
+      bundleId: appBundleId,
+      version: appVersion,
+      storeUrl: appStoreUrl,
+      firstInstallTime: install ?? 0,
+      lastUpdateTime: lastUpdate ?? 0,
+      startTime: processStart ?? 0,
     );
   }
 
@@ -68,7 +68,7 @@ class AppInfo {
       try {
         final times = await _ch.invokeMapMethod('getInstallUpdateTimes');
         firstInstall = (times?['firstInstall'] as num?)?.toInt();
-        lastUpdate  = (times?['lastUpdate']  as num?)?.toInt();
+        lastUpdate = (times?['lastUpdate'] as num?)?.toInt();
       } catch (e) {
         Logger.error('Failed to get install and update times: $e');
       }
