@@ -1,6 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'package:kontext_flutter_sdk/src/device_app_info/device_audio.dart';
-import 'package:kontext_flutter_sdk/src/device_app_info/device_screen.dart';
 import 'package:kontext_flutter_sdk/src/models/bid.dart';
 import 'package:kontext_flutter_sdk/src/models/character.dart';
 import 'package:kontext_flutter_sdk/src/device_app_info/device_app_info.dart';
@@ -63,19 +61,10 @@ class Api {
     String? iosAppStoreId,
     Regulatory? regulatory,
   }) async {
-    DeviceAppInfo device;
-    DeviceScreen screen;
-    DeviceAudio audio;
-    try {
-      device = await (deviceInfoProvider ?? DeviceAppInfo.init)(iosAppStoreId: iosAppStoreId);
-      screen = DeviceScreen.init();
-      audio = await DeviceAudio.init();
-    } catch (e, stack) {
-      device = DeviceAppInfo.empty();
-      screen = DeviceScreen.empty();
-      audio = DeviceAudio.empty();
-      Logger.exception(e, stack);
-    }
+    final init = (deviceInfoProvider ?? DeviceAppInfo.init);
+    final device = await init(iosAppStoreId: iosAppStoreId)
+        .catchError((_) => DeviceAppInfo.empty());
+    final deviceJson = await device.toJsonFresh();
 
     try {
       final result = await _client.post(
@@ -94,7 +83,7 @@ class Api {
           'variantId': variantId?.nullIfEmpty,
           'advertisingId': advertisingId?.nullIfEmpty,
           'app': device.appInfo.toJson(),
-          'device': device.toJson(screen: screen, audio: audio),
+          'device': deviceJson,
           'regulatory': {
             'gdpr': regulatory?.gdpr,
             'gdprConsent': regulatory?.gdprConsent?.nullIfEmpty,
