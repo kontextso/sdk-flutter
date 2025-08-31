@@ -12,17 +12,17 @@ import 'package:kontext_flutter_sdk/src/utils/extensions.dart';
 void usePreloadAds(
   BuildContext context, {
   required String publisherToken,
-  required String userId,
   required String conversationId,
+  required String userId,
+  required List<String> enabledPlacementCodes,
   required List<Message> messages,
   required bool isDisabled,
-  required List<String> enabledPlacementCodes,
-  required Character? character,
   required String? vendorId,
-  required String? variantId,
   required String? advertisingId,
-  required String? iosAppStoreId,
   required Regulatory? regulatory,
+  required Character? character,
+  required String? variantId,
+  required String? iosAppStoreId,
   required ValueChanged<List<Bid>> setBids,
   required ValueChanged<bool> setReadyForStreamingAssistant,
   required ValueChanged<bool> setReadyForStreamingUser,
@@ -87,17 +87,17 @@ void usePreloadAds(
       final api = Api();
       final response = await api.preload(
         publisherToken: publisherToken,
-        userId: userId,
         conversationId: conversationId,
-        sessionId: sessionId.value,
-        messages: messages.getLastMessages(),
+        userId: userId,
         enabledPlacementCodes: enabledPlacementCodes,
-        character: character,
+        messages: messages.getLastMessages(),
+        sessionId: sessionId.value,
         vendorId: vendorId,
-        variantId: variantId,
         advertisingId: advertisingId,
-        iosAppStoreId: iosAppStoreId,
         regulatory: regulatory,
+        character: character,
+        variantId: variantId,
+        iosAppStoreId: iosAppStoreId,
       );
 
       if (cancelled || !context.mounted) return;

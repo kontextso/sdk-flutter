@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:kontext_flutter_sdk/src/models/bid.dart';
 import 'package:kontext_flutter_sdk/src/models/character.dart';
@@ -49,17 +51,17 @@ class Api {
 
   Future<PreloadResponse> preload({
     required String publisherToken,
-    required String userId,
     required String conversationId,
-    String? sessionId,
-    required List<Message> messages,
+    required String userId,
     required List<String> enabledPlacementCodes,
-    Character? character,
+    required List<Message> messages,
+    String? sessionId,
     String? vendorId,
-    String? variantId,
     String? advertisingId,
-    String? iosAppStoreId,
     Regulatory? regulatory,
+    Character? character,
+    String? variantId,
+    String? iosAppStoreId,
   }) async {
     final init = (deviceInfoProvider ?? DeviceAppInfo.init);
     final device = await init(iosAppStoreId: iosAppStoreId)
@@ -70,21 +72,24 @@ class Api {
       final result = await _client.post(
         '/preload',
         body: {
-          'sdk': kSdkLabel,
-          'sdkVersion': kSdkVersion,
           'publisherToken': publisherToken,
           'userId': userId,
           'conversationId': conversationId,
           'sessionId': sessionId,
           'messages': messages.map((message) => message.toJson()).toList(),
           'enabledPlacementCodes': enabledPlacementCodes,
-          'character': character?.toJson(),
           'vendorId': vendorId?.nullIfEmpty,
-          'variantId': variantId?.nullIfEmpty,
           'advertisingId': advertisingId?.nullIfEmpty,
+          'sdk': {
+            'name': kSdkLabel,
+            'version': kSdkVersion,
+            'platform': Platform.isAndroid ? 'android' : (Platform.isIOS ? 'ios' : 'web'),
+          },
           'app': device.appInfo.toJson(),
           'device': deviceJson,
           if (regulatory != null) 'regulatory': regulatory.toJson(),
+          if (character != null) 'character': character.toJson(),
+          'variantId': variantId?.nullIfEmpty,
         },
       );
 
