@@ -1,4 +1,6 @@
 import 'package:flutter/foundation.dart';
+import 'package:kontext_flutter_sdk/src/device_app_info/device_audio.dart';
+import 'package:kontext_flutter_sdk/src/device_app_info/device_screen.dart';
 import 'package:kontext_flutter_sdk/src/models/bid.dart';
 import 'package:kontext_flutter_sdk/src/models/character.dart';
 import 'package:kontext_flutter_sdk/src/device_app_info/device_app_info.dart';
@@ -37,7 +39,7 @@ class Api {
   static Api? _instance;
 
   @visibleForTesting
-  Future<DeviceAppInfo?> Function({String? iosAppStoreId})? deviceInfoProvider;
+  Future<DeviceAppInfo> Function({String? iosAppStoreId})? deviceInfoProvider;
 
   factory Api() {
     return _instance ??= Api._internal();
@@ -61,12 +63,18 @@ class Api {
     String? iosAppStoreId,
     Regulatory? regulatory,
   }) async {
-    DeviceAppInfo? device;
+    DeviceAppInfo device;
+    DeviceScreen screen;
+    DeviceAudio audio;
     try {
-      device = await (deviceInfoProvider ?? _getDeviceAppInfo)(iosAppStoreId: iosAppStoreId);
+      device = await (deviceInfoProvider ?? DeviceAppInfo.init)(iosAppStoreId: iosAppStoreId);
+      screen = DeviceScreen.init();
+      audio = await DeviceAudio.init();
     } catch (e, stack) {
+      device = DeviceAppInfo.empty();
+      screen = DeviceScreen.empty();
+      audio = DeviceAudio.empty();
       Logger.exception(e, stack);
-      device = null;
     }
 
     try {
@@ -79,13 +87,14 @@ class Api {
           'userId': userId,
           'conversationId': conversationId,
           'sessionId': sessionId,
-          // 'device': device,
           'messages': messages.map((message) => message.toJson()).toList(),
           'enabledPlacementCodes': enabledPlacementCodes,
           'character': character?.toJson(),
           'vendorId': vendorId?.nullIfEmpty,
           'variantId': variantId?.nullIfEmpty,
           'advertisingId': advertisingId?.nullIfEmpty,
+          'app': device.appInfo.toJson(),
+          'device': device.toJson(screen: screen, audio: audio),
           'regulatory': {
             'gdpr': regulatory?.gdpr,
             'gdprConsent': regulatory?.gdprConsent?.nullIfEmpty,
@@ -126,22 +135,6 @@ class Api {
         sessionId: null,
         bids: [],
       );
-    }
-  }
-
-  Future<DeviceAppInfo?> _getDeviceAppInfo({String? iosAppStoreId}) async {
-    try {
-      final deviceAppInfo = await DeviceAppInfo.init(iosAppStoreId: iosAppStoreId);
-      // final device = DeviceAppInfo.instance?.toJson();
-      //
-      // if (device != null) {
-      //   device['soundOn'] = await _isSoundOn();
-      // }
-
-      return deviceAppInfo;
-    } catch (e, stack) {
-      Logger.exception(e, stack);
-      return null;
     }
   }
 }

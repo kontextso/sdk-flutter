@@ -12,40 +12,40 @@ import 'package:kontext_flutter_sdk/src/services/logger.dart';
 
 class DeviceAppInfo {
   DeviceAppInfo({
-    this.appInfo,
-    this.hardware,
-    this.os,
-    this.screen,
-    this.power,
-    this.audio,
-    this.network,
+    required this.appInfo,
+    required this.os,
+    required this.hardware,
+    required this.power,
+    required this.network,
   });
 
   static DeviceAppInfo? _instance;
   static Future<DeviceAppInfo>? _loading;
 
-  final AppInfo? appInfo;
-  final DeviceHardware? hardware;
-  final OperationSystem? os;
-  final DeviceScreen? screen;
-  final DevicePower? power;
-  final DeviceAudio? audio;
-  final DeviceNetwork? network;
+  final AppInfo appInfo;
+  final OperationSystem os;
+  final DeviceHardware hardware;
+  final DevicePower power;
+  final DeviceNetwork network;
 
-  Map<String, dynamic> toJson() {
+  Map<String, dynamic> toJson({required DeviceScreen screen, required DeviceAudio audio}) {
     return {
-
+      'os': os.toJson(),
+      'hardware': hardware.toJson(),
+      'screen': screen.toJson(),
+      'power': power.toJson(),
+      'audio': audio.toJson(),
+      'network': network.toJson(),
     };
   }
 
-  static DeviceAppInfo? get instance {
-    final i = _instance;
-    if (i == null) {
-      Logger.error('DeviceAppInfo.init() must be awaited before use.');
-    }
-
-    return i;
-  }
+  factory DeviceAppInfo.empty() => DeviceAppInfo(
+        appInfo: AppInfo.empty(),
+        hardware: DeviceHardware.empty(),
+        os: OperationSystem.empty(),
+        power: DevicePower.empty(),
+        network: DeviceNetwork.empty(),
+      );
 
   static Future<DeviceAppInfo> init({String? iosAppStoreId}) async {
     if (_instance != null) {
@@ -56,33 +56,30 @@ class DeviceAppInfo {
   }
 
   static Future<DeviceAppInfo> _initInternal({String? iosAppStoreId}) async {
+    final emptyInstance = DeviceAppInfo.empty();
+
     try {
       if (kIsWeb) {
-        return _instance = DeviceAppInfo();
+        return _instance = emptyInstance;
       }
 
       final dispatcher = PlatformDispatcher.instance;
       final appInfo = await AppInfo.init(iosAppStoreId: iosAppStoreId);
       final hardware = await DeviceHardware.init(dispatcher);
       final os = await OperationSystem.init(dispatcher);
-      final screen = await DeviceScreen.init(dispatcher);
       final power = await DevicePower.init(dispatcher);
-      final audio = await DeviceAudio.init();
       final network = await DeviceNetwork.init();
-
 
       return _instance = DeviceAppInfo(
         appInfo: appInfo,
         hardware: hardware,
         os: os,
-        screen: screen,
         power: power,
-        audio: audio,
         network: network,
       );
     } catch (e, stack) {
       Logger.exception(e, stack);
-      return _instance = DeviceAppInfo();
+      return _instance = emptyInstance;
     } finally {
       _loading = null;
     }
