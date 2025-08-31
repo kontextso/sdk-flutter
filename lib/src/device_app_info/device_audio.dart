@@ -1,5 +1,6 @@
 import 'package:flutter/services.dart' show MethodChannel;
 import 'package:kontext_flutter_sdk/src/services/logger.dart' show Logger;
+import 'package:kontext_flutter_sdk/src/utils/extensions.dart';
 
 enum AudioOutputType { wired, hdmi, bluetooth, usb, other }
 
@@ -54,13 +55,7 @@ class DeviceAudio {
       return null;
     }
     return types.map((type) {
-      return switch (type) {
-        'wired' => AudioOutputType.wired,
-        'hdmi' => AudioOutputType.hdmi,
-        'bluetooth' => AudioOutputType.bluetooth,
-        'usb' => AudioOutputType.usb,
-        _ => AudioOutputType.other,
-      };
+      return AudioOutputType.values.firstWhereOrElse((t) => t.name == type) ?? AudioOutputType.other;
     }).toList();
   }
 }
