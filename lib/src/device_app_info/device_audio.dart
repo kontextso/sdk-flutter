@@ -18,6 +18,13 @@ class DeviceAudio {
 
   static const _ch = MethodChannel('kontext_flutter_sdk/device_audio');
 
+  Map<String, dynamic> toJson() => {
+        if (volume != null) 'volume': volume,
+        if (muted != null) 'muted': muted,
+        if (outputPluggedIn != null) 'outputPluggedIn': outputPluggedIn,
+        if (outputType != null) 'outputType': outputType!.map((e) => e.name).toList(),
+      };
+
   static Future<DeviceAudio> init() async {
     int? volume;
     bool? muted;
