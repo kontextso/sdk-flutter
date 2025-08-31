@@ -3,6 +3,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kontext_flutter_sdk/src/models/bid.dart';
 import 'package:kontext_flutter_sdk/src/models/character.dart';
 import 'package:kontext_flutter_sdk/src/models/message.dart';
+import 'package:kontext_flutter_sdk/src/models/regulatory.dart';
 import 'package:kontext_flutter_sdk/src/services/api.dart';
 import 'package:kontext_flutter_sdk/src/services/logger.dart';
 import 'package:kontext_flutter_sdk/src/utils/constants.dart';
@@ -11,22 +12,17 @@ import 'package:kontext_flutter_sdk/src/utils/extensions.dart';
 void usePreloadAds(
   BuildContext context, {
   required String publisherToken,
-  required String userId,
   required String conversationId,
+  required String userId,
+  required List<String> enabledPlacementCodes,
   required List<Message> messages,
   required bool isDisabled,
-  required List<String> enabledPlacementCodes,
-  required Character? character,
   required String? vendorId,
-  required String? variantId,
   required String? advertisingId,
+  required Regulatory? regulatory,
+  required Character? character,
+  required String? variantId,
   required String? iosAppStoreId,
-  required int? gdpr,
-  required String? gdprConsent,
-  required int? coppa,
-  required String? gpp,
-  required List<int>? gppSid,
-  required String? usPrivacy,
   required ValueChanged<List<Bid>> setBids,
   required ValueChanged<bool> setReadyForStreamingAssistant,
   required ValueChanged<bool> setReadyForStreamingUser,
@@ -91,22 +87,17 @@ void usePreloadAds(
       final api = Api();
       final response = await api.preload(
         publisherToken: publisherToken,
-        userId: userId,
         conversationId: conversationId,
-        sessionId: sessionId.value,
-        messages: messages.getLastMessages(),
+        userId: userId,
         enabledPlacementCodes: enabledPlacementCodes,
-        character: character,
+        messages: messages.getLastMessages(),
+        sessionId: sessionId.value,
         vendorId: vendorId,
-        variantId: variantId,
         advertisingId: advertisingId,
+        regulatory: regulatory,
+        character: character,
+        variantId: variantId,
         iosAppStoreId: iosAppStoreId,
-        gdpr: gdpr,
-        gdprConsent: gdprConsent,
-        coppa: coppa,
-        gpp: gpp,
-        gppSid: gppSid,
-        usPrivacy: usPrivacy,
       );
 
       if (cancelled || !context.mounted) return;

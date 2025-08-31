@@ -30,31 +30,28 @@ class InterstitialModal {
                 opacity: isVisible ? 1.0 : 0.0,
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeInOut,
-                child: SafeArea(
-                  child: Container(
-                    color: Colors.black,
-                    width: double.infinity,
-                    height: double.infinity,
-                    child: KontextWebview(
-                      uri: uri,
-                      allowedOrigins: [adServerUrl],
-                      onMessageReceived: (controller, messageType, data) {
-                        switch (messageType) {
-                          case 'init-component-iframe':
-                            _initTimer?.cancel();
-                            visible.value = true;
-                            break;
-                          case 'click-iframe':
-                            onAdClick(data);
-                            break;
-                          case 'close-component-iframe':
-                          case 'error-component-iframe':
-                            close();
-                            break;
-                          default:
-                        }
-                      },
-                    ),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: double.infinity,
+                  child: KontextWebview(
+                    uri: uri,
+                    allowedOrigins: [adServerUrl],
+                    onMessageReceived: (controller, messageType, data) {
+                      switch (messageType) {
+                        case 'init-component-iframe':
+                          _initTimer?.cancel();
+                          visible.value = true;
+                          break;
+                        case 'click-iframe':
+                          onAdClick(data);
+                          break;
+                        case 'close-component-iframe':
+                        case 'error-component-iframe':
+                          close();
+                          break;
+                        default:
+                      }
+                    },
                   ),
                 ),
               ),
