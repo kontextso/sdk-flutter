@@ -1,15 +1,15 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart' show MethodChannel, MissingPluginException;
 import 'package:kontext_flutter_sdk/src/models/bid.dart';
 import 'package:kontext_flutter_sdk/src/models/character.dart';
-import 'package:kontext_flutter_sdk/src/services/device_app_info.dart';
+import 'package:kontext_flutter_sdk/src/device_app_info/device_app_info.dart';
 import 'package:kontext_flutter_sdk/src/services/logger.dart';
 import 'package:kontext_flutter_sdk/src/services/http_client.dart';
 import 'package:kontext_flutter_sdk/src/models/message.dart';
+import 'package:kontext_flutter_sdk/src/models/regulatory.dart';
 import 'package:kontext_flutter_sdk/src/utils/constants.dart';
 import 'package:kontext_flutter_sdk/src/utils/extensions.dart';
-
-const MethodChannel _soundChannel = MethodChannel('kontext_flutter_sdk/device_sound');
 
 class PreloadResponse {
   const PreloadResponse({
@@ -39,7 +39,7 @@ class Api {
   static Api? _instance;
 
   @visibleForTesting
-  Future<Json?> Function({String? iosAppStoreId})? deviceInfoProvider;
+  Future<DeviceAppInfo> Function({String? iosAppStoreId})? deviceInfoProvider;
 
   factory Api() {
     return _instance ??= Api._internal();
@@ -51,56 +51,52 @@ class Api {
 
   Future<PreloadResponse> preload({
     required String publisherToken,
-    required String userId,
     required String conversationId,
-    String? sessionId,
-    required List<Message> messages,
+    required String userId,
     required List<String> enabledPlacementCodes,
-    Character? character,
+    required List<Message> messages,
+    String? sessionId,
     String? vendorId,
-    String? variantId,
     String? advertisingId,
+    Regulatory? regulatory,
+    Character? character,
+    String? variantId,
     String? iosAppStoreId,
-    int? gdpr,
-    String? gdprConsent,
-    int? coppa,
-    String? gpp,
-    List<int>? gppSid,
-    String? usPrivacy,
   }) async {
-    Json? device;
+    late final DeviceAppInfo device;
     try {
-      device = await (deviceInfoProvider ?? _getDeviceAppInfo)(iosAppStoreId: iosAppStoreId);
-    } catch (e, stack) {
-      Logger.exception(e, stack);
-      device = null;
+      device = await (deviceInfoProvider ?? DeviceAppInfo.init)(iosAppStoreId: iosAppStoreId);
+    } catch (_) {
+      device = DeviceAppInfo.empty();
     }
+    final deviceJson = await device.toJsonFresh();
+
+    final vendor = vendorId?.nullIfEmpty;
+    final advertising = advertisingId?.nullIfEmpty;
+    final variant = variantId?.nullIfEmpty;
 
     try {
       final result = await _client.post(
         '/preload',
         body: {
-          'sdk': kSdkLabel,
-          'sdkVersion': kSdkVersion,
           'publisherToken': publisherToken,
-          'userId': userId,
           'conversationId': conversationId,
-          'sessionId': sessionId,
-          'device': device,
-          'messages': messages.map((message) => message.toJson()).toList(),
+          'userId': userId,
           'enabledPlacementCodes': enabledPlacementCodes,
-          'character': character?.toJson(),
-          'vendorId': vendorId?.nullIfEmpty,
-          'variantId': variantId?.nullIfEmpty,
-          'advertisingId': advertisingId?.nullIfEmpty,
-          'regulatory': {
-            'gdpr': gdpr,
-            'gdprConsent': gdprConsent?.nullIfEmpty,
-            'coppa': coppa,
-            'gpp': gpp?.nullIfEmpty,
-            'gppSid': gppSid?.nullIfEmpty,
-            'usPrivacy': usPrivacy?.nullIfEmpty,
+          'messages': messages.map((message) => message.toJson()).toList(),
+          if (sessionId != null) 'sessionId': sessionId,
+          if (vendor != null) 'vendorId': vendor,
+          if (advertising != null) 'advertisingId': advertising,
+          'sdk': {
+            'name': kSdkLabel,
+            'version': kSdkVersion,
+            'platform': Platform.isAndroid ? 'android' : (Platform.isIOS ? 'ios' : 'web'),
           },
+          'app': device.appInfo.toJson(),
+          'device': deviceJson,
+          if (regulatory != null) 'regulatory': regulatory.toJson(),
+          if (character != null) 'character': character.toJson(),
+          if (variant != null) 'variantId': variant,
         },
       );
 
@@ -133,35 +129,6 @@ class Api {
         sessionId: null,
         bids: [],
       );
-    }
-  }
-
-  Future<Json?> _getDeviceAppInfo({String? iosAppStoreId}) async {
-    try {
-      await DeviceAppInfo.init(iosAppStoreId: iosAppStoreId);
-      final device = DeviceAppInfo.instance?.toJson();
-
-      if (device != null) {
-        device['soundOn'] = await _isSoundOn();
-      }
-
-      return device;
-    } catch (e, stack) {
-      Logger.exception(e, stack);
-      return null;
-    }
-  }
-
-  Future<bool> _isSoundOn() async {
-    try {
-      final isSoundOn = await _soundChannel.invokeMethod<bool>('isSoundOn');
-      return isSoundOn ?? true;
-    } on MissingPluginException catch (e) {
-      Logger.info(e.toString());
-      return true;
-    } catch (e, stack) {
-      Logger.exception(e, stack);
-      return true;
     }
   }
 }

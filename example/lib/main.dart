@@ -110,6 +110,7 @@ class _HomePageState extends State<HomePage> {
         conversationId: conversationId,
         messages: _messages,
         enabledPlacementCodes: const [kPlacementCode],
+        otherParams: {'theme': theme},
         logLevel: LogLevel.info,
         child: Column(
           children: [
@@ -145,7 +146,6 @@ class _HomePageState extends State<HomePage> {
                         InlineAd(
                           code: kPlacementCode,
                           messageId: msg.id,
-                          otherParams: {'theme': theme},
                         ),
                       ],
                     ),

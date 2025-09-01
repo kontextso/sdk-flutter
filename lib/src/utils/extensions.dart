@@ -1,3 +1,4 @@
+import 'package:kontext_flutter_sdk/src/services/logger.dart';
 import 'package:kontext_flutter_sdk/src/utils/helper_methods.dart';
 import 'package:kontext_flutter_sdk/src/models/message.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -48,14 +49,21 @@ extension StringExtension on String {
   }
 }
 
-extension StringUrlExtension on String {
-  Future<bool> openUrl({bool useExternalApplication = true}) async {
-    final url = Uri.tryParse(this);
-    if (url != null) {
-      await launchUrl(url, mode: useExternalApplication ? LaunchMode.externalApplication : LaunchMode.platformDefault);
-      return true;
+extension UriExtension on Uri {
+  Future<bool> openUri({bool useExternalApplication = true}) async {
+    try {
+      return await launchUrl(
+        this,
+        mode: useExternalApplication ? LaunchMode.externalApplication : LaunchMode.platformDefault,
+      );
+    } catch (e, stack) {
+      Logger.exception(e, stack);
+      return false;
     }
+  }
 
-    return false;
+  Uri replacePath(String newPath) {
+    final params = queryParameters;
+    return replace(path: newPath, queryParameters: params.isEmpty ? null : params);
   }
 }

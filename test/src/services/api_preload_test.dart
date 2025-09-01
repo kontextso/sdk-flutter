@@ -2,6 +2,7 @@ import 'dart:convert' show jsonDecode;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kontext_flutter_sdk/src/models/bid.dart' show AdDisplayPosition;
+import 'package:kontext_flutter_sdk/src/models/regulatory.dart';
 import 'package:kontext_flutter_sdk/src/services/api.dart';
 import 'package:kontext_flutter_sdk/src/services/http_client.dart';
 import 'package:mocktail/mocktail.dart';
@@ -158,10 +159,13 @@ void main() {
       vendorId: '',
       variantId: '',
       advertisingId: '',
-      gdprConsent: '',
-      usPrivacy: '',
-      gpp: '',
-      gppSid: [],
+      regulatory: Regulatory(
+        gdpr: 1,
+        gdprConsent: '',
+        usPrivacy: '',
+        gpp: '',
+        gppSid: [],
+      ),
     );
 
     verify(() => mock.post(
@@ -172,28 +176,26 @@ void main() {
             that: predicate<String>((b) {
               final body = jsonDecode(b) as Json;
               final regulatory = body['regulatory'] as Json;
-              return body['vendorId'] == null &&
-                  body['variantId'] == null &&
-                  body['advertisingId'] == null &&
-                  regulatory['gdprConsent'] == null &&
-                  regulatory['usPrivacy'] == null &&
-                  regulatory['gpp'] == null &&
-                  regulatory['gppSid'] == null;
+              return !body.containsKey('vendorId') &&
+                  !body.containsKey('variantId') &&
+                  !body.containsKey('advertisingId') &&
+                  regulatory['gdpr'] == 1 &&
+                  !regulatory.containsKey('gdprConsent') &&
+                  !regulatory.containsKey('usPrivacy') &&
+                  !regulatory.containsKey('gpp') &&
+                  regulatory['gppSid'] is List;
             }),
           ),
         )).called(1);
   });
 
-  test('device provider throws exception', () async {
+  test('device provider throws -> falls back to empty device payload', () async {
     when(() => mock.post(
-          any(),
-          headers: any(named: 'headers'),
-          body: any(named: 'body'),
-        )).thenAnswer((_) async {
-      return http.Response(
-        '{"sessionId": "123", "bids": []}',
-        200,
-      );
+      any(),
+      headers: any(named: 'headers'),
+      body: any(named: 'body'),
+    )).thenAnswer((_) async {
+      return http.Response('{"sessionId": "123", "bids": []}', 200);
     });
 
     api.deviceInfoProvider = ({String? iosAppStoreId}) async {
@@ -209,15 +211,26 @@ void main() {
     );
 
     verify(() => mock.post(
-          Uri.parse('https://api.test/preload'),
-          headers: {'Content-Type': 'application/json'},
-          body: any(
-            named: 'body',
-            that: predicate<String>((b) {
-              final body = jsonDecode(b) as Json;
-              return body.containsKey('device') && body['device'] == null;
-            }),
-          ),
-        )).called(1);
+      Uri.parse('https://api.test/preload'),
+      headers: {'Content-Type': 'application/json'},
+      body: any(
+        named: 'body',
+        that: predicate<String>((raw) {
+          final body = jsonDecode(raw) as Map<String, dynamic>;
+          final device = body['device'];
+          if (device is! Map<String, dynamic>) return false;
+
+          const requiredKeys = {
+            'os',
+            'hardware',
+            'screen',
+            'power',
+            'audio',
+            'network',
+          };
+          return requiredKeys.every(device.containsKey);
+        }),
+      ),
+    )).called(1);
   });
 }

@@ -1,21 +1,22 @@
 Pod::Spec.new do |s|
   s.name             = 'kontext_flutter_sdk'
-  s.version          = '0.0.1'
-  s.summary          = 'Kontext Flutter SDK plugin shim for sound status.'
+  s.version          = '1.0.5'
+  s.summary          = 'Kontext Flutter SDK plugin.'
   s.description      = <<-DESC
-Best-effort "soundOn"
+Kontext Flutter SDK: sound status, app info, hardware, power, network, etc.
   DESC
   s.homepage         = 'https://www.kontext.so/'
   s.license          = { :file => '../LICENSE' }
   s.author           = { 'Kontext' => 'support@kontext.so' }
   s.source           = { :path => '.' }
 
-  s.source_files     = 'Classes/**/*'
-  s.dependency       'Flutter'
-  s.platform         = :ios, '12.0'
-  s.swift_version    = '5.0'
+  s.source_files        = 'Classes/**/*'
+  s.public_header_files = 'Classes/**/*.h'
+  s.dependency          'Flutter'
+  s.platform            = :ios, '12.0'
+  s.swift_version       = '5.0'
 
-  s.frameworks       = 'AVFoundation'
+  s.frameworks = 'AVFoundation', 'SystemConfiguration', 'CoreTelephony', 'WebKit'
 
   s.resources = ['PrivacyInfo.xcprivacy']
 
