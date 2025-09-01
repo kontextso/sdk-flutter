@@ -1,8 +1,15 @@
 # Changelog
 
+## 1.0.5
+
+* Added support for interstitial ads.
+* Added `Regulatory` object to `AdsProvider`.
+* Added new parameters to preload API request body.
+* Updated README.
+
 ## 1.0.4
 
-* Removed assertions for `gdpr` and `coppa` parameters
+* Removed assertions for `gdpr` and `coppa` parameters.
 
 ## 1.0.3
 
