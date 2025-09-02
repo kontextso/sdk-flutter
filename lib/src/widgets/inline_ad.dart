@@ -20,16 +20,25 @@ class InlineAd extends StatefulWidget {
 }
 
 class InlineAdState extends State<InlineAd> with AutomaticKeepAliveClientMixin {
+  bool _keepAlive = false;
+
   @override
-  bool get wantKeepAlive => true;
+  bool get wantKeepAlive => _keepAlive;
+
+  void _setKeepAlive(bool value) {
+    if (_keepAlive == value) return;
+
+    setState(() => _keepAlive = value);
+    updateKeepAlive();
+  }
 
   @override
   Widget build(BuildContext context) {
     super.build(context);
-
     return AdFormat(
       code: widget.code,
       messageId: widget.messageId,
+      onActiveChanged: _setKeepAlive,
     );
   }
 }
