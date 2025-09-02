@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.6
+
+* Enhanced InlineAd and AdFormat to manage active state and keep-alive behavior.
+* Refactored ad preloading logic to prevent multiple concurrent requests.
+* Updated README.
+
 ## 1.0.5
 
 * Added support for interstitial ads.
