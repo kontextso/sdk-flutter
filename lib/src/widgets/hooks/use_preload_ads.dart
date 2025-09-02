@@ -64,76 +64,91 @@ void usePreloadAds(
     return null;
   }, [sessionId.value, publisherToken, userId, conversationId, character, vendorId, variantId, advertisingId]);
 
+  final loading = useRef<bool>(false);
+
   useEffect(() {
     if (!hasMessages) return null;
 
     final isNewUserMessage = userMessageCount > prevUserMessageCount.value;
-    prevUserMessageCount.value = userMessageCount;
 
-    if (!isNewUserMessage) {
+    if (loading.value) {
+      if (isNewUserMessage) {
+        // Acknowledge the arrival but do not schedule another preload
+        prevUserMessageCount.value = userMessageCount;
+      }
+      // Drop if a preload is already running
       return null;
     }
+
+    if (!isNewUserMessage) return null;
+
+    prevUserMessageCount.value = userMessageCount;
 
     setBids([]);
     setReadyForStreamingAssistant(false);
     setReadyForStreamingUser(false);
 
-    bool cancelled = false;
-
     Future<void> preload() async {
-      if (isDisabled || cancelled || sessionDisabled.value) return;
+      if (isDisabled || sessionDisabled.value) return;
 
       Logger.log('Preload ads started');
-      final api = Api();
-      final response = await api.preload(
-        publisherToken: publisherToken,
-        conversationId: conversationId,
-        userId: userId,
-        enabledPlacementCodes: enabledPlacementCodes,
-        messages: messages.getLastMessages(),
-        sessionId: sessionId.value,
-        vendorId: vendorId,
-        advertisingId: advertisingId,
-        regulatory: regulatory,
-        character: character,
-        variantId: variantId,
-        iosAppStoreId: iosAppStoreId,
-      );
+      loading.value = true;
 
-      if (cancelled || !context.mounted) return;
+      try {
+        final api = Api();
+        final response = await api.preload(
+          publisherToken: publisherToken,
+          conversationId: conversationId,
+          userId: userId,
+          enabledPlacementCodes: enabledPlacementCodes,
+          messages: messages.getLastMessages(),
+          sessionId: sessionId.value,
+          vendorId: vendorId,
+          advertisingId: advertisingId,
+          regulatory: regulatory,
+          character: character,
+          variantId: variantId,
+          iosAppStoreId: iosAppStoreId,
+        );
 
-      if (response.statusCode == 204) {
-        Logger.log('Preload ads finished (204)');
-        return;
-      }
+        if (!context.mounted) return;
 
-      if (response.error != null || response.errorCode != null || response.sessionId == null) {
-        if (response.permanentError == true) {
-          // Geo disabled or other reason, ads are permanently disabled
-          sessionDisabled.value = true;
-          Logger.info('Session is disabled. Reason: Error=${response.error}, ErrorCode=${response.errorCode}');
+        if (isDisabled || sessionDisabled.value) {
+          Logger.log('Preload ads dropped (disabled mid-flight)');
           return;
         }
-        Logger.info('Ad generation skipped. Reason: Error=${response.error}, ErrorCode=${response.errorCode}');
-        return;
+
+        if (response.statusCode == 204) {
+          Logger.log('Preload ads finished (204)');
+          return;
+        }
+
+        if (response.error != null || response.errorCode != null || response.sessionId == null) {
+          if (response.permanentError == true) {
+            // Geo disabled or other reason, ads are permanently disabled
+            sessionDisabled.value = true;
+            Logger.info('Session is disabled. Reason: Error=${response.error}, ErrorCode=${response.errorCode}');
+            return;
+          }
+          Logger.info('Ad generation skipped. Reason: Error=${response.error}, ErrorCode=${response.errorCode}');
+          return;
+        }
+
+        if (response.remoteLogLevel != null) {
+          Logger.setRemoteLogLevel(response.remoteLogLevel!);
+        }
+
+        sessionId.value = response.sessionId;
+
+        setBids([...response.bids]);
+        setReadyForStreamingUser(true);
+        Logger.log('Preload Ads finished');
+      } finally {
+        loading.value = false;
       }
-
-      if (response.remoteLogLevel != null) {
-        Logger.setRemoteLogLevel(response.remoteLogLevel!);
-      }
-
-      sessionId.value = response.sessionId;
-
-      setBids([...response.bids]);
-      setReadyForStreamingUser(true);
-
-      Logger.log('Preload Ads finished');
     }
 
     preload();
-
-    return () {
-      cancelled = true;
-    };
-  }, [userMessageCount, hasMessages]);
+    return null;
+  }, [userMessageCount, hasMessages, isDisabled]);
 }

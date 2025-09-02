@@ -20,10 +20,12 @@ class AdFormat extends HookWidget {
     super.key,
     required this.code,
     required this.messageId,
+    required this.onActiveChanged,
   });
 
   final String code;
   final String messageId;
+  final ValueChanged<bool> onActiveChanged;
 
   void _postUpdateIframe(
     InAppWebViewController controller, {
@@ -154,19 +156,24 @@ class AdFormat extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    final adsProviderData = AdsProviderData.of(context);
-    if (adsProviderData == null) {
-      return const SizedBox.shrink();
-    }
+    void setActive(bool value) => WidgetsBinding.instance.addPostFrameCallback((_) => onActiveChanged(value));
 
-    if (adsProviderData.isDisabled) {
+    final adsProviderData = AdsProviderData.of(context);
+    if (adsProviderData == null || adsProviderData.isDisabled) {
+      setActive(false);
       return const SizedBox.shrink();
     }
 
     final bidId = selectBid(adsProviderData, code: code, messageId: messageId)?.id;
     if (bidId == null) {
+      setActive(false);
       return const SizedBox.shrink();
     }
+
+    useEffect(() {
+      setActive(true);
+      return () => setActive(false);
+    }, const []);
 
     final otherParams = adsProviderData.otherParams;
     final adServerUrl = adsProviderData.adServerUrl;
@@ -181,6 +188,7 @@ class AdFormat extends HookWidget {
         .addParam('theme', otherParams?['theme'])
         .buildUri();
     if (inlineUri == null) {
+      setActive(false);
       return const SizedBox.shrink();
     }
 
@@ -223,14 +231,17 @@ class AdFormat extends HookWidget {
       height.value = 0.0;
       webViewController.value = null;
       adsProviderData.resetAll();
+      onActiveChanged.call(false);
     }
 
     return Offstage(
       offstage: !iframeLoaded.value || !showIframe.value,
-      child: SizedBox(
+      child: Container(
         height: height.value,
         width: double.infinity,
+        color: Colors.transparent,
         child: KontextWebview(
+          key: ValueKey('ad-$messageId-$bidId'), // Force rebuild on bidId or messageId change
           uri: inlineUri,
           allowedOrigins: [adServerUrl],
           onMessageReceived: (controller, messageType, data) {
