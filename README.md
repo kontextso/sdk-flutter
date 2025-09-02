@@ -136,6 +136,10 @@ ListView.builder(
 )
 ```
 
+> 💡 **Note:** `InlineAd` does not always display an ad — whether an ad is shown depends on the context of the ongoing conversation.
+> If there is no ad to display, `InlineAd` automatically returns a `const SizedBox.shrink()`, so it won’t take up any extra space in your layout.
+
+
 ## Integration notes
 
 - Place `AdsProvider` high enough in the widget tree to cover all screens/areas that can show ads.
