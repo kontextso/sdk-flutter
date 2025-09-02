@@ -227,9 +227,10 @@ class AdFormat extends HookWidget {
 
     return Offstage(
       offstage: !iframeLoaded.value || !showIframe.value,
-      child: SizedBox(
+      child: Container(
         height: height.value,
         width: double.infinity,
+        color: Colors.transparent,
         child: KontextWebview(
           uri: inlineUri,
           allowedOrigins: [adServerUrl],

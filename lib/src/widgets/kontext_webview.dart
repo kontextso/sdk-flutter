@@ -75,6 +75,7 @@ class KontextWebview extends StatelessWidget {
       initialUrlRequest: URLRequest(url: WebUri.uri(uri)),
       initialUserScripts: UnmodifiableListView([_earlyBridge]),
       initialSettings: InAppWebViewSettings(
+        transparentBackground: true,
         mixedContentMode: MixedContentMode.MIXED_CONTENT_ALWAYS_ALLOW,
         useShouldOverrideUrlLoading: true,
         mediaPlaybackRequiresUserGesture: false,
