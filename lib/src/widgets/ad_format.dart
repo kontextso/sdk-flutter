@@ -1,3 +1,4 @@
+import 'dart:async' show Timer;
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -26,6 +27,78 @@ class AdFormat extends HookWidget {
   final String code;
   final String messageId;
   final ValueChanged<bool> onActiveChanged;
+
+  Rect _visibleWindowRect(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    final size = mediaQuery.size;
+    final top = mediaQuery.padding.top; // status bar / notch
+    final left = mediaQuery.padding.left;
+    final right = mediaQuery.padding.right;
+    final bottomInset = mediaQuery.viewInsets.bottom; // keyboard
+
+    return Rect.fromLTWH(
+      left,
+      top,
+      size.width - left - right,
+      size.height - top - bottomInset,
+    );
+  }
+
+  Rect? _slotRectInWindow(GlobalKey key) {
+    final currentContext = key.currentContext;
+    if (currentContext == null) return null;
+
+    final box = currentContext.findRenderObject() as RenderBox?;
+    if (box == null || !box.attached || !box.hasSize) return null;
+
+    final topLeft = box.localToGlobal(Offset.zero);
+    final size = box.size;
+
+    return Rect.fromLTWH(topLeft.dx, topLeft.dy, size.width, size.height);
+  }
+
+  void _postDimensions({
+    required BuildContext context,
+    required GlobalKey key,
+    InAppWebViewController? controller,
+    required String adServerUrl,
+    required bool isNullDimensions,
+    required void Function(bool isNull) setIsNullDimensions,
+  }) {
+    if (!context.mounted) return;
+
+    final slot = _slotRectInWindow(key);
+    if (slot == null || controller == null) return;
+
+    final viewport = _visibleWindowRect(context);
+
+    final containerWidth = slot.width.nullIfNaN;
+    final containerHeight = slot.height.nullIfNaN;
+    final containerX = slot.left.nullIfNaN;
+    final containerY = slot.top.nullIfNaN;
+
+    final isAnyNullDimension = containerWidth == null || containerHeight == null || containerX == null || containerY == null;
+    // If first time any dimension is null, we set the flag to avoid further posts
+    setIsNullDimensions(isAnyNullDimension);
+
+    if (isNullDimensions) return;
+
+    final payload = {
+      'type': 'update-dimensions-iframe',
+      'data': {
+        'windowWidth': viewport.width.nullIfNaN,
+        'windowHeight': viewport.height.nullIfNaN,
+        'containerWidth': slot.width.nullIfNaN,
+        'containerHeight': slot.height.nullIfNaN,
+        'containerX': slot.left.nullIfNaN,
+        'containerY': slot.top.nullIfNaN,
+      },
+    };
+
+    controller.evaluateJavascript(source: '''
+      window.postMessage(${jsonEncode(payload)}, '$adServerUrl');
+    ''');
+  }
 
   void _postUpdateIframe(
     InAppWebViewController controller, {
@@ -160,6 +233,14 @@ class AdFormat extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
+    final slotKey = useMemoized(() => GlobalKey(), const []);
+
+    final ticker = useRef<Timer?>(null);
+    void cancelTimer() {
+      ticker.value?.cancel();
+      ticker.value = null;
+    }
+
     void setActive(bool active) => WidgetsBinding.instance.addPostFrameCallback((_) {
           onActiveChanged(active);
         });
@@ -220,6 +301,38 @@ class AdFormat extends HookWidget {
 
     final webViewController = useRef<InAppWebViewController?>(null);
 
+    final isNullDimensions = useRef(false);
+    useEffect(() {
+      void postDimensions() => _postDimensions(
+            context: context,
+            controller: webViewController.value,
+            key: slotKey,
+            adServerUrl: adServerUrl,
+            isNullDimensions: isNullDimensions.value,
+            setIsNullDimensions: (isNull) => isNullDimensions.value = isNull,
+          );
+      final shouldRun = iframeLoaded.value && showIframe.value;
+      if (shouldRun && ticker.value == null) {
+        // First call immediately without waiting for the first tick
+        WidgetsBinding.instance.addPostFrameCallback((_) => postDimensions());
+        ticker.value = Timer.periodic(
+          const Duration(milliseconds: 200),
+          (_) => postDimensions(),
+        );
+      } else if (!shouldRun && ticker.value != null) {
+        cancelTimer();
+      }
+      return null;
+    }, [iframeLoaded.value, showIframe.value]);
+
+    useEffect(() {
+      return () {
+        if (ticker.value != null) {
+          cancelTimer();
+        }
+      };
+    }, const []);
+
     final otherParamsHash = otherParams?.deepHash;
     useEffect(() {
       if (!iframeLoaded.value || webViewController.value == null) {
@@ -248,6 +361,7 @@ class AdFormat extends HookWidget {
     return Offstage(
       offstage: !iframeLoaded.value || !showIframe.value,
       child: Container(
+        key: slotKey,
         height: height.value,
         width: double.infinity,
         color: Colors.transparent,
