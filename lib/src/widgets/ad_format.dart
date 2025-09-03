@@ -89,6 +89,7 @@ class AdFormat extends HookWidget {
   void _handleWebViewCreated(
     BuildContext context, {
     required String messageType,
+    required bool Function() disposed,
     Json? data,
     required String adServerUrl,
     required Uri inlineUri,
@@ -122,6 +123,8 @@ class AdFormat extends HookWidget {
         _onAdClick(adServerUrl, adsProviderData.onAdClick, data);
         break;
       case 'ad-done-iframe':
+        if (disposed()) return;
+
         // To ensure the ad is fully processed
         Future.delayed(const Duration(milliseconds: 300), () {
           _handleAdCallback(adsProviderData.onAdDone, data);
@@ -147,6 +150,7 @@ class AdFormat extends HookWidget {
           initTimeout: timeout,
           onAdClick: (data) => _onAdClick(adServerUrl, adsProviderData.onAdClick, data),
         );
+        break;
       case 'error-iframe':
         resetIframe();
         break;
@@ -156,41 +160,48 @@ class AdFormat extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    void setActive(bool value) => WidgetsBinding.instance.addPostFrameCallback((_) => onActiveChanged(value));
+    void setActive(bool active) => WidgetsBinding.instance.addPostFrameCallback((_) {
+          onActiveChanged(active);
+        });
 
     final adsProviderData = AdsProviderData.of(context);
-    if (adsProviderData == null || adsProviderData.isDisabled) {
-      setActive(false);
-      return const SizedBox.shrink();
+    final disabled = adsProviderData == null || adsProviderData.isDisabled;
+
+    final bidId = !disabled ? selectBid(adsProviderData, code: code, messageId: messageId)?.id : null;
+
+    Uri? inlineUri;
+    if (!disabled && bidId != null) {
+      inlineUri = KontextUrlBuilder(
+        baseUrl: adsProviderData.adServerUrl,
+        path: '/api/frame/$bidId',
+      )
+          .addParam('code', code)
+          .addParam('messageId', messageId)
+          .addParam('sdk', kSdkLabel)
+          .addParam('theme', adsProviderData.otherParams?['theme'])
+          .buildUri();
     }
 
-    final bidId = selectBid(adsProviderData, code: code, messageId: messageId)?.id;
-    if (bidId == null) {
-      setActive(false);
-      return const SizedBox.shrink();
-    }
+    final isActive = !disabled && bidId != null && inlineUri != null;
 
     useEffect(() {
-      setActive(true);
+      setActive(isActive);
+      return null;
+    }, [isActive]);
+
+    if (!isActive) return const SizedBox.shrink();
+
+    final adServerUrl = adsProviderData.adServerUrl;
+    final otherParams = adsProviderData.otherParams;
+
+    useEffect(() {
       return () => setActive(false);
     }, const []);
 
-    final otherParams = adsProviderData.otherParams;
-    final adServerUrl = adsProviderData.adServerUrl;
-
-    final inlineUri = KontextUrlBuilder(
-      baseUrl: adServerUrl,
-      path: '/api/frame/$bidId',
-    )
-        .addParam('code', code)
-        .addParam('messageId', messageId)
-        .addParam('sdk', kSdkLabel)
-        .addParam('theme', otherParams?['theme'])
-        .buildUri();
-    if (inlineUri == null) {
-      setActive(false);
-      return const SizedBox.shrink();
-    }
+    final disposed = useRef(false);
+    useEffect(() {
+      return () => disposed.value = true;
+    }, const []);
 
     final iframeLoaded = useState(false);
     final showIframe = useState(false);
@@ -231,7 +242,7 @@ class AdFormat extends HookWidget {
       height.value = 0.0;
       webViewController.value = null;
       adsProviderData.resetAll();
-      onActiveChanged.call(false);
+      setActive(false);
     }
 
     return Offstage(
@@ -249,9 +260,10 @@ class AdFormat extends HookWidget {
             _handleWebViewCreated(
               context,
               messageType: messageType,
+              disposed: () => disposed.value,
               data: data,
               adServerUrl: adServerUrl,
-              inlineUri: inlineUri,
+              inlineUri: inlineUri!,
               bidId: bidId,
               iframeLoaded: iframeLoaded,
               showIframe: showIframe,
