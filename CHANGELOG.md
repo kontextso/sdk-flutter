@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.7
+
+* Fixed `setState() called after dispose()` issue in `InlineAd` widget.
+* Periodically report ad dimensions to the server.
+
 ## 1.0.6
 
 * Enhanced InlineAd and AdFormat to manage active state and keep-alive behavior.

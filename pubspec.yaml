@@ -1,6 +1,6 @@
 name: kontext_flutter_sdk
 description: Flutter SDK for integrating Kontext.so ads. Monetize text-based & AI apps like chatbots, search or messaging with unique, native ad formats.
-version: 1.0.6
+version: 1.0.7
 homepage: https://www.kontext.so/publishers
 repository: https://github.com/kontextso/sdk-flutter
 issue_tracker: https://github.com/kontextso/sdk-flutter/issues
