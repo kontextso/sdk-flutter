@@ -67,3 +67,7 @@ extension UriExtension on Uri {
     return replace(path: newPath, queryParameters: params.isEmpty ? null : params);
   }
 }
+
+extension DoubleExtension on double {
+  double? get nullIfNaN => isNaN ? null : this;
+}

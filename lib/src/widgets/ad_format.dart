@@ -1,3 +1,4 @@
+import 'dart:async' show Timer;
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -26,6 +27,79 @@ class AdFormat extends HookWidget {
   final String code;
   final String messageId;
   final ValueChanged<bool> onActiveChanged;
+
+  Rect _visibleWindowRect(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    final size = mediaQuery.size;
+    final top = mediaQuery.padding.top; // status bar / notch
+    final left = mediaQuery.padding.left;
+    final right = mediaQuery.padding.right;
+    final bottomInset = mediaQuery.viewInsets.bottom; // keyboard
+
+    return Rect.fromLTWH(
+      left,
+      top,
+      size.width - left - right,
+      size.height - top - bottomInset,
+    );
+  }
+
+  Rect? _slotRectInWindow(GlobalKey key) {
+    final currentContext = key.currentContext;
+    if (currentContext == null) return null;
+
+    final box = currentContext.findRenderObject() as RenderBox?;
+    if (box == null || !box.attached || !box.hasSize) return null;
+
+    final topLeft = box.localToGlobal(Offset.zero);
+    final size = box.size;
+
+    return Rect.fromLTWH(topLeft.dx, topLeft.dy, size.width, size.height);
+  }
+
+  void _postDimensions({
+    required BuildContext context,
+    required GlobalKey key,
+    InAppWebViewController? controller,
+    required String adServerUrl,
+    required bool Function() disposed,
+    required bool isNullDimensions,
+    required void Function(bool isNull) setIsNullDimensions,
+  }) {
+    if (disposed()) return;
+
+    final slot = _slotRectInWindow(key);
+    if (slot == null || controller == null) return;
+
+    final viewport = _visibleWindowRect(context);
+
+    final containerWidth = slot.width.nullIfNaN;
+    final containerHeight = slot.height.nullIfNaN;
+    final containerX = slot.left.nullIfNaN;
+    final containerY = slot.top.nullIfNaN;
+
+    final isAnyNullDimension = containerWidth == null || containerHeight == null || containerX == null || containerY == null;
+    // If first time any dimension is null, we set the flag to avoid further posts
+    setIsNullDimensions(isAnyNullDimension);
+
+    if (isNullDimensions) return;
+
+    final payload = {
+      'type': 'update-dimensions-iframe',
+      'data': {
+        'windowWidth': viewport.width.nullIfNaN,
+        'windowHeight': viewport.height.nullIfNaN,
+        'containerWidth': slot.width.nullIfNaN,
+        'containerHeight': slot.height.nullIfNaN,
+        'containerX': slot.left.nullIfNaN,
+        'containerY': slot.top.nullIfNaN,
+      },
+    };
+
+    controller.evaluateJavascript(source: '''
+      window.postMessage(${jsonEncode(payload)}, '$adServerUrl');
+    ''');
+  }
 
   void _postUpdateIframe(
     InAppWebViewController controller, {
@@ -89,6 +163,7 @@ class AdFormat extends HookWidget {
   void _handleWebViewCreated(
     BuildContext context, {
     required String messageType,
+    required bool Function() disposed,
     Json? data,
     required String adServerUrl,
     required Uri inlineUri,
@@ -122,6 +197,8 @@ class AdFormat extends HookWidget {
         _onAdClick(adServerUrl, adsProviderData.onAdClick, data);
         break;
       case 'ad-done-iframe':
+        if (disposed()) return;
+
         // To ensure the ad is fully processed
         Future.delayed(const Duration(milliseconds: 300), () {
           _handleAdCallback(adsProviderData.onAdDone, data);
@@ -147,6 +224,7 @@ class AdFormat extends HookWidget {
           initTimeout: timeout,
           onAdClick: (data) => _onAdClick(adServerUrl, adsProviderData.onAdClick, data),
         );
+        break;
       case 'error-iframe':
         resetIframe();
         break;
@@ -156,41 +234,56 @@ class AdFormat extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    void setActive(bool value) => WidgetsBinding.instance.addPostFrameCallback((_) => onActiveChanged(value));
+    final slotKey = useMemoized(() => GlobalKey(), const []);
+
+    final ticker = useRef<Timer?>(null);
+    void cancelTimer() {
+      ticker.value?.cancel();
+      ticker.value = null;
+    }
+
+    void setActive(bool active) => WidgetsBinding.instance.addPostFrameCallback((_) {
+          onActiveChanged(active);
+        });
 
     final adsProviderData = AdsProviderData.of(context);
-    if (adsProviderData == null || adsProviderData.isDisabled) {
-      setActive(false);
-      return const SizedBox.shrink();
+    final disabled = adsProviderData == null || adsProviderData.isDisabled;
+
+    final bidId = !disabled ? selectBid(adsProviderData, code: code, messageId: messageId)?.id : null;
+
+    Uri? inlineUri;
+    if (!disabled && bidId != null) {
+      inlineUri = KontextUrlBuilder(
+        baseUrl: adsProviderData.adServerUrl,
+        path: '/api/frame/$bidId',
+      )
+          .addParam('code', code)
+          .addParam('messageId', messageId)
+          .addParam('sdk', kSdkLabel)
+          .addParam('theme', adsProviderData.otherParams?['theme'])
+          .buildUri();
     }
 
-    final bidId = selectBid(adsProviderData, code: code, messageId: messageId)?.id;
-    if (bidId == null) {
-      setActive(false);
-      return const SizedBox.shrink();
-    }
+    final isActive = !disabled && bidId != null && inlineUri != null;
 
     useEffect(() {
-      setActive(true);
+      setActive(isActive);
+      return null;
+    }, [isActive]);
+
+    if (!isActive) return const SizedBox.shrink();
+
+    final adServerUrl = adsProviderData.adServerUrl;
+    final otherParams = adsProviderData.otherParams;
+
+    useEffect(() {
       return () => setActive(false);
     }, const []);
 
-    final otherParams = adsProviderData.otherParams;
-    final adServerUrl = adsProviderData.adServerUrl;
-
-    final inlineUri = KontextUrlBuilder(
-      baseUrl: adServerUrl,
-      path: '/api/frame/$bidId',
-    )
-        .addParam('code', code)
-        .addParam('messageId', messageId)
-        .addParam('sdk', kSdkLabel)
-        .addParam('theme', otherParams?['theme'])
-        .buildUri();
-    if (inlineUri == null) {
-      setActive(false);
-      return const SizedBox.shrink();
-    }
+    final disposed = useRef(false);
+    useEffect(() {
+      return () => disposed.value = true;
+    }, const []);
 
     final iframeLoaded = useState(false);
     final showIframe = useState(false);
@@ -208,6 +301,39 @@ class AdFormat extends HookWidget {
     }, [showIframe.value]);
 
     final webViewController = useRef<InAppWebViewController?>(null);
+
+    final isNullDimensions = useRef(false);
+    useEffect(() {
+      void postDimensions() => _postDimensions(
+            context: context,
+            controller: webViewController.value,
+            key: slotKey,
+            adServerUrl: adServerUrl,
+            disposed: () => disposed.value,
+            isNullDimensions: isNullDimensions.value,
+            setIsNullDimensions: (isNull) => isNullDimensions.value = isNull,
+          );
+      final shouldRun = iframeLoaded.value && showIframe.value;
+      if (shouldRun && ticker.value == null) {
+        // First call immediately without waiting for the first tick
+        WidgetsBinding.instance.addPostFrameCallback((_) => postDimensions());
+        ticker.value = Timer.periodic(
+          const Duration(milliseconds: 200),
+          (_) => postDimensions(),
+        );
+      } else if (!shouldRun && ticker.value != null) {
+        cancelTimer();
+      }
+      return null;
+    }, [iframeLoaded.value, showIframe.value]);
+
+    useEffect(() {
+      return () {
+        if (ticker.value != null) {
+          cancelTimer();
+        }
+      };
+    }, const []);
 
     final otherParamsHash = otherParams?.deepHash;
     useEffect(() {
@@ -231,12 +357,13 @@ class AdFormat extends HookWidget {
       height.value = 0.0;
       webViewController.value = null;
       adsProviderData.resetAll();
-      onActiveChanged.call(false);
+      setActive(false);
     }
 
     return Offstage(
       offstage: !iframeLoaded.value || !showIframe.value,
       child: Container(
+        key: slotKey,
         height: height.value,
         width: double.infinity,
         color: Colors.transparent,
@@ -249,9 +376,10 @@ class AdFormat extends HookWidget {
             _handleWebViewCreated(
               context,
               messageType: messageType,
+              disposed: () => disposed.value,
               data: data,
               adServerUrl: adServerUrl,
-              inlineUri: inlineUri,
+              inlineUri: inlineUri!,
               bidId: bidId,
               iframeLoaded: iframeLoaded,
               showIframe: showIframe,

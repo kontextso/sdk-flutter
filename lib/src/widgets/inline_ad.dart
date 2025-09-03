@@ -26,8 +26,7 @@ class InlineAdState extends State<InlineAd> with AutomaticKeepAliveClientMixin {
   bool get wantKeepAlive => _keepAlive;
 
   void _setKeepAlive(bool value) {
-    if (_keepAlive == value) return;
-
+    if (!mounted || _keepAlive == value) return;
     setState(() => _keepAlive = value);
     updateKeepAlive();
   }
