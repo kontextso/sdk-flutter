@@ -62,10 +62,11 @@ class AdFormat extends HookWidget {
     required GlobalKey key,
     InAppWebViewController? controller,
     required String adServerUrl,
+    required bool Function() disposed,
     required bool isNullDimensions,
     required void Function(bool isNull) setIsNullDimensions,
   }) {
-    if (!context.mounted) return;
+    if (disposed()) return;
 
     final slot = _slotRectInWindow(key);
     if (slot == null || controller == null) return;
@@ -308,6 +309,7 @@ class AdFormat extends HookWidget {
             controller: webViewController.value,
             key: slotKey,
             adServerUrl: adServerUrl,
+            disposed: () => disposed.value,
             isNullDimensions: isNullDimensions.value,
             setIsNullDimensions: (isNull) => isNullDimensions.value = isNull,
           );
