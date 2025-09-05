@@ -303,13 +303,15 @@ class AdFormat extends HookWidget {
           );
       final shouldRun = iframeLoaded.value && showIframe.value;
       if (shouldRun && ticker.value == null) {
-        // First call immediately without waiting for the first tick
-        WidgetsBinding.instance.addPostFrameCallback((_) => postDimensions());
-        ticker.value = Timer.periodic(
-          const Duration(milliseconds: 200),
-          (_) => postDimensions(),
-        );
-      } else if (!shouldRun && ticker.value != null) {
+        Future.delayed(const Duration(milliseconds: 500), () {
+          // First call immediately without waiting for the first tick
+          postDimensions();
+          ticker.value = Timer.periodic(
+            const Duration(milliseconds: 200),
+            (_) => postDimensions(),
+          );
+        });
+      } else if (!shouldRun) {
         cancelTimer();
       }
       return null;
@@ -317,9 +319,7 @@ class AdFormat extends HookWidget {
 
     useEffect(() {
       return () {
-        if (ticker.value != null) {
-          cancelTimer();
-        }
+        cancelTimer();
       };
     }, const []);
 
