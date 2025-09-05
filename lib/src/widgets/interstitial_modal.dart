@@ -17,7 +17,6 @@ class InterstitialModal {
     required String adServerUrl,
     required Uri uri,
     Duration initTimeout = const Duration(seconds: 5),
-    required void Function(Json? data) onAdClick,
     required void Function(Json? data) onEventIframe,
   }) {
     close();
@@ -53,9 +52,6 @@ class InterstitialModal {
 
                           _initTimer?.cancel();
                           visible.value = true;
-                          break;
-                        case 'click-iframe':
-                          onAdClick(data);
                           break;
                         case 'close-component-iframe':
                         case 'error-component-iframe':

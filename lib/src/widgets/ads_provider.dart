@@ -31,9 +31,6 @@ class AdsProvider extends HookWidget {
     this.iosAppStoreId,
     this.regulatory,
     this.otherParams,
-    this.onAdView,
-    this.onAdClick,
-    this.onAdDone,
     this.onEvent,
     required this.child,
   });
@@ -93,15 +90,6 @@ class AdsProvider extends HookWidget {
 
   /// Used to pass publisher-specific information to Kontext. Contents will be discussed with your account manager if needed.
   final Map<String, dynamic>? otherParams;
-
-  /// Callback when an ad is viewed.
-  final AdCallback? onAdView;
-
-  /// Callback when an ad is clicked.
-  final AdCallback? onAdClick;
-
-  /// Callback when an ad is fully processed.
-  final AdCallback? onAdDone;
 
   /// Callback for various ad events triggered by the SDK.
   final OnEventCallback? onEvent;
@@ -200,9 +188,6 @@ class AdsProvider extends HookWidget {
       relevantAssistantMessageId: relevantAssistantMessageId.value,
       setRelevantAssistantMessageId: setRelevantAssistantMessageId,
       resetAll: resetAll,
-      onAdView: onAdView,
-      onAdClick: onAdClick,
-      onAdDone: onAdDone,
       onEvent: onEvent,
       child: child,
     );
