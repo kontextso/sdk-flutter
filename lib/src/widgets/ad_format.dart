@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:kontext_flutter_sdk/src/models/ad_event.dart';
 import 'package:kontext_flutter_sdk/src/models/message.dart';
 import 'package:kontext_flutter_sdk/src/models/public_ad.dart';
 import 'package:kontext_flutter_sdk/src/services/logger.dart';
@@ -160,6 +161,40 @@ class AdFormat extends HookWidget {
     }
   }
 
+  void _handleEventIframe({required String adServerUrl, OnEventCallback? onEvent, Json? data}) {
+    if (onEvent == null || data == null) {
+      return;
+    }
+
+    try {
+      final payload = data['payload'] as Json?;
+      final path = payload?['url'] as String?;
+      Uri? uri;
+      if (path is String) {
+        uri = KontextUrlBuilder(baseUrl: adServerUrl, path: path).buildUri();
+      }
+
+      if (uri != null && data['name'] == 'ad.clicked') {
+        uri.openUri();
+      }
+
+      final updatedData = {
+        ...data,
+        if (payload != null)
+          'payload': {
+            ...payload,
+            if (uri != null) 'url': uri.toString(),
+          }
+      };
+
+      final event = AdEvent.fromJson(updatedData);
+      onEvent(event);
+    } catch (e, stack) {
+      Logger.exception(e, stack);
+      return;
+    }
+  }
+
   void _handleWebViewCreated(
     BuildContext context, {
     required String messageType,
@@ -222,7 +257,12 @@ class AdFormat extends HookWidget {
           adServerUrl: adServerUrl,
           uri: modalUri,
           initTimeout: timeout,
-          onAdClick: (data) => _onAdClick(adServerUrl, adsProviderData.onAdClick, data),
+          onEventIframe: (data) => _handleEventIframe(
+            adServerUrl: adServerUrl,
+            onEvent: adsProviderData.onEvent,
+            data: data,
+          ),
+          onAdClick: (data) => _onAdClick(adServerUrl, (PublicAd ad) {}, data),
         );
         break;
       case 'error-iframe':
@@ -371,6 +411,11 @@ class AdFormat extends HookWidget {
           key: ValueKey('ad-$messageId-$bidId'), // Force rebuild on bidId or messageId change
           uri: inlineUri,
           allowedOrigins: [adServerUrl],
+          onEventIframe: (data) => _handleEventIframe(
+            adServerUrl: adServerUrl,
+            onEvent: adsProviderData.onEvent,
+            data: data,
+          ),
           onMessageReceived: (controller, messageType, data) {
             webViewController.value = controller;
             _handleWebViewCreated(

@@ -61,12 +61,13 @@ class KontextWebview extends StatelessWidget {
     super.key,
     required this.uri,
     required this.allowedOrigins,
+    required this.onEventIframe,
     required this.onMessageReceived,
   });
 
   final Uri uri;
   final List<String> allowedOrigins;
-
+  final void Function(Json? data) onEventIframe;
   final void Function(InAppWebViewController controller, String messageType, Json? data) onMessageReceived;
 
   @override
@@ -103,6 +104,9 @@ class KontextWebview extends StatelessWidget {
             final data = postMessage['data'];
 
             if (messageType is String && (data == null || data is Json)) {
+              if (messageType == 'event-iframe') {
+                onEventIframe(data);
+              }
               onMessageReceived(controller, messageType, data as Json?);
             }
           },

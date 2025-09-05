@@ -34,6 +34,7 @@ class AdsProvider extends HookWidget {
     this.onAdView,
     this.onAdClick,
     this.onAdDone,
+    this.onEvent,
     required this.child,
   });
 
@@ -101,6 +102,9 @@ class AdsProvider extends HookWidget {
 
   /// Callback when an ad is fully processed.
   final AdCallback? onAdDone;
+
+  /// Callback for various ad events triggered by the SDK.
+  final OnEventCallback? onEvent;
 
   /// The child widget to be wrapped by the AdsProvider.
   final Widget child;
@@ -170,6 +174,7 @@ class AdsProvider extends HookWidget {
       setBids: setBids,
       setReadyForStreamingAssistant: setReadyForStreamingAssistant,
       setReadyForStreamingUser: setReadyForStreamingUser,
+      onEvent: onEvent,
     );
 
     useLastMessages(
@@ -198,6 +203,7 @@ class AdsProvider extends HookWidget {
       onAdView: onAdView,
       onAdClick: onAdClick,
       onAdDone: onAdDone,
+      onEvent: onEvent,
       child: child,
     );
   }

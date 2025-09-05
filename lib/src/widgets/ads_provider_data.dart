@@ -1,10 +1,12 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:kontext_flutter_sdk/src/models/ad_event.dart';
 import 'package:kontext_flutter_sdk/src/models/bid.dart';
 import 'package:kontext_flutter_sdk/src/models/message.dart';
 import 'package:kontext_flutter_sdk/src/models/public_ad.dart';
 
 typedef AdCallback = void Function(PublicAd ad);
+typedef OnEventCallback = void Function(AdEvent event);
 
 class AdsProviderData extends InheritedWidget {
   const AdsProviderData({
@@ -25,6 +27,7 @@ class AdsProviderData extends InheritedWidget {
     required this.onAdView,
     required this.onAdClick,
     required this.onAdDone,
+    required this.onEvent,
     required super.child,
   });
 
@@ -44,6 +47,7 @@ class AdsProviderData extends InheritedWidget {
   final AdCallback? onAdView;
   final AdCallback? onAdClick;
   final AdCallback? onAdDone;
+  final OnEventCallback? onEvent;
 
   static AdsProviderData? of(BuildContext context) {
     return context.dependOnInheritedWidgetOfExactType<AdsProviderData>();
@@ -64,6 +68,7 @@ class AdsProviderData extends InheritedWidget {
         lastUserMessageId != oldWidget.lastUserMessageId ||
         onAdView != oldWidget.onAdView ||
         onAdClick != oldWidget.onAdClick ||
-        onAdDone != oldWidget.onAdDone;
+        onAdDone != oldWidget.onAdDone ||
+        onEvent != oldWidget.onEvent;
   }
 }

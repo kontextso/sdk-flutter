@@ -16,8 +16,9 @@ class InterstitialModal {
     BuildContext context, {
     required String adServerUrl,
     required Uri uri,
-    required void Function(Json? data) onAdClick,
     Duration initTimeout = const Duration(seconds: 5),
+    required void Function(Json? data) onAdClick,
+    required void Function(Json? data) onEventIframe,
   }) {
     close();
 
@@ -40,6 +41,7 @@ class InterstitialModal {
                   child: KontextWebview(
                     uri: uri,
                     allowedOrigins: [adServerUrl],
+                    onEventIframe: onEventIframe,
                     onMessageReceived: (controller, messageType, data) {
                       switch (messageType) {
                         case 'init-component-iframe':
