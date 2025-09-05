@@ -2,8 +2,8 @@ import 'dart:collection' show UnmodifiableListView;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
-import 'package:kontext_flutter_sdk/src/services/http_client.dart' show Json;
 import 'package:kontext_flutter_sdk/src/services/logger.dart' show Logger;
+import 'package:kontext_flutter_sdk/src/utils/types.dart' show Json;
 
 final _earlyBridge = UserScript(
   source: '''
@@ -61,12 +61,13 @@ class KontextWebview extends StatelessWidget {
     super.key,
     required this.uri,
     required this.allowedOrigins,
+    required this.onEventIframe,
     required this.onMessageReceived,
   });
 
   final Uri uri;
   final List<String> allowedOrigins;
-
+  final void Function(Json? data) onEventIframe;
   final void Function(InAppWebViewController controller, String messageType, Json? data) onMessageReceived;
 
   @override
@@ -80,6 +81,8 @@ class KontextWebview extends StatelessWidget {
         useShouldOverrideUrlLoading: true,
         mediaPlaybackRequiresUserGesture: false,
         allowsInlineMediaPlayback: true,
+        verticalScrollBarEnabled: false,
+        horizontalScrollBarEnabled: false,
       ),
       shouldOverrideUrlLoading: (controller, navigationAction) async {
         final url = navigationAction.request.url?.toString();
@@ -103,6 +106,9 @@ class KontextWebview extends StatelessWidget {
             final data = postMessage['data'];
 
             if (messageType is String && (data == null || data is Json)) {
+              if (messageType == 'event-iframe') {
+                onEventIframe(data);
+              }
               onMessageReceived(controller, messageType, data as Json?);
             }
           },

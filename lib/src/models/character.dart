@@ -35,6 +35,7 @@ class Character {
   /// Additional properties that can be added to the character.
   final Map<String, dynamic>? additionalProperties;
 
+  /// Converts a JSON map to a [Character] instance.
   Map<String, dynamic> toJson() {
     return {
       'id': id,

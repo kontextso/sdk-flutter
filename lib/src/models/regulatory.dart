@@ -37,6 +37,7 @@ class Regulatory {
   /// https://github.com/InteractiveAdvertisingBureau/USPrivacy/blob/master/CCPA/US%20Privacy%20String.md
   final String? usPrivacy;
 
+  /// Converts the Regulatory instance to a JSON-compatible map.
   Map<String, dynamic> toJson() {
     final consent = gdprConsent?.nullIfEmpty;
     final gppNullIfEmpty = gpp?.nullIfEmpty;

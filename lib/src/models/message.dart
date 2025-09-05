@@ -21,10 +21,13 @@ class Message {
   /// The timestamp when the message was created.
   final DateTime createdAt;
 
+  /// Returns true if the message was sent by the user.
   bool get isUser => role == MessageRole.user;
 
+  /// Returns true if the message was sent by the assistant.
   bool get isAssistant => role == MessageRole.assistant;
 
+  /// Converts a JSON map to a [Message] instance.
   Map<String, dynamic> toJson() {
     return {
       'id': id,

@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.0
+
+* BREAKING CHANGE: Removed `onAdView`, `onAdClick` and `onAdDone` callbacks from `AdsProvider` widget. Use `onEvent` callback instead.
+* BREAKING CHANGE: Removed `PublicAd` class. Use `AdEvent` class instead.
+
 ## 1.0.7
 
 * Fixed `setState() called after dispose()` issue in `InlineAd` widget.

@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:kontext_flutter_sdk/src/models/ad_event.dart';
 import 'package:kontext_flutter_sdk/src/models/bid.dart';
 import 'package:kontext_flutter_sdk/src/models/character.dart';
 import 'package:kontext_flutter_sdk/src/models/message.dart';
@@ -8,6 +9,7 @@ import 'package:kontext_flutter_sdk/src/services/api.dart';
 import 'package:kontext_flutter_sdk/src/services/logger.dart';
 import 'package:kontext_flutter_sdk/src/utils/constants.dart';
 import 'package:kontext_flutter_sdk/src/utils/extensions.dart';
+import 'package:kontext_flutter_sdk/src/utils/types.dart' show OnEventCallback;
 
 void usePreloadAds(
   BuildContext context, {
@@ -26,6 +28,7 @@ void usePreloadAds(
   required ValueChanged<List<Bid>> setBids,
   required ValueChanged<bool> setReadyForStreamingAssistant,
   required ValueChanged<bool> setReadyForStreamingUser,
+  required OnEventCallback? onEvent,
 }) {
   final sessionId = useRef<String?>(null);
   final sessionDisabled = useRef<bool>(false);
@@ -140,9 +143,12 @@ void usePreloadAds(
 
         sessionId.value = response.sessionId;
 
-        setBids([...response.bids]);
+        final bids = response.bids;
+        setBids([...bids]);
         setReadyForStreamingUser(true);
         Logger.log('Preload Ads finished');
+
+        onEvent?.call(AdEvent(name: bids.isNotEmpty ? 'ad.filled' : 'ad.no-fill'));
       } finally {
         loading.value = false;
       }
