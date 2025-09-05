@@ -9,7 +9,7 @@ import 'package:kontext_flutter_sdk/src/services/api.dart';
 import 'package:kontext_flutter_sdk/src/services/logger.dart';
 import 'package:kontext_flutter_sdk/src/utils/constants.dart';
 import 'package:kontext_flutter_sdk/src/utils/extensions.dart';
-import 'package:kontext_flutter_sdk/src/widgets/ads_provider_data.dart' show OnEventCallback;
+import 'package:kontext_flutter_sdk/src/utils/types.dart' show OnEventCallback;
 
 void usePreloadAds(
   BuildContext context, {

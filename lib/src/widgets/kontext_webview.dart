@@ -2,8 +2,8 @@ import 'dart:collection' show UnmodifiableListView;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
-import 'package:kontext_flutter_sdk/src/services/http_client.dart' show Json;
 import 'package:kontext_flutter_sdk/src/services/logger.dart' show Logger;
+import 'package:kontext_flutter_sdk/src/utils/types.dart' show Json;
 
 final _earlyBridge = UserScript(
   source: '''

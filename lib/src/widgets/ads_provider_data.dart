@@ -1,10 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:kontext_flutter_sdk/src/models/ad_event.dart';
 import 'package:kontext_flutter_sdk/src/models/bid.dart';
 import 'package:kontext_flutter_sdk/src/models/message.dart';
-
-typedef OnEventCallback = void Function(AdEvent event);
+import 'package:kontext_flutter_sdk/src/utils/types.dart' show OnEventCallback;
 
 class AdsProviderData extends InheritedWidget {
   const AdsProviderData({

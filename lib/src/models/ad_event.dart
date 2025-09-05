@@ -1,5 +1,5 @@
-import 'package:kontext_flutter_sdk/src/services/http_client.dart' show Json;
 import 'package:kontext_flutter_sdk/src/services/logger.dart' show Logger;
+import 'package:kontext_flutter_sdk/src/utils/types.dart' show Json;
 
 /// Represents an advertisement-related event within the SDK.
 ///

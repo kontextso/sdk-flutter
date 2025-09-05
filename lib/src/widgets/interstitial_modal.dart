@@ -2,7 +2,7 @@ import 'dart:async' show Timer;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show DeviceOrientation, SystemChrome;
-import 'package:kontext_flutter_sdk/src/services/http_client.dart' show Json;
+import 'package:kontext_flutter_sdk/src/utils/types.dart' show Json;
 import 'package:kontext_flutter_sdk/src/widgets/kontext_webview.dart';
 
 class InterstitialModal {
