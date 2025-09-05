@@ -81,6 +81,8 @@ class KontextWebview extends StatelessWidget {
         useShouldOverrideUrlLoading: true,
         mediaPlaybackRequiresUserGesture: false,
         allowsInlineMediaPlayback: true,
+        verticalScrollBarEnabled: false,
+        horizontalScrollBarEnabled: false,
       ),
       shouldOverrideUrlLoading: (controller, navigationAction) async {
         final url = navigationAction.request.url?.toString();
