@@ -5,6 +5,7 @@ import 'package:kontext_flutter_sdk/src/models/regulatory.dart';
 import 'package:kontext_flutter_sdk/src/services/api.dart';
 import 'package:kontext_flutter_sdk/src/services/http_client.dart';
 import 'package:kontext_flutter_sdk/src/services/logger.dart';
+import 'package:kontext_flutter_sdk/src/utils/types.dart' show OnEventCallback;
 import 'package:kontext_flutter_sdk/src/widgets/ads_provider_data.dart';
 import 'package:kontext_flutter_sdk/src/models/message.dart';
 import 'package:kontext_flutter_sdk/src/models/character.dart';
@@ -31,9 +32,7 @@ class AdsProvider extends HookWidget {
     this.iosAppStoreId,
     this.regulatory,
     this.otherParams,
-    this.onAdView,
-    this.onAdClick,
-    this.onAdDone,
+    this.onEvent,
     required this.child,
   });
 
@@ -93,14 +92,8 @@ class AdsProvider extends HookWidget {
   /// Used to pass publisher-specific information to Kontext. Contents will be discussed with your account manager if needed.
   final Map<String, dynamic>? otherParams;
 
-  /// Callback when an ad is viewed.
-  final AdCallback? onAdView;
-
-  /// Callback when an ad is clicked.
-  final AdCallback? onAdClick;
-
-  /// Callback when an ad is fully processed.
-  final AdCallback? onAdDone;
+  /// Callback for various ad events triggered by the SDK.
+  final OnEventCallback? onEvent;
 
   /// The child widget to be wrapped by the AdsProvider.
   final Widget child;
@@ -170,6 +163,7 @@ class AdsProvider extends HookWidget {
       setBids: setBids,
       setReadyForStreamingAssistant: setReadyForStreamingAssistant,
       setReadyForStreamingUser: setReadyForStreamingUser,
+      onEvent: onEvent,
     );
 
     useLastMessages(
@@ -195,9 +189,7 @@ class AdsProvider extends HookWidget {
       relevantAssistantMessageId: relevantAssistantMessageId.value,
       setRelevantAssistantMessageId: setRelevantAssistantMessageId,
       resetAll: resetAll,
-      onAdView: onAdView,
-      onAdClick: onAdClick,
-      onAdDone: onAdDone,
+      onEvent: onEvent,
       child: child,
     );
   }

@@ -2,9 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:kontext_flutter_sdk/src/models/bid.dart';
 import 'package:kontext_flutter_sdk/src/models/message.dart';
-import 'package:kontext_flutter_sdk/src/models/public_ad.dart';
-
-typedef AdCallback = void Function(PublicAd ad);
+import 'package:kontext_flutter_sdk/src/utils/types.dart' show OnEventCallback;
 
 class AdsProviderData extends InheritedWidget {
   const AdsProviderData({
@@ -22,9 +20,7 @@ class AdsProviderData extends InheritedWidget {
     required this.relevantAssistantMessageId,
     required this.setRelevantAssistantMessageId,
     required this.resetAll,
-    required this.onAdView,
-    required this.onAdClick,
-    required this.onAdDone,
+    required this.onEvent,
     required super.child,
   });
 
@@ -41,9 +37,7 @@ class AdsProviderData extends InheritedWidget {
   final String? relevantAssistantMessageId;
   final void Function(String?) setRelevantAssistantMessageId;
   final VoidCallback resetAll;
-  final AdCallback? onAdView;
-  final AdCallback? onAdClick;
-  final AdCallback? onAdDone;
+  final OnEventCallback? onEvent;
 
   static AdsProviderData? of(BuildContext context) {
     return context.dependOnInheritedWidgetOfExactType<AdsProviderData>();
@@ -62,8 +56,6 @@ class AdsProviderData extends InheritedWidget {
         lastAssistantMessageId != oldWidget.lastAssistantMessageId ||
         relevantAssistantMessageId != oldWidget.relevantAssistantMessageId ||
         lastUserMessageId != oldWidget.lastUserMessageId ||
-        onAdView != oldWidget.onAdView ||
-        onAdClick != oldWidget.onAdClick ||
-        onAdDone != oldWidget.onAdDone;
+        onEvent != oldWidget.onEvent;
   }
 }

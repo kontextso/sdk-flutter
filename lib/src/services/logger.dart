@@ -1,6 +1,7 @@
 import 'dart:developer' as developer;
 import 'package:flutter/foundation.dart';
 import 'package:kontext_flutter_sdk/src/services/http_client.dart';
+import 'package:kontext_flutter_sdk/src/utils/types.dart' show Json;
 
 /// Log levels for the logger.
 enum LogLevel {

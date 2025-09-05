@@ -3,6 +3,7 @@ import 'dart:convert' show jsonDecode;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kontext_flutter_sdk/src/services/http_client.dart';
 import 'package:kontext_flutter_sdk/src/services/logger.dart';
+import 'package:kontext_flutter_sdk/src/utils/types.dart' show Json;
 import 'package:mocktail/mocktail.dart';
 import 'package:http/http.dart' as http;
 

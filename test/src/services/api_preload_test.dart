@@ -5,6 +5,7 @@ import 'package:kontext_flutter_sdk/src/models/bid.dart' show AdDisplayPosition;
 import 'package:kontext_flutter_sdk/src/models/regulatory.dart';
 import 'package:kontext_flutter_sdk/src/services/api.dart';
 import 'package:kontext_flutter_sdk/src/services/http_client.dart';
+import 'package:kontext_flutter_sdk/src/utils/types.dart' show Json;
 import 'package:mocktail/mocktail.dart';
 import 'package:http/http.dart' as http;
 

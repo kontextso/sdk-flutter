@@ -2,7 +2,7 @@ import 'dart:async' show Timer;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show DeviceOrientation, SystemChrome;
-import 'package:kontext_flutter_sdk/src/services/http_client.dart' show Json;
+import 'package:kontext_flutter_sdk/src/utils/types.dart' show Json;
 import 'package:kontext_flutter_sdk/src/widgets/kontext_webview.dart';
 
 class InterstitialModal {
@@ -16,8 +16,8 @@ class InterstitialModal {
     BuildContext context, {
     required String adServerUrl,
     required Uri uri,
-    required void Function(Json? data) onAdClick,
     Duration initTimeout = const Duration(seconds: 5),
+    required void Function(Json? data) onEventIframe,
   }) {
     close();
 
@@ -40,6 +40,7 @@ class InterstitialModal {
                   child: KontextWebview(
                     uri: uri,
                     allowedOrigins: [adServerUrl],
+                    onEventIframe: onEventIframe,
                     onMessageReceived: (controller, messageType, data) {
                       switch (messageType) {
                         case 'init-component-iframe':
@@ -51,9 +52,6 @@ class InterstitialModal {
 
                           _initTimer?.cancel();
                           visible.value = true;
-                          break;
-                        case 'click-iframe':
-                          onAdClick(data);
                           break;
                         case 'close-component-iframe':
                         case 'error-component-iframe':

@@ -1,8 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:kontext_flutter_sdk/src/utils/constants.dart';
-
-typedef Json = Map<String, dynamic>;
+import 'package:kontext_flutter_sdk/src/utils/types.dart' show Json;
 
 class HttpClient {
   HttpClient._internal(this.baseUrl, this._client);

@@ -4,13 +4,13 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:kontext_flutter_sdk/src/models/ad_event.dart';
 import 'package:kontext_flutter_sdk/src/models/message.dart';
-import 'package:kontext_flutter_sdk/src/models/public_ad.dart';
 import 'package:kontext_flutter_sdk/src/services/logger.dart';
-import 'package:kontext_flutter_sdk/src/services/http_client.dart';
 import 'package:kontext_flutter_sdk/src/utils/constants.dart';
 import 'package:kontext_flutter_sdk/src/utils/extensions.dart';
 import 'package:kontext_flutter_sdk/src/utils/kontext_url_builder.dart';
+import 'package:kontext_flutter_sdk/src/utils/types.dart' show OnEventCallback, Json;
 import 'package:kontext_flutter_sdk/src/widgets/ads_provider_data.dart';
 import 'package:kontext_flutter_sdk/src/widgets/hooks/select_bid.dart';
 import 'package:kontext_flutter_sdk/src/widgets/interstitial_modal.dart';
@@ -78,7 +78,8 @@ class AdFormat extends HookWidget {
     final containerX = slot.left.nullIfNaN;
     final containerY = slot.top.nullIfNaN;
 
-    final isAnyNullDimension = containerWidth == null || containerHeight == null || containerX == null || containerY == null;
+    final isAnyNullDimension =
+        containerWidth == null || containerHeight == null || containerX == null || containerY == null;
     // If first time any dimension is null, we set the flag to avoid further posts
     setIsNullDimensions(isAnyNullDimension);
 
@@ -123,37 +124,34 @@ class AdFormat extends HookWidget {
     ''');
   }
 
-  void _onAdClick(String adServerUrl, AdCallback? callback, Json? data) {
-    final path = data?['url'];
-    if (path is! String) {
-      Logger.error('Ad click URL is missing or invalid. Data: $data');
-      return;
-    }
-
-    final uri = KontextUrlBuilder(baseUrl: adServerUrl, path: path).buildUri();
-    if (uri == null) {
-      Logger.error('Ad click URL is invalid: $path');
-      return;
-    }
-
-    uri.openUri();
-
-    final updatedData = {
-      ...data!,
-      'url': uri.toString(),
-    };
-
-    _handleAdCallback(callback, updatedData);
-  }
-
-  void _handleAdCallback(AdCallback? callback, Json? data) {
-    if (callback == null || data == null) {
+  void _handleEventIframe({required String adServerUrl, OnEventCallback? onEvent, Json? data}) {
+    if (onEvent == null || data == null) {
       return;
     }
 
     try {
-      final ad = PublicAd.fromJson(data);
-      callback(ad);
+      final payload = data['payload'] as Json?;
+      final path = payload?['url'] as String?;
+      Uri? uri;
+      if (path is String) {
+        uri = KontextUrlBuilder(baseUrl: adServerUrl, path: path).buildUri();
+      }
+
+      if (uri != null && data['name'] == 'ad.clicked') {
+        uri.openUri();
+      }
+
+      final updatedData = {
+        ...data,
+        if (payload != null)
+          'payload': {
+            ...payload,
+            if (uri != null) 'url': uri.toString(),
+          }
+      };
+
+      final event = AdEvent.fromJson(updatedData);
+      onEvent(event);
     } catch (e, stack) {
       Logger.exception(e, stack);
       return;
@@ -163,8 +161,8 @@ class AdFormat extends HookWidget {
   void _handleWebViewCreated(
     BuildContext context, {
     required String messageType,
-    required bool Function() disposed,
     Json? data,
+    required bool Function() isDisposed,
     required String adServerUrl,
     required Uri inlineUri,
     required String bidId,
@@ -190,20 +188,6 @@ class AdFormat extends HookWidget {
           height.value = dataHeight.toDouble();
         }
         break;
-      case 'view-iframe':
-        _handleAdCallback(adsProviderData.onAdView, data);
-        break;
-      case 'click-iframe':
-        _onAdClick(adServerUrl, adsProviderData.onAdClick, data);
-        break;
-      case 'ad-done-iframe':
-        if (disposed()) return;
-
-        // To ensure the ad is fully processed
-        Future.delayed(const Duration(milliseconds: 300), () {
-          _handleAdCallback(adsProviderData.onAdDone, data);
-        });
-        break;
       case 'open-component-iframe':
         final component = data?['component'];
         if (component is! String || component.isEmpty) {
@@ -222,7 +206,11 @@ class AdFormat extends HookWidget {
           adServerUrl: adServerUrl,
           uri: modalUri,
           initTimeout: timeout,
-          onAdClick: (data) => _onAdClick(adServerUrl, adsProviderData.onAdClick, data),
+          onEventIframe: (data) => _handleEventIframe(
+            adServerUrl: adServerUrl,
+            onEvent: adsProviderData.onEvent,
+            data: data,
+          ),
         );
         break;
       case 'error-iframe':
@@ -371,12 +359,17 @@ class AdFormat extends HookWidget {
           key: ValueKey('ad-$messageId-$bidId'), // Force rebuild on bidId or messageId change
           uri: inlineUri,
           allowedOrigins: [adServerUrl],
+          onEventIframe: (data) => _handleEventIframe(
+            adServerUrl: adServerUrl,
+            onEvent: adsProviderData.onEvent,
+            data: data,
+          ),
           onMessageReceived: (controller, messageType, data) {
             webViewController.value = controller;
             _handleWebViewCreated(
               context,
               messageType: messageType,
-              disposed: () => disposed.value,
+              isDisposed: () => disposed.value,
               data: data,
               adServerUrl: adServerUrl,
               inlineUri: inlineUri!,
