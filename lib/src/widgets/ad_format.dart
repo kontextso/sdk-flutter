@@ -303,11 +303,12 @@ class AdFormat extends HookWidget {
           );
       final shouldRun = iframeLoaded.value && showIframe.value;
       if (shouldRun && ticker.value == null) {
+        // Start after a short delay to allow initial layout to settle
         Future.delayed(const Duration(milliseconds: 500), () {
           // First call immediately without waiting for the first tick
           postDimensions();
           ticker.value = Timer.periodic(
-            const Duration(milliseconds: 200),
+            const Duration(milliseconds: 300),
             (_) => postDimensions(),
           );
         });
@@ -318,9 +319,7 @@ class AdFormat extends HookWidget {
     }, [iframeLoaded.value, showIframe.value]);
 
     useEffect(() {
-      return () {
-        cancelTimer();
-      };
+      return () => cancelTimer();
     }, const []);
 
     final otherParamsHash = otherParams?.deepHash;
