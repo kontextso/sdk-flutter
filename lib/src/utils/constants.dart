@@ -1,3 +1,3 @@
 const kDefaultAdServerUrl = 'https://server.megabrain.co';
 const kSdkLabel = 'sdk-flutter';
-const kSdkVersion = '1.0.7';
+const kSdkVersion = '1.1.0';
