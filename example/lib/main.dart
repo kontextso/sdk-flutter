@@ -6,6 +6,10 @@ import 'constants.dart';
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
+  if (kPublisherToken.contains('PUBLISHER_TOKEN')) {
+    throw Exception('Please set your publisher token in constants.dart'.toUpperCase());
+  }
+
   runApp(const DemoApp());
 }
 
