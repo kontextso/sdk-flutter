@@ -34,13 +34,12 @@ class AdFormat extends HookWidget {
     final top = mediaQuery.padding.top; // status bar / notch
     final left = mediaQuery.padding.left;
     final right = mediaQuery.padding.right;
-    final bottomInset = mediaQuery.viewInsets.bottom; // keyboard
 
     return Rect.fromLTWH(
       left,
       top,
       size.width - left - right,
-      size.height - top - bottomInset,
+      size.height - top,
     );
   }
 
@@ -72,6 +71,8 @@ class AdFormat extends HookWidget {
     if (slot == null || controller == null) return;
 
     final viewport = _visibleWindowRect(context);
+    final mq = MediaQueryData.fromView(View.of(context));
+    final keyboardHeight = mq.viewInsets.bottom;
 
     final containerWidth = slot.width.nullIfNaN;
     final containerHeight = slot.height.nullIfNaN;
@@ -94,6 +95,7 @@ class AdFormat extends HookWidget {
         'containerHeight': slot.height.nullIfNaN,
         'containerX': slot.left.nullIfNaN,
         'containerY': slot.top.nullIfNaN,
+        'keyboardHeight': keyboardHeight.nullIfNaN,
       },
     };
 
