@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.1
+* Stop logging `postMessage` events from `InAppWebView`.
+* Updated Gradle and NDK versions for the example app.
+* Send keyboard height to the server to determine whether an ad is visible.
+
 ## 1.1.0
 
 * BREAKING CHANGE: Removed `onAdView`, `onAdClick` and `onAdDone` callbacks from `AdsProvider` widget. Use `onEvent` callback instead.
