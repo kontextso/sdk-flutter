@@ -12,6 +12,8 @@ import 'package:kontext_flutter_sdk/src/utils/types.dart' show Json;
 ///    content: Ad content
 ///    messageId: ID of the message
 ///    url: URL of the ad to be opened
+///    format: Format
+///    area: Area where the user clicked
 ///
 /// ad.viewed
 ///  • The user has viewed the ad.
@@ -19,6 +21,7 @@ import 'package:kontext_flutter_sdk/src/utils/types.dart' show Json;
 ///    id: Bid ID
 ///    content: Ad content
 ///    messageId: ID of the message
+///    format: Format
 ///
 /// ad.filled
 ///  • Ad is available and can be rendered (bids array is not empty).
