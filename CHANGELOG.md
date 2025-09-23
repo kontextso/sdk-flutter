@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.2
+* Updated README.
+* Updated `AdEvent` documentation.
+
 ## 1.1.1
 * Stop logging `postMessage` events from `InAppWebView`.
 * Updated Gradle and NDK versions for the example app.
