@@ -91,8 +91,14 @@ void usePreloadAds(
     setReadyForStreamingAssistant(false);
     setReadyForStreamingUser(false);
 
+    notifyAdFilled() => onEvent?.call(AdEvent(name: 'ad.filled'));
+    notifyAdNoFill() => onEvent?.call(AdEvent(name: 'ad.no-fill'));
+
     Future<void> preload() async {
-      if (isDisabled || sessionDisabled.value) return;
+      if (isDisabled || sessionDisabled.value) {
+        notifyAdNoFill();
+        return;
+      }
 
       Logger.log('Preload ads started');
       loading.value = true;
@@ -114,15 +120,20 @@ void usePreloadAds(
           iosAppStoreId: iosAppStoreId,
         );
 
-        if (!context.mounted) return;
+        if (!context.mounted) {
+          notifyAdNoFill();
+          return;
+        }
 
         if (isDisabled || sessionDisabled.value) {
           Logger.log('Preload ads dropped (disabled mid-flight)');
+          notifyAdNoFill();
           return;
         }
 
         if (response.statusCode == 204) {
           Logger.log('Preload ads finished (204)');
+          notifyAdNoFill();
           return;
         }
 
@@ -131,9 +142,10 @@ void usePreloadAds(
             // Geo disabled or other reason, ads are permanently disabled
             sessionDisabled.value = true;
             Logger.info('Session is disabled. Reason: Error=${response.error}, ErrorCode=${response.errorCode}');
-            return;
+          } else {
+            Logger.info('Ad generation skipped. Reason: Error=${response.error}, ErrorCode=${response.errorCode}');
           }
-          Logger.info('Ad generation skipped. Reason: Error=${response.error}, ErrorCode=${response.errorCode}');
+          notifyAdNoFill();
           return;
         }
 
@@ -148,7 +160,14 @@ void usePreloadAds(
         setReadyForStreamingUser(true);
         Logger.log('Preload Ads finished');
 
-        onEvent?.call(AdEvent(name: bids.isNotEmpty ? 'ad.filled' : 'ad.no-fill'));
+        if (bids.isNotEmpty) {
+          notifyAdFilled();
+        } else {
+          notifyAdNoFill();
+        }
+      } catch (e) {
+        Logger.error('Preload ads error: $e');
+        notifyAdNoFill();
       } finally {
         loading.value = false;
       }
