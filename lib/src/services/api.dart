@@ -69,13 +69,14 @@ class Api {
     } catch (_) {
       device = DeviceAppInfo.empty();
     }
-    final deviceJson = await device.toJsonFresh();
-
-    final vendor = vendorId?.nullIfEmpty;
-    final advertising = advertisingId?.nullIfEmpty;
-    final variant = variantId?.nullIfEmpty;
 
     try {
+      final deviceJson = await device.toJsonFresh();
+
+      final vendor = vendorId?.nullIfEmpty;
+      final advertising = advertisingId?.nullIfEmpty;
+      final variant = variantId?.nullIfEmpty;
+
       final result = await _client.post(
         '/preload',
         body: {
