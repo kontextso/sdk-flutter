@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart' show HookWidget, useState, useEffect;
-import 'package:flutter_inappwebview/flutter_inappwebview.dart'
+import 'package:flutter_inappwebview_kontext/flutter_inappwebview_kontext.dart'
     show PlatformInAppWebViewController, DebugLoggingSettings;
 import 'package:kontext_flutter_sdk/src/models/bid.dart';
 import 'package:kontext_flutter_sdk/src/models/regulatory.dart';

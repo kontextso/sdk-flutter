@@ -1,7 +1,8 @@
 import 'dart:collection' show UnmodifiableListView;
 
 import 'package:flutter/material.dart';
-import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:flutter_inappwebview_kontext/flutter_inappwebview_kontext.dart';
 import 'package:kontext_flutter_sdk/src/services/logger.dart' show Logger;
 import 'package:kontext_flutter_sdk/src/utils/types.dart' show Json;
 
@@ -65,7 +66,7 @@ typedef KontextWebviewBuilder = Widget Function({
   required OnMessageReceived onMessageReceived,
 });
 
-class KontextWebview extends StatelessWidget {
+class KontextWebview extends HookWidget {
   const KontextWebview({
     super.key,
     required this.uri,
@@ -81,7 +82,14 @@ class KontextWebview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final instanceId = useMemoized(() => 'kontext-webview-${DateTime.now().millisecondsSinceEpoch}');
+
+    useEffect(() {
+      return () => OmidSessionController.stopSession(instanceId);
+    }, const []);
+
     return InAppWebView(
+      instanceId: instanceId,
       initialUrlRequest: URLRequest(url: WebUri.uri(uri)),
       initialUserScripts: UnmodifiableListView([_earlyBridge]),
       initialSettings: InAppWebViewSettings(
@@ -102,7 +110,15 @@ class KontextWebview extends StatelessWidget {
 
         return NavigationActionPolicy.CANCEL;
       },
-      onWebViewCreated: (controller) {
+      onWebViewCreated: (controller) async {
+        final list = await InAppWebViewController.getAllRegisteredInstanceIds();
+        final sessionStartResult = await OmidSessionController.startSession(
+          instanceId: instanceId,
+          partnerName: 'Kontext',
+          partnerVersion: '1.0.0',
+        );
+        print('WebView instances: $list');
+
         controller.addJavaScriptHandler(
           handlerName: 'postMessage',
           callback: (args) {
