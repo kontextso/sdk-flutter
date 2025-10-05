@@ -26,9 +26,15 @@ class InterstitialModal {
     required Uri uri,
     required Duration initTimeout,
     required void Function(Json? data) onEventIframe,
+    required void Function(OpenIframeComponent component, Json? data) onOpenComponentIframe,
+    required VoidCallback closeSKOverlay,
     @visibleForTesting Key? animatedOpacityKey,
     @visibleForTesting KontextWebviewBuilder? webviewBuilder,
   }) {
+    close() {
+      closeSKOverlay();
+      _close();
+    }
     close();
 
     final visible = ValueNotifier<bool>(false);
@@ -85,6 +91,9 @@ class InterstitialModal {
                           _initTimer?.cancel();
                           visible.value = true;
                           break;
+                        case 'open-component-iframe':
+                          onOpenComponentIframe(component, data);
+                          break;
                         case 'close-component-iframe':
                         case 'error-component-iframe':
                           close();
@@ -105,7 +114,7 @@ class InterstitialModal {
     _initTimer = Timer(initTimeout, () => close());
   }
 
-  static void close() {
+  static void _close() {
     _initTimer?.cancel();
     _initTimer = null;
     _entry?.remove();

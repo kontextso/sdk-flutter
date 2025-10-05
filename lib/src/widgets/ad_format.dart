@@ -7,8 +7,10 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:kontext_flutter_sdk/src/models/ad_event.dart';
 import 'package:kontext_flutter_sdk/src/models/message.dart';
 import 'package:kontext_flutter_sdk/src/services/logger.dart';
+import 'package:kontext_flutter_sdk/src/services/sk_overlay_service.dart';
 import 'package:kontext_flutter_sdk/src/utils/constants.dart';
 import 'package:kontext_flutter_sdk/src/utils/extensions.dart';
+import 'package:kontext_flutter_sdk/src/utils/helper_methods.dart';
 import 'package:kontext_flutter_sdk/src/utils/kontext_url_builder.dart';
 import 'package:kontext_flutter_sdk/src/utils/types.dart' show OnEventCallback, Json, OpenIframeComponent;
 import 'package:kontext_flutter_sdk/src/widgets/ads_provider_data.dart';
@@ -216,6 +218,14 @@ class AdFormat extends HookWidget {
           onEvent: adsProviderData.onEvent,
         );
         break;
+      case 'close-component-iframe':
+        final component = toOpenIframeComponent(data?['component']);
+        if (component == null) {
+          return;
+        }
+
+        _handleCloseComponentIframe(component);
+        break;
       case 'error-iframe':
         resetIframe();
         break;
@@ -254,7 +264,46 @@ class AdFormat extends HookWidget {
             onEvent: onEvent,
             data: data,
           ),
+          onOpenComponentIframe: (component, data) => _handleOpenComponentIframe(
+            context,
+            adServerUrl: adServerUrl,
+            inlineUri: inlineUri,
+            bidId: bidId,
+            component: component,
+            data: data,
+            onEvent: onEvent,
+          ),
+          closeSKOverlay: () => _handleCloseComponentIframe(OpenIframeComponent.skoverlay),
         );
+        break;
+      case OpenIframeComponent.skoverlay:
+        final appStoreId = data['appStoreId'];
+        if (appStoreId is! String || appStoreId.isEmpty) {
+          Logger.error('App Store ID is required to open SKOverlay. Data: $data');
+          return;
+        }
+
+        final position = SKOverlayPosition.values.firstWhere(
+              (e) => e.name == (data['position'] is String ? data['position'].toLowerCase() : null),
+          orElse: () => SKOverlayPosition.bottom,
+        );
+
+        final dismissible = data['dismissible'];
+        SKOverlayService.present(
+          appStoreId: appStoreId,
+          position: position,
+          dismissible: dismissible is bool ? dismissible : true,
+        );
+        break;
+    }
+  }
+
+  void _handleCloseComponentIframe(OpenIframeComponent component) {
+    switch (component) {
+      case OpenIframeComponent.modal:
+        break; // Do nothing, already handled by InterstitialModal
+      case OpenIframeComponent.skoverlay:
+        SKOverlayService.dismiss();
         break;
     }
   }
@@ -302,6 +351,10 @@ class AdFormat extends HookWidget {
 
     final adServerUrl = adsProviderData.adServerUrl;
     final otherParams = adsProviderData.otherParams;
+
+    useEffect(() {
+      return () => SKOverlayService.dismiss();
+    }, const []);
 
     useEffect(() {
       return () => setActive(false);
@@ -378,6 +431,7 @@ class AdFormat extends HookWidget {
     }, [iframeLoaded.value, webViewController.value, otherParamsHash]);
 
     void resetIframe() {
+      SKOverlayService.dismiss();
       iframeLoaded.value = false;
       showIframe.value = false;
       height.value = 0.0;
