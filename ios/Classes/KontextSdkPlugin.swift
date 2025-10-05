@@ -9,5 +9,6 @@ public class KontextSdkPlugin: NSObject, FlutterPlugin {
         DeviceAudioPlugin.register(with: registrar)
         DeviceNetworkPlugin.register(with: registrar)
         TransparencyConsentFrameworkPlugin.register(with: registrar)
+        SKOverlayPlugin.register(with: registrar)
     }
 }

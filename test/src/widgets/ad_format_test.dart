@@ -25,7 +25,7 @@ void main() {
     when(() => opener.open(any())).thenAnswer((_) async => true);
   });
 
-  tearDown(() => InterstitialModal.close());
+  tearDown(() => InterstitialModal.closeModal());
 
   group('AdFormat disabled', () {
     testWidgets(

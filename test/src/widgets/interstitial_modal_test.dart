@@ -23,7 +23,7 @@ void main() {
     when(() => opener.open(any())).thenAnswer((_) async => true);
   });
 
-  tearDown(() => InterstitialModal.close());
+  tearDown(() => InterstitialModal.closeModal());
 
   testWidgets(
     'Opens interstitial modal with correct URI and timeout',
@@ -109,6 +109,8 @@ void main() {
         initTimeout: const Duration(milliseconds: 500),
         onClickIframe: (_) {},
         onEventIframe: (_) {},
+        onOpenComponentIframe: (_, __) {},
+        closeSKOverlay: () {},
         webviewBuilder: ({
           Key? key,
           required Uri uri,
@@ -154,6 +156,8 @@ void main() {
         initTimeout: const Duration(milliseconds: 500),
         onClickIframe: (_) {},
         onEventIframe: (_) {},
+        onOpenComponentIframe: (_, __) {},
+        closeSKOverlay: () {},
         webviewBuilder: ({
           Key? key,
           required Uri uri,
@@ -203,6 +207,8 @@ void main() {
         initTimeout: const Duration(milliseconds: 500),
         onClickIframe: (_) {},
         onEventIframe: (_) {},
+        onOpenComponentIframe: (_, __) {},
+        closeSKOverlay: () {},
         webviewBuilder: ({
           Key? key,
           required Uri uri,
@@ -253,6 +259,8 @@ void main() {
         initTimeout: const Duration(milliseconds: 500),
         onClickIframe: (_) {},
         onEventIframe: (data) => receivedData = data,
+        onOpenComponentIframe: (_, __) {},
+        closeSKOverlay: () {},
         webviewBuilder: ({
           Key? key,
           required Uri uri,
@@ -294,6 +302,8 @@ void main() {
         initTimeout: const Duration(milliseconds: 1000),
         onClickIframe: (_) {},
         onEventIframe: (_) {},
+        onOpenComponentIframe: (_, __) {},
+        closeSKOverlay: () {},
         animatedOpacityKey: const Key('first_modal_opacity'),
         webviewBuilder: ({
           Key? key,
@@ -327,6 +337,8 @@ void main() {
         initTimeout: const Duration(milliseconds: 1000),
         onClickIframe: (_) {},
         onEventIframe: (_) {},
+        onOpenComponentIframe: (_, __) {},
+        closeSKOverlay: () {},
         animatedOpacityKey: const Key('second_modal_opacity'),
         webviewBuilder: ({
           Key? key,
@@ -374,6 +386,8 @@ void main() {
         initTimeout: const Duration(milliseconds: 500),
         onClickIframe: (_) {},
         onEventIframe: (_) {},
+        onOpenComponentIframe: (_, __) {},
+        closeSKOverlay: () {},
         webviewBuilder: ({
           Key? key,
           required Uri uri,
@@ -425,6 +439,8 @@ void main() {
           }
         },
         onEventIframe: (_) {},
+        onOpenComponentIframe: (_, __) {},
+        closeSKOverlay: () {},
         webviewBuilder: ({
           Key? key,
           required Uri uri,
@@ -473,6 +489,8 @@ void main() {
           }
         },
         onEventIframe: (_) {},
+        onOpenComponentIframe: (_, __) {},
+        closeSKOverlay: () {},
         webviewBuilder: ({
           Key? key,
           required Uri uri,
@@ -520,6 +538,8 @@ void main() {
           }
         },
         onEventIframe: (_) {},
+        onOpenComponentIframe: (_, __) {},
+        closeSKOverlay: () {},
         webviewBuilder: ({
           Key? key,
           required Uri uri,

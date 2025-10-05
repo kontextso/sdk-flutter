@@ -13,7 +13,7 @@ import 'test_helpers.dart';
 void main() {
   final fakeController = MockInAppWebViewController();
 
-  tearDown(() => InterstitialModal.close());
+  tearDown(() => InterstitialModal.closeModal());
 
   when(() => fakeController.evaluateJavascript(source: any(named: 'source'))).thenAnswer((_) async => null);
 
