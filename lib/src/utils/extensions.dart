@@ -1,7 +1,8 @@
+import 'package:flutter_inappwebview/flutter_inappwebview.dart'
+    show ChromeSafariBrowser, WebUri, ChromeSafariBrowserSettings;
 import 'package:kontext_flutter_sdk/src/services/logger.dart';
 import 'package:kontext_flutter_sdk/src/utils/helper_methods.dart';
 import 'package:kontext_flutter_sdk/src/models/message.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 extension DeepHashExt on Object? {
   int get deepHash => deepHashObject(this);
@@ -50,12 +51,15 @@ extension StringExtension on String {
 }
 
 extension UriExtension on Uri {
-  Future<bool> openUri({bool useExternalApplication = true}) async {
+  Future<bool> openInAppBrowser() async {
     try {
-      return await launchUrl(
-        this,
-        mode: useExternalApplication ? LaunchMode.externalApplication : LaunchMode.platformDefault,
+      final webUri = WebUri.uri(this);
+      final browser = ChromeSafariBrowser();
+      browser.open(
+        url: webUri,
+        settings: ChromeSafariBrowserSettings(barCollapsingEnabled: true),
       );
+      return true;
     } catch (e, stack) {
       Logger.exception(e, stack);
       return false;

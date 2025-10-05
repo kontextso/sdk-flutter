@@ -142,7 +142,7 @@ class AdFormat extends HookWidget {
       }
 
       if (uri != null && data['name'] == 'ad.clicked') {
-        uri.openUri();
+        uri.openInAppBrowser();
       }
 
       final updatedData = {
