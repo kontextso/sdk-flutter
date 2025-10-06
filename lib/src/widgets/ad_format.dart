@@ -9,6 +9,7 @@ import 'package:kontext_flutter_sdk/src/models/message.dart';
 import 'package:kontext_flutter_sdk/src/services/logger.dart';
 import 'package:kontext_flutter_sdk/src/utils/browser_opener.dart';
 import 'package:kontext_flutter_sdk/src/services/sk_overlay_service.dart';
+import 'package:kontext_flutter_sdk/src/services/sk_store_product_service.dart';
 import 'package:kontext_flutter_sdk/src/utils/constants.dart';
 import 'package:kontext_flutter_sdk/src/utils/extensions.dart';
 import 'package:kontext_flutter_sdk/src/utils/helper_methods.dart';
@@ -174,6 +175,19 @@ class AdFormat extends HookWidget {
     } catch (e, stack) {
       Logger.exception(e, stack);
       return;
+    }
+  }
+
+  Future<void> _handleAdClickedEvent(Uri uri, {Json? payload}) async {
+    bool storeProductOpened = false;
+    final appStoreId = payload?['appStoreId'];
+    if (appStoreId is String && appStoreId.isNotEmpty) {
+      final result = await SkStoreProductService.present(appStoreId: appStoreId);
+      storeProductOpened = result;
+    }
+
+    if (!storeProductOpened) {
+      uri.openInAppBrowser();
     }
   }
 
@@ -375,7 +389,10 @@ class AdFormat extends HookWidget {
     final otherParams = adsProviderData.otherParams;
 
     useEffect(() {
-      return () => SKOverlayService.dismiss();
+      return () {
+        SKOverlayService.dismiss();
+        SkStoreProductService.dismiss();
+      };
     }, const []);
 
     useEffect(() {
@@ -458,6 +475,7 @@ class AdFormat extends HookWidget {
 
     void resetIframe() {
       SKOverlayService.dismiss();
+      SkStoreProductService.dismiss();
       iframeLoaded.value = false;
       showIframe.value = false;
       height.value = 0.0;
