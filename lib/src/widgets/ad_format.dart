@@ -6,6 +6,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:kontext_flutter_sdk/src/models/ad_event.dart';
 import 'package:kontext_flutter_sdk/src/models/message.dart';
+import 'package:kontext_flutter_sdk/src/services/ad_attribution_kit.dart';
 import 'package:kontext_flutter_sdk/src/services/logger.dart';
 import 'package:kontext_flutter_sdk/src/utils/browser_opener.dart';
 import 'package:kontext_flutter_sdk/src/utils/constants.dart';
@@ -195,6 +196,13 @@ class AdFormat extends HookWidget {
         break;
       case 'show-iframe':
         showIframe.value = true;
+        final tmpData = {
+          if (data != null) ...data,
+          'jws': jsonEncode({
+            'dummy': 'data',
+          })
+        };
+        _handleAdAttributionJws(tmpData);
         break;
       case 'hide-iframe':
         showIframe.value = false;
@@ -229,6 +237,9 @@ class AdFormat extends HookWidget {
           data: data,
           onEvent: adsProviderData.onEvent,
         );
+        break;
+      case "ad-attribution-kit":
+        _handleAdAttributionJws(data);
         break;
       case 'error-iframe':
         resetIframe();
@@ -275,6 +286,15 @@ class AdFormat extends HookWidget {
         );
         break;
     }
+  }
+
+  void _handleAdAttributionJws(Json? data) {
+    final jws = data?['jws'];
+    if (jws is! String || jws.isEmpty) {
+      Logger.error('Ad attribution JWS is missing or invalid. Data: $data');
+      return;
+    }
+    AdAttributionKit.initImpression(jws);
   }
 
   @override
