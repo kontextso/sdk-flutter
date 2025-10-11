@@ -180,6 +180,7 @@ class AdFormat extends HookWidget {
     BuildContext context, {
     required String messageType,
     Json? data,
+    required GlobalKey key,
     required bool Function() isDisposed,
     required String adServerUrl,
     required Uri inlineUri,
@@ -203,6 +204,7 @@ class AdFormat extends HookWidget {
           })
         };
         _handleAdAttributionJws(tmpData);
+        _setAttributionFrame(key);
         break;
       case 'hide-iframe':
         showIframe.value = false;
@@ -295,6 +297,13 @@ class AdFormat extends HookWidget {
       return;
     }
     AdAttributionKit.initImpression(jws);
+  }
+
+  void _setAttributionFrame(GlobalKey key) {
+    final adContainer = _slotRectInWindow(key);
+    if (adContainer == null) return;
+
+    AdAttributionKit.setAttributionFrame(adContainer);
   }
 
   @override
@@ -471,6 +480,7 @@ class AdFormat extends HookWidget {
               messageType: messageType,
               isDisposed: () => disposed.value,
               data: data,
+              key: slotKey,
               adServerUrl: adServerUrl,
               inlineUri: inlineUri!,
               bidId: bidId,

@@ -22,6 +22,25 @@ public class AdAttributionPlugin: NSObject, FlutterPlugin {
             AdAttributionManager.shared.initImpression(jws: jws) { success in
                 result(success)
             }
+        case "setAttributionFrame":
+            guard let args = call.arguments as? [String: Any],
+                  let x = (args["x"] as? NSNumber)?.doubleValue,
+                  let y = (args["y"] as? NSNumber)?.doubleValue,
+                  let width = (args["width"] as? NSNumber)?.doubleValue,
+                  let height = (args["height"] as? NSNumber)?.doubleValue else {
+                result(FlutterError(code: "INVALID_ARGUMENTS", message: "x, y, width, height are required", details: nil))
+                return
+            }
+            DispatchQueue.main.async {
+                AdAttributionManager.shared.setAttributionFrame(
+                    x: CGFloat(x),
+                    y: CGFloat(y),
+                    width: CGFloat(width),
+                    height: CGFloat(height)
+                ) { success in
+                    result(success)
+                }
+            }
         default:
             result(FlutterMethodNotImplemented)
         }
