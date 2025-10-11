@@ -29,7 +29,17 @@ class AdAttributionKit {
   static Future<void> setAttributionFrame(Rect rect) async {
     if (!Platform.isIOS) return;
 
-    throw UnimplementedError('setAttributionFrame is not implemented yet.');
+    try {
+      final result = await _channel.invokeMethod('setAttributionFrame', {
+        'x': rect.left,
+        'y': rect.top,
+        'width': rect.width,
+        'height': rect.height,
+      });
+      Logger.debug('AdAttributionKit attribution frame set: $result');
+    } catch (e, stack) {
+      Logger.exception('Error setting AdAttributionKit attribution frame: $e', stack);
+    }
   }
 
   static Future<void> handleTap(String? url) async {
