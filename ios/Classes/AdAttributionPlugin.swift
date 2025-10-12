@@ -41,6 +41,11 @@ public class AdAttributionPlugin: NSObject, FlutterPlugin {
                     result(success)
                 }
             }
+        case "handleTap":
+            let url = (call.arguments as? [String: Any])?["url"] as? String
+            AdAttributionManager.shared.handleTap(url: url) { success in
+                result(success)
+            }
         default:
             result(FlutterMethodNotImplemented)
         }

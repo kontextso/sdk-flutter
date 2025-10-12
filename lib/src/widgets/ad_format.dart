@@ -175,6 +175,8 @@ class AdFormat extends HookWidget {
     if (!storeProductOpened) {
       uri.openInAppBrowser();
     }
+
+    await AdAttributionKit.handleTap(uri);
   }
 
   void _handleWebViewCreated(

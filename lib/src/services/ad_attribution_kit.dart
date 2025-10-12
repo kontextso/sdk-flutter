@@ -42,10 +42,15 @@ class AdAttributionKit {
     }
   }
 
-  static Future<void> handleTap(String? url) async {
+  static Future<void> handleTap(Uri? uri) async {
     if (!Platform.isIOS) return;
 
-    throw UnimplementedError('handleTap is not implemented yet.');
+    try {
+      final result = await _channel.invokeMethod('handleTap', {'url': uri?.toString()});
+      Logger.debug('AdAttributionKit handle tap: $result');
+    } catch (e, stack) {
+      Logger.exception('Error handling AdAttributionKit tap: $e', stack);
+    }
   }
 
   static Future<void> beginView() async {
