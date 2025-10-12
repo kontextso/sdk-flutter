@@ -78,6 +78,11 @@ class AdAttributionKit {
   static Future<void> dispose() async {
     if (!Platform.isIOS) return;
 
-    throw UnimplementedError('dispose is not implemented yet.');
+    try {
+      final result = await _channel.invokeMethod('dispose');
+      Logger.debug('AdAttributionKit disposed: $result');
+    } catch (e, stack) {
+      Logger.exception('Error disposing AdAttributionKit: $e', stack);
+    }
   }
 }

@@ -192,14 +192,6 @@ class AdFormat extends HookWidget {
         break;
       case 'show-iframe':
         showIframe.value = true;
-        final tmpData = {
-          if (data != null) ...data,
-          'jws': jsonEncode({
-            'dummy': 'data',
-          })
-        };
-        _handleAdAttributionJws(tmpData);
-        _setAttributionFrame(adSlotKey);
         break;
       case 'hide-iframe':
         showIframe.value = false;
@@ -288,6 +280,12 @@ class AdFormat extends HookWidget {
     AdAttributionKit.setAttributionFrame(adContainer);
   }
 
+  Future<void> _cleanupAdResources() async {
+    await Future.wait([
+      AdAttributionKit.dispose(),
+    ]);
+  }
+
   @override
   Widget build(BuildContext context) {
     final adSlotKey = useMemoized(() => GlobalKey(), const []);
@@ -331,6 +329,10 @@ class AdFormat extends HookWidget {
 
     final adServerUrl = adsProviderData.adServerUrl;
     final otherParams = adsProviderData.otherParams;
+
+    useEffect(() {
+      return () => _cleanupAdResources();
+    }, const []);
 
     useEffect(() {
       return () => setActive(false);
@@ -407,6 +409,7 @@ class AdFormat extends HookWidget {
     }, [iframeLoaded.value, webViewController.value, otherParamsHash]);
 
     void resetIframe() {
+      _cleanupAdResources();
       iframeLoaded.value = false;
       showIframe.value = false;
       height.value = 0.0;
