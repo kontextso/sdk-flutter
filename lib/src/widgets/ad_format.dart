@@ -68,7 +68,7 @@ class AdFormat extends HookWidget {
 
   void _postDimensions({
     required BuildContext context,
-    required GlobalKey key,
+    required GlobalKey adSlotKey,
     InAppWebViewController? controller,
     required String adServerUrl,
     required bool Function() disposed,
@@ -77,17 +77,17 @@ class AdFormat extends HookWidget {
   }) {
     if (disposed()) return;
 
-    final slot = _slotRectInWindow(key);
-    if (slot == null || controller == null) return;
+    final adSlot = _slotRectInWindow(adSlotKey);
+    if (adSlot == null || controller == null) return;
 
     final viewport = _visibleWindowRect(context);
     final mq = MediaQueryData.fromView(View.of(context));
     final keyboardHeight = mq.viewInsets.bottom;
 
-    final containerWidth = slot.width.nullIfNaN;
-    final containerHeight = slot.height.nullIfNaN;
-    final containerX = slot.left.nullIfNaN;
-    final containerY = slot.top.nullIfNaN;
+    final containerWidth = adSlot.width.nullIfNaN;
+    final containerHeight = adSlot.height.nullIfNaN;
+    final containerX = adSlot.left.nullIfNaN;
+    final containerY = adSlot.top.nullIfNaN;
 
     final isAnyNullDimension =
         containerWidth == null || containerHeight == null || containerX == null || containerY == null;
@@ -101,10 +101,10 @@ class AdFormat extends HookWidget {
       'data': {
         'windowWidth': viewport.width.nullIfNaN,
         'windowHeight': viewport.height.nullIfNaN,
-        'containerWidth': slot.width.nullIfNaN,
-        'containerHeight': slot.height.nullIfNaN,
-        'containerX': slot.left.nullIfNaN,
-        'containerY': slot.top.nullIfNaN,
+        'containerWidth': adSlot.width.nullIfNaN,
+        'containerHeight': adSlot.height.nullIfNaN,
+        'containerX': adSlot.left.nullIfNaN,
+        'containerY': adSlot.top.nullIfNaN,
         'keyboardHeight': keyboardHeight.nullIfNaN,
       },
     };
@@ -180,7 +180,7 @@ class AdFormat extends HookWidget {
     BuildContext context, {
     required String messageType,
     Json? data,
-    required GlobalKey key,
+    required GlobalKey adSlotKey,
     required bool Function() isDisposed,
     required String adServerUrl,
     required Uri inlineUri,
@@ -204,7 +204,7 @@ class AdFormat extends HookWidget {
           })
         };
         _handleAdAttributionJws(tmpData);
-        _setAttributionFrame(key);
+        _setAttributionFrame(adSlotKey);
         break;
       case 'hide-iframe':
         showIframe.value = false;
@@ -308,7 +308,7 @@ class AdFormat extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    final slotKey = useMemoized(() => GlobalKey(), const []);
+    final adSlotKey = useMemoized(() => GlobalKey(), const []);
 
     final ticker = useRef<Timer?>(null);
     final delayedTicker = useRef<Timer?>(null);
@@ -385,7 +385,7 @@ class AdFormat extends HookWidget {
       void postDimensions() => _postDimensions(
             context: context,
             controller: webViewController.value,
-            key: slotKey,
+            adSlotKey: adSlotKey,
             adServerUrl: adServerUrl,
             disposed: () => disposed.value,
             isNullDimensions: isNullDimensions.value,
@@ -460,7 +460,7 @@ class AdFormat extends HookWidget {
     return Offstage(
       offstage: !iframeLoaded.value || !showIframe.value,
       child: Container(
-        key: slotKey,
+        key: adSlotKey,
         height: height.value,
         width: double.infinity,
         color: Colors.transparent,
@@ -480,7 +480,7 @@ class AdFormat extends HookWidget {
               messageType: messageType,
               isDisposed: () => disposed.value,
               data: data,
-              key: slotKey,
+              adSlotKey: adSlotKey,
               adServerUrl: adServerUrl,
               inlineUri: inlineUri!,
               bidId: bidId,
