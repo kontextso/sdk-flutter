@@ -168,7 +168,7 @@ class AdFormat extends HookWidget {
     bool storeProductOpened = false;
     final appStoreId = payload?['appStoreId'];
     if (appStoreId is String && appStoreId.isNotEmpty) {
-      final result = await SkStoreProductService.present(appStoreId: appStoreId);
+      final result = await SKStoreProductService.present(appStoreId: appStoreId);
       storeProductOpened = result;
     }
 
@@ -388,7 +388,7 @@ class AdFormat extends HookWidget {
     useEffect(() {
       return () {
         SKOverlayService.dismiss();
-        SkStoreProductService.dismiss();
+        SKStoreProductService.dismiss();
       };
     }, const []);
 
@@ -468,7 +468,7 @@ class AdFormat extends HookWidget {
 
     void resetIframe() {
       SKOverlayService.dismiss();
-      SkStoreProductService.dismiss();
+      SKStoreProductService.dismiss();
       iframeLoaded.value = false;
       showIframe.value = false;
       height.value = 0.0;

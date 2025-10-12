@@ -3,13 +3,13 @@ import 'dart:io';
 import 'package:flutter/services.dart' show MethodChannel;
 import 'package:kontext_flutter_sdk/src/services/logger.dart' show Logger;
 
-class SkStoreProductService {
-  SkStoreProductService._();
+class SKStoreProductService {
+  SKStoreProductService._();
 
-  static SkStoreProductService? _instance;
+  static SKStoreProductService? _instance;
 
-  factory SkStoreProductService() {
-    return _instance ??= SkStoreProductService._();
+  factory SKStoreProductService() {
+    return _instance ??= SKStoreProductService._();
   }
 
   static const MethodChannel _channel = MethodChannel('kontext_flutter_sdk/sk_store_product');
