@@ -46,6 +46,14 @@ public class AdAttributionPlugin: NSObject, FlutterPlugin {
             AdAttributionManager.shared.handleTap(url: url) { success in
                 result(success)
             }
+        case "beginView":
+            AdAttributionManager.shared.beginView { success in
+                result(success)
+            }
+        case "endView":
+            AdAttributionManager.shared.endView { success in
+                result(success)
+            }
         default:
             result(FlutterMethodNotImplemented)
         }

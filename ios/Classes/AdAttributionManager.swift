@@ -100,6 +100,7 @@ final class AdAttributionManager {
                     completion(FlutterError(code: "HANDLE_TAP_FAILED", message: "Failed to handle tap with URL: \(error)", details: nil))
                 }
             }
+            return
         }
         
         guard #available(iOS 17.4, *) else {
@@ -117,6 +118,46 @@ final class AdAttributionManager {
                 completion(true)
             } catch {
                 completion(FlutterError(code: "HANDLE_TAP_FAILED", message: "Failed to handle tap: \(error)", details: nil))
+            }
+        }
+    }
+
+    func beginView(completion: @escaping (Any) -> Void) {
+        guard #available(iOS 17.4, *) else {
+            completion(false)
+            return
+        }
+        guard let impression = appImpression else {
+            completion(FlutterError(code: "NO_IMPRESSION", message: "AppImpression not initialized", details: nil))
+            return
+        }
+
+        Task {
+            do {
+                try await impression.beginView()
+                completion(true)
+            } catch {
+                completion(FlutterError(code: "BEGIN_VIEW_FAILED", message: "Failed to begin view: \(error)", details: nil))
+            }
+        }
+    }
+
+    func endView(completion: @escaping (Any) -> Void) {
+        guard #available(iOS 17.4, *) else {
+            completion(false)
+            return
+        }
+        guard let impression = appImpression else {
+            completion(FlutterError(code: "NO_IMPRESSION", message: "AppImpression not initialized", details: nil))
+            return
+        }
+
+        Task {
+            do {
+                try await impression.endView()
+                completion(true)
+            } catch {
+                completion(FlutterError(code: "END_VIEW_FAILED", message: "Failed to end view: \(error)", details: nil))
             }
         }
     }

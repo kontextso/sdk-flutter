@@ -56,13 +56,23 @@ class AdAttributionKit {
   static Future<void> beginView() async {
     if (!Platform.isIOS) return;
 
-    throw UnimplementedError('beginView is not implemented yet.');
+    try {
+      final result = await _channel.invokeMethod('beginView');
+      Logger.debug('AdAttributionKit view began: $result');
+    } catch (e, stack) {
+      Logger.exception('Error beginning AdAttributionKit view: $e', stack);
+    }
   }
 
   static Future<void> endView() async {
     if (!Platform.isIOS) return;
 
-    throw UnimplementedError('endView is not implemented yet.');
+    try {
+      final result = await _channel.invokeMethod('endView');
+      Logger.debug('AdAttributionKit view ended: $result');
+    } catch (e, stack) {
+      Logger.exception('Error ending AdAttributionKit view: $e', stack);
+    }
   }
 
   static Future<void> dispose() async {
