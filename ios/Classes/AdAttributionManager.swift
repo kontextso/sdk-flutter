@@ -78,7 +78,31 @@ final class AdAttributionManager {
     }
     
     func handleTap(url: String?, completion: @escaping (Any) -> Void) {
-        guard #available(iOS 18.0, *) else {
+        if let urlString = url, !urlString.isEmpty {
+            guard #available(iOS 18.0, *) else {
+                completion(FlutterError(code: "UNSUPPORTED_IOS_VERSION", message: "Handling reengagement URL requires iOS 18.0 or later", details: nil))
+                return
+            }
+            guard let impression = appImpression else {
+                completion(FlutterError(code: "NO_IMPRESSION", message: "AppImpression not initialized", details: nil))
+                return
+            }
+            guard let reengagementURL = URL(string: urlString) else {
+                completion(FlutterError(code: "INVALID_URL", message: "Provided URL is invalid", details: nil))
+                return
+            }
+            
+            Task {
+                do {
+                    try await impression.handleTap(reengagementURL: reengagementURL)
+                    completion(true)
+                } catch {
+                    completion(FlutterError(code: "HANDLE_TAP_FAILED", message: "Failed to handle tap with URL: \(error)", details: nil))
+                }
+            }
+        }
+        
+        guard #available(iOS 17.4, *) else {
             completion(false)
             return
         }
@@ -87,17 +111,9 @@ final class AdAttributionManager {
             return
         }
         
-        Task { [weak self] in
-            guard let self = self else {
-                completion(false)
-                return
-            }
+        Task {
             do {
-                if let urlString = url, let reengagementURL = URL(string: urlString) {
-                    try await impression.handleTap(reengagementURL: reengagementURL)
-                } else {
-                    try await impression.handleTap()
-                }
+                try await impression.handleTap()
                 completion(true)
             } catch {
                 completion(FlutterError(code: "HANDLE_TAP_FAILED", message: "Failed to handle tap: \(error)", details: nil))
