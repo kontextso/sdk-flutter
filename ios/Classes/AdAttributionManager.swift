@@ -161,6 +161,26 @@ final class AdAttributionManager {
             }
         }
     }
+
+    func dispose(completion: @escaping (Any) -> Void) {
+        appImpressionBox = nil
+        hostWindow = nil
+
+        let uiCleanup = { [weak self] in
+            guard let self = self else { return }
+            if #available(iOS 17.4, *) {
+                self.attributionView?.removeFromSuperview()
+                self.attributionView = nil
+            }
+            completion(true)
+        }
+
+        if Thread.isMainThread {
+            uiCleanup()
+        } else {
+            DispatchQueue.main.async { uiCleanup() }
+        }
+    }
     
     private func currentKeyWindow() -> UIWindow? {
         // Scan scenes by activation, prefer .foregroundActive, then .foregroundInactive
