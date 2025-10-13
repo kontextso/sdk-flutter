@@ -23,13 +23,13 @@ final class AdAttributionManager {
         get { attributionViewBox as? UIEventAttributionView }
         set { attributionViewBox = newValue }
     }
-
+    
     @available(iOS 14.5, *)
     private var skImpression: SKAdImpression? {
         get { skImpressionBox as? SKAdImpression }
         set { skImpressionBox = newValue }
     }
-
+    
     func initImpression(jws: String, completion: @escaping (Any) -> Void) {
         guard #available(iOS 17.4, *) else {
             completion(false)
@@ -129,7 +129,7 @@ final class AdAttributionManager {
             }
         }
     }
-
+    
     func beginView(completion: @escaping (Any) -> Void) {
         guard #available(iOS 17.4, *) else {
             completion(false)
@@ -139,7 +139,7 @@ final class AdAttributionManager {
             completion(FlutterError(code: "NO_IMPRESSION", message: "AppImpression not initialized", details: nil))
             return
         }
-
+        
         Task {
             do {
                 try await impression.beginView()
@@ -149,7 +149,7 @@ final class AdAttributionManager {
             }
         }
     }
-
+    
     func endView(completion: @escaping (Any) -> Void) {
         guard #available(iOS 17.4, *) else {
             completion(false)
@@ -159,7 +159,7 @@ final class AdAttributionManager {
             completion(FlutterError(code: "NO_IMPRESSION", message: "AppImpression not initialized", details: nil))
             return
         }
-
+        
         Task {
             do {
                 try await impression.endView()
@@ -170,19 +170,80 @@ final class AdAttributionManager {
         }
     }
 
-
-
+    /// Required keys:
+    ///  - advertisedAppStoreItemIdentifier: Int / NSNumber
+    ///  - adNetworkIdentifier: String
+    ///  - adCampaignIdentifier: Int / NSNumber (0..99)
+    ///  - adImpressionIdentifier: String (UUID recommended)
+    ///  - timestamp: Double/Int/NSNumber (unix seconds)
+    ///  - signature: String
+    ///  - version: String (e.g. "4.0", "3.0", "2.2")
+    /// Optional:
+    ///  - sourceAppStoreItemIdentifier: Int/NSNumber (0 allowed if publisher app has no App Store ID - for testing)
+    func skanInitImpression(params: [String: Any], completion: @escaping (Any) -> Void) {
+        guard #available(iOS 16.0, *) else {
+            completion(false)
+            return
+        }
+        
+        func num(_ any: Any?) -> NSNumber? {
+            if let n = any as? NSNumber { return n }
+            if let i = any as? Int { return NSNumber(value: i) }
+            if let d = any as? Double { return NSNumber(value: d) }
+            if let s = any as? String, let i = Int(s) { return NSNumber(value: i) }
+            return nil
+        }
+        
+        let advertised = num(params["advertisedAppStoreItemIdentifier"])
+        let networkId = params["adNetworkIdentifier"] as? String
+        let campaign = num(params["adCampaignIdentifier"])
+        let impId = params["adImpressionIdentifier"] as? String
+        let timestamp = num(params["timestamp"])
+        let signature = params["signature"] as? String
+        let version = params["version"] as? String
+        
+        let source = num(params["sourceAppStoreItemIdentifier"]) ?? NSNumber(value: 0)
+        
+        var missing: [String] = []
+        if advertised == nil { missing.append("advertisedAppStoreItemIdentifier") }
+        if networkId?.isEmpty != false { missing.append("adNetworkIdentifier") }
+        if campaign == nil { missing.append("adCampaignIdentifier") }
+        if impId?.isEmpty != false { missing.append("adImpressionIdentifier") }
+        if timestamp == nil { missing.append("timestamp") }
+        if signature?.isEmpty != false { missing.append("signature") }
+        if version?.isEmpty != false { missing.append("version") }
+        
+        guard missing.isEmpty else {
+            completion(FlutterError(code: "MISSING_ARGUMENTS", message: "Missing required arguments: \(missing.joined(separator: ", "))", details: ["provided_keys": Array(params.keys)]))
+            return
+        }
+        
+        let impression = SKAdImpression(
+            sourceAppStoreItemIdentifier: source,
+            advertisedAppStoreItemIdentifier: advertised!,
+            adNetworkIdentifier: networkId!,
+            adCampaignIdentifier: campaign!,
+            adImpressionIdentifier: impId!,
+            timestamp: timestamp!,
+            signature: signature!,
+            version: version!
+        )
+        
+        self.skImpression = impression
+        completion(true)
+    }
+    
     func skanStartImpression(completion: @escaping (Any) -> Void) {
         guard #available(iOS 14.5, *) else {
             completion(false)
             return
         }
-
+        
         guard let impression = skImpression else {
             completion(FlutterError(code: "NO_IMPRESSION", message: "SKAdImpression not initialized", details: nil))
             return
         }
-
+        
         SKAdNetwork.startImpression(impression) { error in
             if let error = error {
                 completion(FlutterError(code: "SKAN_START_IMPRESSION_FAILED", message: "Failed to start SKAdImpression: \(error)", details: nil))
@@ -191,18 +252,18 @@ final class AdAttributionManager {
             }
         }
     }
-
+    
     func skanEndImpression(completion: @escaping (Any) -> Void) {
         guard #available(iOS 14.5, *) else {
             completion(false)
             return
         }
-
+        
         guard let impression = skImpression else {
             completion(FlutterError(code: "NO_IMPRESSION", message: "SKAdImpression not initialized", details: nil))
             return
         }
-
+        
         SKAdNetwork.endImpression(impression) { error in
             if let error = error {
                 completion(FlutterError(code: "SKAN_END_IMPRESSION_FAILED", message: "Failed to end SKAdImpression: \(error)", details: nil))
@@ -212,11 +273,10 @@ final class AdAttributionManager {
         }
     }
 
-
     func dispose(completion: @escaping (Any) -> Void) {
         appImpressionBox = nil
         hostWindow = nil
-
+        
         let uiCleanup = { [weak self] in
             guard let self = self else { return }
             if #available(iOS 17.4, *) {
@@ -225,7 +285,7 @@ final class AdAttributionManager {
             }
             completion(true)
         }
-
+        
         if Thread.isMainThread {
             uiCleanup()
         } else {

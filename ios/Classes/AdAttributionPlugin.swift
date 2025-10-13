@@ -54,6 +54,14 @@ public class AdAttributionPlugin: NSObject, FlutterPlugin {
             AdAttributionManager.shared.endView { success in
                 result(success)
             }
+        case "skanInitImpression":
+            guard let args = call.arguments as? [String: Any] else {
+                result(FlutterError(code: "INVALID_ARGUMENTS", message: "expected dictionary", details: nil))
+                return
+            }
+            AdAttributionManager.shared.skanInitImpression(params: args) { success in
+                result(success)
+            }
         case "skanStartImpression":
             AdAttributionManager.shared.skanStartImpression { success in
                 result(success)
