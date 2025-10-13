@@ -54,6 +54,14 @@ public class AdAttributionPlugin: NSObject, FlutterPlugin {
             AdAttributionManager.shared.endView { success in
                 result(success)
             }
+        case "skanStartImpression":
+            AdAttributionManager.shared.skanStartImpression { success in
+                result(success)
+            }
+        case "skanEndImpression":
+            AdAttributionManager.shared.skanEndImpression { success in
+                result(success)
+            }
         case "dispose":
             AdAttributionManager.shared.dispose { success in
                 result(success)

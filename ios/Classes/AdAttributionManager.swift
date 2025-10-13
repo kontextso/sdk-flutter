@@ -2,6 +2,7 @@ import Flutter
 import Foundation
 import UIKit
 import AdAttributionKit
+import StoreKit
 
 final class AdAttributionManager {
     static let shared = AdAttributionManager()
@@ -9,6 +10,7 @@ final class AdAttributionManager {
     private var appImpressionBox: Any?
     private var attributionViewBox: Any?
     private weak var hostWindow: UIWindow?
+    private var skImpressionBox: Any?
     
     @available(iOS 17.4, *)
     private var appImpression: AppImpression? {
@@ -21,7 +23,13 @@ final class AdAttributionManager {
         get { attributionViewBox as? UIEventAttributionView }
         set { attributionViewBox = newValue }
     }
-    
+
+    @available(iOS 14.5, *)
+    private var skImpression: SKAdImpression? {
+        get { skImpressionBox as? SKAdImpression }
+        set { skImpressionBox = newValue }
+    }
+
     func initImpression(jws: String, completion: @escaping (Any) -> Void) {
         guard #available(iOS 17.4, *) else {
             completion(false)
@@ -161,6 +169,49 @@ final class AdAttributionManager {
             }
         }
     }
+
+
+
+    func skanStartImpression(completion: @escaping (Any) -> Void) {
+        guard #available(iOS 14.5, *) else {
+            completion(false)
+            return
+        }
+
+        guard let impression = skImpression else {
+            completion(FlutterError(code: "NO_IMPRESSION", message: "SKAdImpression not initialized", details: nil))
+            return
+        }
+
+        SKAdNetwork.startImpression(impression) { error in
+            if let error = error {
+                completion(FlutterError(code: "SKAN_START_IMPRESSION_FAILED", message: "Failed to start SKAdImpression: \(error)", details: nil))
+            } else {
+                completion(true)
+            }
+        }
+    }
+
+    func skanEndImpression(completion: @escaping (Any) -> Void) {
+        guard #available(iOS 14.5, *) else {
+            completion(false)
+            return
+        }
+
+        guard let impression = skImpression else {
+            completion(FlutterError(code: "NO_IMPRESSION", message: "SKAdImpression not initialized", details: nil))
+            return
+        }
+
+        SKAdNetwork.endImpression(impression) { error in
+            if let error = error {
+                completion(FlutterError(code: "SKAN_END_IMPRESSION_FAILED", message: "Failed to end SKAdImpression: \(error)", details: nil))
+            } else {
+                completion(true)
+            }
+        }
+    }
+
 
     func dispose(completion: @escaping (Any) -> Void) {
         appImpressionBox = nil
