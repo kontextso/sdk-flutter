@@ -169,15 +169,15 @@ final class AdAttributionManager {
             }
         }
     }
-
+    
     /// Required keys:
     ///  - advertisedAppStoreItemIdentifier: Int / NSNumber
     ///  - adNetworkIdentifier: String
     ///  - adCampaignIdentifier: Int / NSNumber (0..99)
-    ///  - adImpressionIdentifier: String (UUID recommended)
+    ///  - adImpressionIdentifier: String
     ///  - timestamp: Double/Int/NSNumber (unix seconds)
     ///  - signature: String
-    ///  - version: String (e.g. "4.0", "3.0", "2.2")
+    ///  - version: String
     /// Optional:
     ///  - sourceAppStoreItemIdentifier: Int/NSNumber (0 allowed if publisher app has no App Store ID - for testing)
     func skanInitImpression(params: [String: Any], completion: @escaping (Any) -> Void) {
@@ -218,19 +218,34 @@ final class AdAttributionManager {
             return
         }
         
-        let impression = SKAdImpression(
-            sourceAppStoreItemIdentifier: source,
-            advertisedAppStoreItemIdentifier: advertised!,
-            adNetworkIdentifier: networkId!,
-            adCampaignIdentifier: campaign!,
-            adImpressionIdentifier: impId!,
-            timestamp: timestamp!,
-            signature: signature!,
-            version: version!
-        )
-        
-        self.skImpression = impression
-        completion(true)
+        if #available(iOS 16.0, *) {
+            let imp = SKAdImpression(
+                sourceAppStoreItemIdentifier: source,
+                advertisedAppStoreItemIdentifier: advertised!,
+                adNetworkIdentifier: networkId!,
+                adCampaignIdentifier: campaign!,
+                adImpressionIdentifier: impId!,
+                timestamp: timestamp!,
+                signature: signature!,
+                version: version!
+            )
+            self.skImpression = imp
+            completion(true)
+        } else if #available(iOS 14.5, *) {
+            let imp = SKAdImpression()
+            imp.sourceAppStoreItemIdentifier = source
+            imp.advertisedAppStoreItemIdentifier = advertised!
+            imp.adNetworkIdentifier = networkId!
+            imp.adCampaignIdentifier = campaign!
+            imp.adImpressionIdentifier = impId!
+            imp.timestamp = timestamp!
+            imp.signature = signature!
+            imp.version = version!
+            self.skImpression = imp
+            completion(true)
+        } else {
+            completion(false)
+        }
     }
     
     func skanStartImpression(completion: @escaping (Any) -> Void) {
@@ -272,7 +287,7 @@ final class AdAttributionManager {
             }
         }
     }
-
+    
     func dispose(completion: @escaping (Any) -> Void) {
         appImpressionBox = nil
         hostWindow = nil
