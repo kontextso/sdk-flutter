@@ -78,7 +78,7 @@ class Api {
       final variant = variantId?.nullIfEmpty;
 
       final result = await _client.post(
-        '/preload',
+        '/preload?publisherToken=$publisherToken',
         body: {
           'publisherToken': publisherToken,
           'conversationId': conversationId,
