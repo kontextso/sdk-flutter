@@ -7,12 +7,15 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:kontext_flutter_sdk/src/models/ad_event.dart';
 import 'package:kontext_flutter_sdk/src/models/message.dart';
 import 'package:kontext_flutter_sdk/src/services/logger.dart';
+import 'package:kontext_flutter_sdk/src/services/sk_overlay_service.dart';
+import 'package:kontext_flutter_sdk/src/services/sk_store_product_service.dart';
 import 'package:kontext_flutter_sdk/src/utils/constants.dart';
 import 'package:kontext_flutter_sdk/src/utils/extensions.dart';
+import 'package:kontext_flutter_sdk/src/utils/helper_methods.dart';
 import 'package:kontext_flutter_sdk/src/utils/kontext_url_builder.dart';
-import 'package:kontext_flutter_sdk/src/utils/types.dart' show OnEventCallback, Json;
+import 'package:kontext_flutter_sdk/src/utils/types.dart' show OnEventCallback, Json, OpenIframeComponent;
 import 'package:kontext_flutter_sdk/src/widgets/ads_provider_data.dart';
-import 'package:kontext_flutter_sdk/src/widgets/hooks/select_bid.dart';
+import 'package:kontext_flutter_sdk/src/widgets/utils/select_bid.dart';
 import 'package:kontext_flutter_sdk/src/widgets/interstitial_modal.dart';
 import 'package:kontext_flutter_sdk/src/widgets/kontext_webview.dart';
 
@@ -140,7 +143,7 @@ class AdFormat extends HookWidget {
       }
 
       if (uri != null && data['name'] == 'ad.clicked') {
-        uri.openUri();
+        _handleAdClickedEvent(uri, payload: payload);
       }
 
       final updatedData = {
@@ -157,6 +160,19 @@ class AdFormat extends HookWidget {
     } catch (e, stack) {
       Logger.exception(e, stack);
       return;
+    }
+  }
+
+  Future<void> _handleAdClickedEvent(Uri uri, {Json? payload}) async {
+    bool storeProductOpened = false;
+    final appStoreId = payload?['appStoreId'];
+    if (appStoreId is String && appStoreId.isNotEmpty) {
+      final result = await SkStoreProductService.present(appStoreId: appStoreId);
+      storeProductOpened = result;
+    }
+
+    if (!storeProductOpened) {
+      uri.openInAppBrowser();
     }
   }
 
@@ -191,18 +207,57 @@ class AdFormat extends HookWidget {
         }
         break;
       case 'open-component-iframe':
-        final component = data?['component'];
-        if (component is! String || component.isEmpty) {
-          Logger.error('Ad component is missing or invalid. Data: $data');
+        final component = toOpenIframeComponent(data?['component']);
+        if (component == null) {
           return;
         }
 
-        final milliseconds = data?['timeout'];
-        final timeout = (milliseconds is int && milliseconds > 0)
-            ? Duration(milliseconds: milliseconds)
-            : const Duration(seconds: 5);
+        _handleOpenComponentIframe(
+          context,
+          adServerUrl: adServerUrl,
+          inlineUri: inlineUri,
+          bidId: bidId,
+          component: component,
+          data: data,
+          onEvent: adsProviderData.onEvent,
+        );
+        break;
+      case 'close-component-iframe':
+        final component = toOpenIframeComponent(data?['component']);
+        if (component == null) {
+          return;
+        }
 
-        final modalUri = inlineUri.replacePath('/api/$component/$bidId');
+        _handleCloseComponentIframe(component);
+        break;
+      case 'error-iframe':
+        resetIframe();
+        break;
+      default:
+    }
+  }
+
+  void _handleOpenComponentIframe(
+    BuildContext context, {
+    required String adServerUrl,
+    required Uri inlineUri,
+    required String bidId,
+    required OpenIframeComponent component,
+    Json? data,
+    OnEventCallback? onEvent,
+  }) {
+    if (data == null) {
+      Logger.error('Ad component data is missing. Component: $component');
+      return;
+    }
+
+    final milliseconds = data['timeout'];
+    final timeout =
+        (milliseconds is int && milliseconds > 0) ? Duration(milliseconds: milliseconds) : const Duration(seconds: 5);
+
+    switch (component) {
+      case OpenIframeComponent.modal:
+        final modalUri = inlineUri.replacePath('/api/${component.name}/$bidId');
         InterstitialModal.show(
           context,
           adServerUrl: adServerUrl,
@@ -210,15 +265,50 @@ class AdFormat extends HookWidget {
           initTimeout: timeout,
           onEventIframe: (data) => _handleEventIframe(
             adServerUrl: adServerUrl,
-            onEvent: adsProviderData.onEvent,
+            onEvent: onEvent,
             data: data,
           ),
+          onOpenComponentIframe: (component, data) => _handleOpenComponentIframe(
+            context,
+            adServerUrl: adServerUrl,
+            inlineUri: inlineUri,
+            bidId: bidId,
+            component: component,
+            data: data,
+            onEvent: onEvent,
+          ),
+          closeSKOverlay: () => _handleCloseComponentIframe(OpenIframeComponent.skoverlay),
         );
         break;
-      case 'error-iframe':
-        resetIframe();
+      case OpenIframeComponent.skoverlay:
+        final appStoreId = data['appStoreId'];
+        if (appStoreId is! String || appStoreId.isEmpty) {
+          Logger.error('App Store ID is required to open SKOverlay. Data: $data');
+          return;
+        }
+
+        final position = SKOverlayPosition.values.firstWhere(
+          (e) => e.name == (data['position'] is String ? data['position'].toLowerCase() : null),
+          orElse: () => SKOverlayPosition.bottom,
+        );
+
+        final dismissible = data['dismissible'];
+        SKOverlayService.present(
+          appStoreId: appStoreId,
+          position: position,
+          dismissible: dismissible is bool ? dismissible : true,
+        );
         break;
-      default:
+    }
+  }
+
+  void _handleCloseComponentIframe(OpenIframeComponent component) {
+    switch (component) {
+      case OpenIframeComponent.modal:
+        break; // Do nothing, already handled by InterstitialModal
+      case OpenIframeComponent.skoverlay:
+        SKOverlayService.dismiss();
+        break;
     }
   }
 
@@ -265,6 +355,13 @@ class AdFormat extends HookWidget {
 
     final adServerUrl = adsProviderData.adServerUrl;
     final otherParams = adsProviderData.otherParams;
+
+    useEffect(() {
+      return () {
+        SKOverlayService.dismiss();
+        SkStoreProductService.dismiss();
+      };
+    }, const []);
 
     useEffect(() {
       return () => setActive(false);
@@ -341,6 +438,8 @@ class AdFormat extends HookWidget {
     }, [iframeLoaded.value, webViewController.value, otherParamsHash]);
 
     void resetIframe() {
+      SKOverlayService.dismiss();
+      SkStoreProductService.dismiss();
       iframeLoaded.value = false;
       showIframe.value = false;
       height.value = 0.0;
@@ -357,7 +456,7 @@ class AdFormat extends HookWidget {
         width: double.infinity,
         color: Colors.transparent,
         child: KontextWebview(
-          key: ValueKey('ad-$messageId-$bidId'), // Force rebuild on bidId or messageId change
+          key: ValueKey('ad-$messageId-$bidId'),
           uri: inlineUri,
           allowedOrigins: [adServerUrl],
           onEventIframe: (data) => _handleEventIframe(

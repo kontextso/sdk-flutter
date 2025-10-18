@@ -2,7 +2,8 @@ import 'dart:async' show Timer;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show DeviceOrientation, SystemChrome;
-import 'package:kontext_flutter_sdk/src/utils/types.dart' show Json;
+import 'package:kontext_flutter_sdk/src/utils/helper_methods.dart';
+import 'package:kontext_flutter_sdk/src/utils/types.dart' show Json, OpenIframeComponent;
 import 'package:kontext_flutter_sdk/src/widgets/kontext_webview.dart';
 
 class InterstitialModal {
@@ -18,7 +19,13 @@ class InterstitialModal {
     required Uri uri,
     Duration initTimeout = const Duration(seconds: 5),
     required void Function(Json? data) onEventIframe,
+    required void Function(OpenIframeComponent component, Json? data) onOpenComponentIframe,
+    required VoidCallback closeSKOverlay,
   }) {
+    close() {
+      closeSKOverlay();
+      _close();
+    }
     close();
 
     final visible = ValueNotifier<bool>(false);
@@ -53,6 +60,13 @@ class InterstitialModal {
                           _initTimer?.cancel();
                           visible.value = true;
                           break;
+                        case 'open-component-iframe':
+                          final component = toOpenIframeComponent(data?['component']);
+                          if (component == null) {
+                            return;
+                          }
+                          onOpenComponentIframe(component, data);
+                          break;
                         case 'close-component-iframe':
                         case 'error-component-iframe':
                           close();
@@ -73,7 +87,7 @@ class InterstitialModal {
     _initTimer = Timer(initTimeout, () => close());
   }
 
-  static void close() {
+  static void _close() {
     _initTimer?.cancel();
     _initTimer = null;
     _entry?.remove();
