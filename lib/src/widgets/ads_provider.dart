@@ -22,7 +22,7 @@ class AdsProvider extends HookWidget {
     this.adServerUrl = kDefaultAdServerUrl,
     required this.publisherToken,
     required this.userId,
-    this.email,
+    this.userEmail,
     required this.conversationId,
     required this.messages,
     this.isDisabled = false,
@@ -52,7 +52,7 @@ class AdsProvider extends HookWidget {
   final String userId;
 
   /// The email of the user.
-  final String? email;
+  final String? userEmail;
 
   /// Unique identifier of the conversation.
   final String conversationId;
@@ -162,7 +162,7 @@ class AdsProvider extends HookWidget {
       context,
       publisherToken: publisherToken,
       userId: userId,
-      email: email,
+      userEmail: userEmail,
       conversationId: conversationId,
       messages: messages,
       enabledPlacementCodes: enabledPlacementCodes,
