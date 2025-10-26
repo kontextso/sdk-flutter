@@ -55,7 +55,7 @@ void main() {
     expect(response.statusCode, 200);
 
     verify(() => mock.post(
-          Uri.parse('https://api.test/preload'),
+          Uri.parse('https://api.test/preload?publisherToken=test-token'),
           headers: {'Content-Type': 'application/json'},
           body: any(
             named: 'body',
@@ -170,7 +170,7 @@ void main() {
     );
 
     verify(() => mock.post(
-          Uri.parse('https://api.test/preload'),
+          Uri.parse('https://api.test/preload?publisherToken=test-token'),
           headers: {'Content-Type': 'application/json'},
           body: any(
             named: 'body',
@@ -192,10 +192,10 @@ void main() {
 
   test('device provider throws -> falls back to empty device payload', () async {
     when(() => mock.post(
-      any(),
-      headers: any(named: 'headers'),
-      body: any(named: 'body'),
-    )).thenAnswer((_) async {
+          any(),
+          headers: any(named: 'headers'),
+          body: any(named: 'body'),
+        )).thenAnswer((_) async {
       return http.Response('{"sessionId": "123", "bids": []}', 200);
     });
 
@@ -212,26 +212,26 @@ void main() {
     );
 
     verify(() => mock.post(
-      Uri.parse('https://api.test/preload'),
-      headers: {'Content-Type': 'application/json'},
-      body: any(
-        named: 'body',
-        that: predicate<String>((raw) {
-          final body = jsonDecode(raw) as Map<String, dynamic>;
-          final device = body['device'];
-          if (device is! Map<String, dynamic>) return false;
+          Uri.parse('https://api.test/preload?publisherToken=test-token'),
+          headers: {'Content-Type': 'application/json'},
+          body: any(
+            named: 'body',
+            that: predicate<String>((raw) {
+              final body = jsonDecode(raw) as Map<String, dynamic>;
+              final device = body['device'];
+              if (device is! Map<String, dynamic>) return false;
 
-          const requiredKeys = {
-            'os',
-            'hardware',
-            'screen',
-            'power',
-            'audio',
-            'network',
-          };
-          return requiredKeys.every(device.containsKey);
-        }),
-      ),
-    )).called(1);
+              const requiredKeys = {
+                'os',
+                'hardware',
+                'screen',
+                'power',
+                'audio',
+                'network',
+              };
+              return requiredKeys.every(device.containsKey);
+            }),
+          ),
+        )).called(1);
   });
 }
