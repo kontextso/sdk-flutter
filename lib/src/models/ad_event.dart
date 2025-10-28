@@ -65,14 +65,25 @@ class AdEvent {
   AdEvent({
     required this.name,
     this.code,
+    this.skipCode,
     this.payload = const {},
   });
+
+  static const String skipCodeUnFilledBid = 'unfilled_bid';
+  static const String skipCodeSessionDisabled = 'session_disabled';
+  static const String skipCodeUnknown = 'unknown';
+  static const String skipCodeError = 'error';
 
   /// The name of the event (e.g., 'ad.clicked', 'ad.viewed').
   final String name;
 
   /// The ad format code that identifies the displayed ad.
   final String? code;
+
+  /// The skip code indicating the reason for no-fill events.
+  /// This can be one of the predefined AdEvent.skipCode* constants (e.g., 'unfilled_bid', 'session_disabled', 'unknown', 'error'),
+  /// or a custom code provided by the server.
+  final String? skipCode;
 
   /// Additional data associated with the event.
   final Json payload;

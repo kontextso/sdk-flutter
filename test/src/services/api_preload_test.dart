@@ -119,6 +119,30 @@ void main() {
     expect(response.permanentError, true);
   });
 
+  test('skip info in payload', () async {
+    when(() => mock.post(
+          any(),
+          headers: any(named: 'headers'),
+          body: any(named: 'body'),
+        )).thenAnswer((_) async {
+      return http.Response('{"skip":true,"skipCode":"S123"}', 200);
+    });
+
+    final response = await api.preload(
+      publisherToken: 'test-token',
+      userId: 'user-123',
+      conversationId: 'conv-456',
+      messages: [],
+      enabledPlacementCodes: [],
+    );
+
+    expect(response, isA<PreloadResponse>());
+    expect(response.sessionId, isNull);
+    expect(response.bids, isEmpty);
+    expect(response.skip, true);
+    expect(response.skipCode, 'S123');
+  });
+
   test('exception -> safe fallback', () async {
     when(() => mock.post(
           any(),
