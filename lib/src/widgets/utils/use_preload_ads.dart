@@ -92,8 +92,8 @@ void usePreloadAds(
     setReadyForStreamingAssistant(false);
     setReadyForStreamingUser(false);
 
-    notifyAdFilled() => onEvent?.call(AdEvent(name: 'ad.filled'));
-    notifyAdNoFill(String skipCode) => onEvent?.call(AdEvent(name: 'ad.no-fill', skipCode: skipCode));
+    notifyAdFilled() => onEvent?.call(AdEvent(type: AdEventType.adFilled));
+    notifyAdNoFill(String skipCode) => onEvent?.call(AdEvent(type: AdEventType.adNoFill, skipCode: skipCode));
 
     Future<void> preload() async {
       if (isDisabled || sessionDisabled.value) {

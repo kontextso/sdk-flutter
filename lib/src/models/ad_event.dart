@@ -1,72 +1,48 @@
 import 'package:kontext_flutter_sdk/src/services/logger.dart' show Logger;
 import 'package:kontext_flutter_sdk/src/utils/types.dart' show Json;
 
+/// Enum representing all possible ad event types.
+enum AdEventType {
+  adClicked('ad.clicked'),
+  adViewed('ad.viewed'),
+  adFilled('ad.filled'),
+  adNoFill('ad.no-fill'),
+  adRenderStarted('ad.render-started'),
+  adRenderCompleted('ad.render-completed'),
+  adError('ad.error'),
+  rewardGranted('reward.granted'),
+  videoStarted('video.started'),
+  videoCompleted('video.completed'),
+  unknown('unknown');
+
+  const AdEventType(this.value);
+
+  /// The string value of the event type.
+  final String value;
+
+  /// Creates an [AdEventType] from a string value.
+  static AdEventType fromString(String? value) {
+    return AdEventType.values.firstWhere(
+      (type) => type.value == value,
+      orElse: () => AdEventType.unknown,
+    );
+  }
+}
+
 /// Represents an advertisement-related event within the SDK.
-///
-/// Supported events:
-///
-/// ad.clicked
-///  • The user has clicked the ad.
-///  Payload:
-///    id: Bid ID
-///    content: Ad content
-///    messageId: ID of the message
-///    url: URL of the ad to be opened
-///    format: Format
-///    area: Area where the user clicked
-///
-/// ad.viewed
-///  • The user has viewed the ad.
-///  Payload:
-///    id: Bid ID
-///    content: Ad content
-///    messageId: ID of the message
-///    format: Format
-///
-/// ad.filled
-///  • Ad is available and can be rendered (bids array is not empty).
-///  Payload: empty
-///
-/// ad.no-fill
-///  • Ad is not available (bids array is empty).
-///  Payload: empty
-///
-/// ad.render-started
-///  • Triggered before the first token was received.
-///  Payload:
-///    id: Bid ID
-///
-/// ad.render-completed
-///  • Triggered after the last token was received.
-///  Payload:
-///    id: Bid ID
-///
-/// ad.error
-///  • Triggered when an error occurs.
-///  Payload:
-///    message: Error message
-///    errCode: Error code
-///
-/// reward.granted
-///  • Triggered when the user receives reward.
-///  Payload:
-///    id: Bid ID
-///
-/// video.started
-///  • Video playback started.
-///  Payload:
-///    id: Bid ID
-///
-/// video.completed
-///  • Video playback finished.
-///  Payload:
-///    id: Bid ID
 class AdEvent {
   AdEvent({
-    required this.name,
+    required this.type,
     this.code,
     this.skipCode,
-    this.payload = const {},
+    this.id,
+    this.content,
+    this.messageId,
+    this.url,
+    this.format,
+    this.area,
+    this.message,
+    this.errCode,
   });
 
   static const String skipCodeUnFilledBid = 'unfilled_bid';
@@ -74,34 +50,63 @@ class AdEvent {
   static const String skipCodeUnknown = 'unknown';
   static const String skipCodeError = 'error';
 
-  /// The name of the event (e.g., 'ad.clicked', 'ad.viewed').
-  final String name;
+  /// The type of the ad event.
+  final AdEventType type;
 
   /// The ad format code that identifies the displayed ad.
   final String? code;
 
-  /// The skip code indicating the reason for no-fill events.
+  /// The skip code indicating the reason for [AdEventType.adNoFill] events.
   /// This can be one of the predefined AdEvent.skipCode* constants (e.g., 'unfilled_bid', 'session_disabled', 'unknown', 'error'),
   /// or a custom code provided by the server.
   final String? skipCode;
 
-  /// Additional data associated with the event.
-  final Json payload;
+  /// Bid ID (used in multiple events).
+  final String? id;
+
+  /// Ad content (used in [AdEventType.adClicked] and [AdEventType.adViewed]).
+  final String? content;
+
+  /// ID of the message (used in [AdEventType.adClicked] and [AdEventType.adViewed]).
+  final String? messageId;
+
+  /// URL of the ad to be opened (used in [AdEventType.adClicked]).
+  final String? url;
+
+  /// Format (used in [AdEventType.adClicked] and [AdEventType.adViewed]).
+  final String? format;
+
+  /// Area where the user clicked (used in [AdEventType.adClicked]).
+  final String? area;
+
+  /// Error message (used in [AdEventType.adError]).
+  final String? message;
+
+  /// Error code (used in [AdEventType.adError]).
+  final String? errCode;
 
   /// Creates an [AdEvent] instance from a JSON object.
   factory AdEvent.fromJson(Json json) {
     try {
+      final payloadData = (json['payload'] as Json?) ?? {};
       return AdEvent(
-        name: json['name'] as String,
+        type: AdEventType.fromString(json['name'] as String?),
         code: json['code'] as String?,
-        payload: (json['payload'] as Json?) ?? {},
+        id: payloadData['id'] as String?,
+        content: payloadData['content'] as String?,
+        messageId: payloadData['messageId'] as String?,
+        url: payloadData['url'] as String?,
+        format: payloadData['format'] as String?,
+        area: payloadData['area'] as String?,
+        message: payloadData['message'] as String?,
+        errCode: payloadData['errCode'] as String?,
       );
     } catch (e, stack) {
       Logger.exception(e, stack);
     }
-    return AdEvent(name: 'unknown', payload: {});
+    return AdEvent(type: AdEventType.unknown);
   }
 
   @override
-  String toString() => 'AdEvent(name: $name, code: $code, payload: $payload)';
+  String toString() => 'AdEvent(type: $type, code: $code, skipCode: $skipCode, id: $id, content: $content, messageId: $messageId, url: $url, format: $format, area: $area, message: $message, errCode: $errCode)';
 }

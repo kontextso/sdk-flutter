@@ -142,7 +142,7 @@ class AdFormat extends HookWidget {
         uri = KontextUrlBuilder(baseUrl: adServerUrl, path: path).buildUri();
       }
 
-      if (uri != null && data['name'] == 'ad.clicked') {
+      if (uri != null && data['name'] == AdEventType.adClicked.value) {
         _handleAdClickedEvent(uri, payload: payload);
       }
 
@@ -155,8 +155,8 @@ class AdFormat extends HookWidget {
           }
       };
 
-      final event = AdEvent.fromJson(updatedData);
-      onEvent(event);
+      final adEvent = AdEvent.fromJson(updatedData);
+      onEvent(adEvent);
     } catch (e, stack) {
       Logger.exception(e, stack);
       return;
