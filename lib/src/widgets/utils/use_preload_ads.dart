@@ -112,7 +112,7 @@ void usePreloadAds(
           userId: userId,
           userEmail: userEmail,
           enabledPlacementCodes: enabledPlacementCodes,
-          messages: messages.getLastMessages(),
+          messages: messages,
           sessionId: sessionId.value,
           vendorId: vendorId,
           advertisingId: advertisingId,

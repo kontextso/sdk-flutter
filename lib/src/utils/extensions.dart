@@ -28,12 +28,6 @@ extension ListExtension<E> on List<E> {
   }
 }
 
-extension MessageListExtension on List<Message> {
-  List<Message> getLastMessages({int count = 10}) {
-    return length > count ? sublist(length - count) : this;
-  }
-}
-
 extension MapExtension<K, V> on Map<K, V> {
   V? getOrNull(K key) {
     if (containsKey(key)) {

@@ -207,6 +207,7 @@ class AdFormat extends HookWidget {
         }
         break;
       case 'open-component-iframe':
+        print('------ open component iframe: $data');
         final component = toOpenIframeComponent(data?['component']);
         if (component == null) {
           return;
@@ -430,7 +431,7 @@ class AdFormat extends HookWidget {
       _postUpdateIframe(
         webViewController.value!,
         adServerUrl: adsProviderData.adServerUrl,
-        messages: adsProviderData.messages.getLastMessages(),
+        messages: adsProviderData.messages,
         otherParams: otherParams,
       );
 
