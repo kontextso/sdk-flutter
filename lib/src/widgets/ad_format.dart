@@ -333,7 +333,7 @@ class AdFormat extends HookWidget {
       _postUpdateIframe(
         webViewController.value!,
         adServerUrl: adsProviderData.adServerUrl,
-        messages: adsProviderData.messages.getLastMessages(),
+        messages: adsProviderData.messages,
         otherParams: otherParams,
       );
 

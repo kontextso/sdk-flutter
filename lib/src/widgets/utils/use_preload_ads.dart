@@ -8,7 +8,6 @@ import 'package:kontext_flutter_sdk/src/models/regulatory.dart';
 import 'package:kontext_flutter_sdk/src/services/api.dart';
 import 'package:kontext_flutter_sdk/src/services/logger.dart';
 import 'package:kontext_flutter_sdk/src/utils/constants.dart';
-import 'package:kontext_flutter_sdk/src/utils/extensions.dart';
 import 'package:kontext_flutter_sdk/src/utils/types.dart' show OnEventCallback;
 
 void usePreloadAds(
@@ -112,7 +111,7 @@ void usePreloadAds(
           userId: userId,
           userEmail: userEmail,
           enabledPlacementCodes: enabledPlacementCodes,
-          messages: messages.getLastMessages(),
+          messages: messages,
           sessionId: sessionId.value,
           vendorId: vendorId,
           advertisingId: advertisingId,
