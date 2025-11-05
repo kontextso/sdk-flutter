@@ -95,7 +95,7 @@ void usePreloadAds(
     notifyAdNoFill(String skipCode) => onEvent?.call(AdEvent(type: AdEventType.adNoFill, skipCode: skipCode));
 
     Future<void> preload() async {
-      if (isDisabled || sessionDisabled.value) {
+      if (sessionDisabled.value) {
         Logger.log('Preload ads dropped (disabled mid-flight)');
         return;
       }
@@ -126,18 +126,6 @@ void usePreloadAds(
           return;
         }
 
-        if (response.statusCode == 204) {
-          Logger.log('Preload ads finished (204)');
-          notifyAdNoFill(AdEvent.skipCodeUnFilledBid);
-          return;
-        }
-
-        if (response.skip == true) {
-          notifyAdNoFill(response.skipCode ?? AdEvent.skipCodeUnknown);
-          Logger.info('Ad generation skipped. Reason: ${response.skipCode}');
-          return;
-        }
-
         if (response.error != null || response.errorCode != null || response.sessionId == null) {
           if (response.permanentError == true) {
             // Geo disabled or other reason, ads are permanently disabled
@@ -151,11 +139,28 @@ void usePreloadAds(
           return;
         }
 
+        sessionId.value = response.sessionId;
+
+        if (isDisabled) {
+          Logger.log('Preload ads finished (disabled)');
+          return;
+        }
+
+        if (response.statusCode == 204) {
+          Logger.log('Preload ads finished (204)');
+          notifyAdNoFill(AdEvent.skipCodeUnFilledBid);
+          return;
+        }
+
+        if (response.skip == true) {
+          notifyAdNoFill(response.skipCode ?? AdEvent.skipCodeUnknown);
+          Logger.info('Ad generation skipped. Reason: ${response.skipCode}');
+          return;
+        }
+
         if (response.remoteLogLevel != null) {
           Logger.setRemoteLogLevel(response.remoteLogLevel!);
         }
-
-        sessionId.value = response.sessionId;
 
         final bids = response.bids;
         setBids([...bids]);
