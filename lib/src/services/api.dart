@@ -20,6 +20,8 @@ class PreloadResponse {
     this.error,
     this.errorCode,
     this.permanentError,
+    this.skip,
+    this.skipCode,
   });
 
   final String? sessionId;
@@ -29,6 +31,8 @@ class PreloadResponse {
   final String? error;
   final String? errorCode;
   final bool? permanentError;
+  final bool? skip;
+  final String? skipCode;
 }
 
 class Api {
@@ -112,6 +116,8 @@ class Api {
       final error = data['error'] as String?;
       final errorCode = data['errCode'] as String?;
       final permanentError = data['permanent'] as bool?;
+      final skip = data['skip'] as bool?;
+      final skipCode = data['skipCode'] as String?;
 
       return PreloadResponse(
         sessionId: sessionIdJson,
@@ -125,6 +131,8 @@ class Api {
         error: error,
         errorCode: errorCode,
         permanentError: permanentError,
+        skip: skip,
+        skipCode: skipCode,
       );
     } catch (e, stack) {
       Logger.exception(e, stack);

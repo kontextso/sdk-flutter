@@ -91,12 +91,12 @@ void usePreloadAds(
     setReadyForStreamingAssistant(false);
     setReadyForStreamingUser(false);
 
-    notifyAdFilled() => onEvent?.call(AdEvent(name: 'ad.filled'));
-    notifyAdNoFill() => onEvent?.call(AdEvent(name: 'ad.no-fill'));
+    notifyAdFilled() => onEvent?.call(AdEvent(type: AdEventType.adFilled));
+    notifyAdNoFill(String skipCode) => onEvent?.call(AdEvent(type: AdEventType.adNoFill, skipCode: skipCode));
 
     Future<void> preload() async {
       if (isDisabled || sessionDisabled.value) {
-        notifyAdNoFill();
+        Logger.log('Preload ads dropped (disabled mid-flight)');
         return;
       }
 
@@ -122,19 +122,18 @@ void usePreloadAds(
         );
 
         if (!context.mounted) {
-          notifyAdNoFill();
-          return;
-        }
-
-        if (isDisabled || sessionDisabled.value) {
-          Logger.log('Preload ads dropped (disabled mid-flight)');
-          notifyAdNoFill();
           return;
         }
 
         if (response.statusCode == 204) {
           Logger.log('Preload ads finished (204)');
-          notifyAdNoFill();
+          notifyAdNoFill(AdEvent.skipCodeUnFilledBid);
+          return;
+        }
+
+        if (response.skip == true) {
+          notifyAdNoFill(response.skipCode ?? AdEvent.skipCodeUnknown);
+          Logger.info('Ad generation skipped. Reason: ${response.skipCode}');
           return;
         }
 
@@ -142,11 +141,12 @@ void usePreloadAds(
           if (response.permanentError == true) {
             // Geo disabled or other reason, ads are permanently disabled
             sessionDisabled.value = true;
+            notifyAdNoFill(AdEvent.skipCodeSessionDisabled);
             Logger.info('Session is disabled. Reason: Error=${response.error}, ErrorCode=${response.errorCode}');
           } else {
+            notifyAdNoFill(response.errorCode ?? AdEvent.skipCodeUnknown);
             Logger.info('Ad generation skipped. Reason: Error=${response.error}, ErrorCode=${response.errorCode}');
           }
-          notifyAdNoFill();
           return;
         }
 
@@ -164,11 +164,11 @@ void usePreloadAds(
         if (bids.isNotEmpty) {
           notifyAdFilled();
         } else {
-          notifyAdNoFill();
+          notifyAdNoFill(AdEvent.skipCodeUnFilledBid);
         }
       } catch (e) {
         Logger.error('Preload ads error: $e');
-        notifyAdNoFill();
+        notifyAdNoFill(AdEvent.skipCodeError);
       } finally {
         loading.value = false;
       }
