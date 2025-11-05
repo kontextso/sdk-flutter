@@ -32,7 +32,10 @@ class HttpClient {
     final response = await _client
         .post(
           url,
-          headers: {...headers ?? {}, 'Content-Type': 'application/json'},
+          headers: {
+            'Content-Type': 'application/json',
+            ...headers ?? {},
+          },
           body: jsonEncode(body ?? {}),
         )
         .timeout(timeout);
