@@ -44,6 +44,7 @@ void main() {
       conversationId: 'conv-456',
       messages: [],
       enabledPlacementCodes: [],
+      isDisabled: false,
     );
 
     expect(response, isA<PreloadResponse>());
@@ -55,8 +56,12 @@ void main() {
     expect(response.statusCode, 200);
 
     verify(() => mock.post(
-          Uri.parse('https://api.test/preload?publisherToken=test-token'),
-          headers: {'Content-Type': 'application/json'},
+          Uri.parse('https://api.test/preload'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Kontextso-Publisher-Token': 'test-token',
+            'Kontextso-Is-Disabled': '0',
+          },
           body: any(
             named: 'body',
             that: predicate<String>((b) {
@@ -86,6 +91,7 @@ void main() {
       conversationId: 'conv-456',
       messages: [],
       enabledPlacementCodes: [],
+      isDisabled: false,
     );
 
     expect(response, isA<PreloadResponse>());
@@ -108,6 +114,7 @@ void main() {
       conversationId: 'conv-456',
       messages: [],
       enabledPlacementCodes: [],
+      isDisabled: false,
     );
 
     expect(response, isA<PreloadResponse>());
@@ -134,6 +141,7 @@ void main() {
       conversationId: 'conv-456',
       messages: [],
       enabledPlacementCodes: [],
+      isDisabled: false,
     );
 
     expect(response, isA<PreloadResponse>());
@@ -156,6 +164,7 @@ void main() {
       conversationId: 'conv-456',
       messages: [],
       enabledPlacementCodes: [],
+      isDisabled: false,
     );
 
     expect(response, isA<PreloadResponse>());
@@ -191,11 +200,16 @@ void main() {
         gpp: '',
         gppSid: [],
       ),
+      isDisabled: false,
     );
 
     verify(() => mock.post(
-          Uri.parse('https://api.test/preload?publisherToken=test-token'),
-          headers: {'Content-Type': 'application/json'},
+          Uri.parse('https://api.test/preload'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Kontextso-Publisher-Token': 'test-token',
+            'Kontextso-Is-Disabled': '0',
+          },
           body: any(
             named: 'body',
             that: predicate<String>((b) {
@@ -233,11 +247,16 @@ void main() {
       conversationId: 'conv-456',
       messages: [],
       enabledPlacementCodes: [],
+      isDisabled: false,
     );
 
     verify(() => mock.post(
-          Uri.parse('https://api.test/preload?publisherToken=test-token'),
-          headers: {'Content-Type': 'application/json'},
+          Uri.parse('https://api.test/preload'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Kontextso-Publisher-Token': 'test-token',
+            'Kontextso-Is-Disabled': '0',
+          },
           body: any(
             named: 'body',
             that: predicate<String>((raw) {

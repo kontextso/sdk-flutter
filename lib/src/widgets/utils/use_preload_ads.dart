@@ -119,6 +119,7 @@ void usePreloadAds(
           character: character,
           variantId: variantId,
           iosAppStoreId: iosAppStoreId,
+          isDisabled: isDisabled,
         );
 
         if (!context.mounted) {
