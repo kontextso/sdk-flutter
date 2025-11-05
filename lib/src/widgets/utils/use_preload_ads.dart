@@ -60,12 +60,11 @@ void usePreloadAds(
         'character': character?.toJson(),
         'vendorId': vendorId,
         'variantId': variantId,
-        'advertisingId': advertisingId,
       });
     }
 
     return null;
-  }, [sessionId.value, publisherToken, userId, conversationId, character, vendorId, variantId, advertisingId]);
+  }, [sessionId.value, publisherToken, userId, conversationId, character, vendorId, variantId]);
 
   final loading = useRef<bool>(false);
 
