@@ -4,7 +4,10 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kontext_flutter_sdk/src/widgets/utils/use_preload_ads.dart';
 
 void main() {
-  testWidgets('usePreloadAds runs without crashing', (tester) async {
+  testWidgets('usePreloadAds resets when messages are empty', (tester) async {
+    List? lastBids;
+    bool? readyAssistant;
+    bool? readyUser;
 
     await tester.pumpWidget(
       HookBuilder(
@@ -15,8 +18,8 @@ void main() {
             conversationId: 'conv1',
             userId: 'user1',
             userEmail: null,
-            enabledPlacementCodes: ['inlineAd'],
-            messages: [],
+            enabledPlacementCodes: const ['inlineAd'],
+            messages: const [], // triggers the reset early-path
             isDisabled: false,
             vendorId: null,
             advertisingId: null,
@@ -24,9 +27,9 @@ void main() {
             character: null,
             variantId: null,
             iosAppStoreId: null,
-            setBids: (bids) => bids,
-            setReadyForStreamingAssistant: (ready) => ready,
-            setReadyForStreamingUser: (ready) => ready,
+            setBids: (bids) => lastBids = bids,
+            setReadyForStreamingAssistant: (ready) => readyAssistant = ready,
+            setReadyForStreamingUser: (ready) => readyUser = ready,
             onEvent: null,
           );
           return const SizedBox.shrink();
@@ -34,6 +37,10 @@ void main() {
       ),
     );
 
-    expect(1, 1);
+    await tester.pump();
+
+    expect(lastBids, isEmpty);
+    expect(readyAssistant, isFalse);
+    expect(readyUser, isFalse);
   });
 }
