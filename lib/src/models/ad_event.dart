@@ -48,6 +48,7 @@ class AdEvent {
 
   static const String skipCodeUnFilledBid = 'unfilled_bid';
   static const String skipCodeSessionDisabled = 'session_disabled';
+  static const String skipCodeRequestFailed = 'request_failed';
   static const String skipCodeUnknown = 'unknown';
   static const String skipCodeError = 'error';
 

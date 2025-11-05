@@ -92,6 +92,7 @@ void usePreloadAds(
 
     notifyAdFilled() => onEvent?.call(AdEvent(type: AdEventType.adFilled));
     notifyAdNoFill(String skipCode) => onEvent?.call(AdEvent(type: AdEventType.adNoFill, skipCode: skipCode));
+    notifyAdError(String error, String errorCode) => onEvent?.call(AdEvent(type: AdEventType.adError, message: error, errCode: errorCode));
 
     Future<void> preload() async {
       if (sessionDisabled.value) {
@@ -125,40 +126,34 @@ void usePreloadAds(
           return;
         }
 
+        // 1) Skip everything if there was an error
         if (response.error != null || response.errorCode != null || response.sessionId == null) {
           if (response.permanentError == true) {
             // Geo disabled or other reason, ads are permanently disabled
             sessionDisabled.value = true;
-            notifyAdNoFill(AdEvent.skipCodeSessionDisabled);
+            notifyAdError(response.error ?? 'Session is disabled', response.errorCode ?? AdEvent.skipCodeSessionDisabled);
             Logger.info('Session is disabled. Reason: Error=${response.error}, ErrorCode=${response.errorCode}');
           } else {
-            notifyAdNoFill(response.errorCode ?? AdEvent.skipCodeUnknown);
+            notifyAdError(response.error ?? 'Ad generation skipped', response.errorCode ?? AdEvent.skipCodeUnknown);
             Logger.info('Ad generation skipped. Reason: Error=${response.error}, ErrorCode=${response.errorCode}');
           }
           return;
         }
 
+        // 2) Save session ID
         sessionId.value = response.sessionId;
 
+        // 3) Skip everything else if ads are disabled manually
         if (isDisabled) {
           Logger.log('Preload ads finished (disabled)');
           return;
         }
 
-        if (response.statusCode == 204) {
-          Logger.log('Preload ads finished (204)');
-          notifyAdNoFill(AdEvent.skipCodeUnFilledBid);
-          return;
-        }
-
+        // 4) Handle unfilled response
         if (response.skip == true) {
           notifyAdNoFill(response.skipCode ?? AdEvent.skipCodeUnknown);
           Logger.info('Ad generation skipped. Reason: ${response.skipCode}');
           return;
-        }
-
-        if (response.remoteLogLevel != null) {
-          Logger.setRemoteLogLevel(response.remoteLogLevel!);
         }
 
         final bids = response.bids;
@@ -173,7 +168,7 @@ void usePreloadAds(
         }
       } catch (e) {
         Logger.error('Preload ads error: $e');
-        notifyAdNoFill(AdEvent.skipCodeError);
+        notifyAdError(e.toString(), AdEvent.skipCodeRequestFailed);
       } finally {
         loading.value = false;
       }
