@@ -50,7 +50,12 @@ void main() {
           },
         ),
       );
+
+      // Let the effects schedule the async work.
       await tester.pump();
+
+      // Give some real time; the callback won’t fire -> test will fail due to unmet expectAsync1.
+      await Future<void>.delayed(const Duration(seconds: 2));
     });
   });
 }
