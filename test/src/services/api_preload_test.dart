@@ -44,6 +44,7 @@ void main() {
       conversationId: 'conv-456',
       messages: [],
       enabledPlacementCodes: [],
+      isDisabled: false,
     );
 
     expect(response, isA<PreloadResponse>());
@@ -86,6 +87,7 @@ void main() {
       conversationId: 'conv-456',
       messages: [],
       enabledPlacementCodes: [],
+      isDisabled: false,
     );
 
     expect(response, isA<PreloadResponse>());
@@ -108,6 +110,7 @@ void main() {
       conversationId: 'conv-456',
       messages: [],
       enabledPlacementCodes: [],
+      isDisabled: false,
     );
 
     expect(response, isA<PreloadResponse>());
@@ -156,6 +159,7 @@ void main() {
       conversationId: 'conv-456',
       messages: [],
       enabledPlacementCodes: [],
+      isDisabled: false,
     );
 
     expect(response, isA<PreloadResponse>());
@@ -191,6 +195,7 @@ void main() {
         gpp: '',
         gppSid: [],
       ),
+      isDisabled: false,
     );
 
     verify(() => mock.post(
@@ -233,6 +238,7 @@ void main() {
       conversationId: 'conv-456',
       messages: [],
       enabledPlacementCodes: [],
+      isDisabled: false,
     );
 
     verify(() => mock.post(
