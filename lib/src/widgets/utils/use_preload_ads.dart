@@ -149,23 +149,20 @@ void usePreloadAds(
           return;
         }
 
+        final bids = response.bids;
+
         // 4) Handle unfilled response
-        if (response.skip == true) {
+        if (response.skip == true || bids.isEmpty) {
           notifyAdNoFill(response.skipCode ?? AdEvent.skipCodeUnknown);
           Logger.info('Ad generation skipped. Reason: ${response.skipCode}');
           return;
         }
 
-        final bids = response.bids;
         setBids([...bids]);
         setReadyForStreamingUser(true);
         Logger.log('Preload Ads finished');
-
-        if (bids.isNotEmpty) {
-          notifyAdFilled();
-        } else {
-          notifyAdNoFill(AdEvent.skipCodeUnFilledBid);
-        }
+        notifyAdFilled();
+        
       } catch (e) {
         Logger.error('Preload ads error: $e');
         notifyAdError(e.toString(), AdEvent.skipCodeRequestFailed);
