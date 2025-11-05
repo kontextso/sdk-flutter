@@ -120,7 +120,6 @@ void main() {
     expect(events.first.type, AdEventType.adFilled);
   });
 
-  // ignore preload if user message count is 0
   testWidgets('ignore preload if user message count is 0', (tester) async {
     mockSuccessfulPreload(mock);
 
@@ -182,4 +181,14 @@ void main() {
     expect(readyAssistant, isFalse);
     expect(events.length, 0);
   });
+
+  // TODO: ignore if user messages count is not changed
+  // TODO: is disabled 
+  // TODO: session disabled
+  // TODO: parallel preloads
+  // TODO: error handling
+  // TODO: skip
+  // TODO: permanent error
+  // TODO: unfilled bid
+
 }
