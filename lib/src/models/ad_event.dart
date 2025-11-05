@@ -45,13 +45,9 @@ class AdEvent {
     this.errCode,
   });
 
-  static const String skipCodeAdsDisabled = 'ads_disabled';
+
   static const String skipCodeUnFilledBid = 'unfilled_bid';
-  static const String skipCodeIllegalContent = 'illegal_content';
-  static const String skipCodeContextTooShort = 'context_too_short';
-  static const String skipCodeTrafficDropped = 'traffic_dropped';
   static const String skipCodeSessionDisabled = 'session_disabled';
-  static const String skipCodeAdGenerationSkipped = 'ad_generation_skipped';
   static const String skipCodeUnknown = 'unknown';
   static const String skipCodeError = 'error';
 
