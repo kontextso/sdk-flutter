@@ -12,7 +12,7 @@ import 'package:kontext_flutter_sdk/src/utils/extensions.dart';
 import 'package:kontext_flutter_sdk/src/utils/kontext_url_builder.dart';
 import 'package:kontext_flutter_sdk/src/utils/types.dart' show OnEventCallback, Json;
 import 'package:kontext_flutter_sdk/src/widgets/ads_provider_data.dart';
-import 'package:kontext_flutter_sdk/src/widgets/hooks/select_bid.dart';
+import 'package:kontext_flutter_sdk/src/widgets/utils/select_bid.dart';
 import 'package:kontext_flutter_sdk/src/widgets/interstitial_modal.dart';
 import 'package:kontext_flutter_sdk/src/widgets/kontext_webview.dart';
 
@@ -140,7 +140,7 @@ class AdFormat extends HookWidget {
       }
 
       if (uri != null && data['name'] == AdEventType.adClicked.value) {
-        _handleAdClickedEvent(uri, payload: payload);
+        uri.openInAppBrowser();
       }
 
       final updatedData = {
