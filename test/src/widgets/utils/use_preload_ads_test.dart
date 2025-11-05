@@ -15,6 +15,35 @@ import 'package:kontext_flutter_sdk/src/models/ad_event.dart';
 
 class MockHttp extends Mock implements http.Client {}
 
+/// Helper function to mock a successful preload API call
+void mockSuccessfulPreload(MockHttp mock) {
+  when(() => mock.post(
+        any(),
+        headers: any(named: 'headers'),
+        body: any(named: 'body'),
+      )).thenAnswer((invocation) async {
+    final body = jsonDecode(invocation.namedArguments[#body] as String) as Json;
+    expect(body['publisherToken'], 'test-token');
+
+    return http.Response(
+      '''
+      {
+        "sessionId": "sess-1",
+        "remoteLogLevel": "unknown",
+        "bids": [
+          {
+            "bidId": "id1",
+            "code": "code1",
+            "adDisplayPosition": "afterAssistantMessage"
+          }
+        ]
+      }
+      ''',
+      200,
+    );
+  });
+}
+
 void main() {
 
   late MockHttp mock;
@@ -27,35 +56,8 @@ void main() {
     HttpClient(baseUrl: 'https://api.test', client: mock);
   });
 
-  testWidgets('run the simple flow', (tester) async {
-
-   when(() => mock.post(
-      any(),
-      headers: any(named: 'headers'),
-      body: any(named: 'body'),
-    )).thenAnswer((invocation) async {
-      // (Optional) Validate body structure here if you like
-      final body = jsonDecode(invocation.namedArguments[#body] as String) as Json;
-      expect(body['publisherToken'], 'test-token');
-
-      return http.Response(
-        // Minimal valid response your Api.preload understands
-        '''
-        {
-          "sessionId": "sess-1",
-          "remoteLogLevel": "unknown",
-          "bids": [
-            {
-              "bidId": "id1",
-              "code": "code1",
-              "adDisplayPosition": "afterAssistantMessage"
-            }
-          ]
-        }
-        ''',
-        200,
-      );
-    });
+  testWidgets('run a successful preload flow with 1 user message', (tester) async {
+    mockSuccessfulPreload(mock);
 
     List? lastBids;
     bool? readyAssistant;
@@ -116,5 +118,68 @@ void main() {
     expect(readyAssistant, isFalse);
     expect(events.length, 1);
     expect(events.first.type, AdEventType.adFilled);
+  });
+
+  // ignore preload if user message count is 0
+  testWidgets('ignore preload if user message count is 0', (tester) async {
+    mockSuccessfulPreload(mock);
+
+    List? lastBids = [];
+    bool? readyAssistant = false;
+    bool? readyUser = false;
+    final events = <AdEvent>[];
+
+    final messages = <Message>[
+      Message(
+        id: 'a1',
+        role: MessageRole.assistant,
+        content: 'Hi!',
+        createdAt: DateTime.parse('2025-08-31T10:00:00Z'),
+      ),
+      Message(
+        id: 'a2',
+        role: MessageRole.assistant, 
+        content: 'Hello!',
+        createdAt: DateTime.parse('2025-08-31T10:00:05Z'),
+      ),
+    ];
+  
+    await tester.runAsync(() async {
+      await tester.pumpWidget(
+        HookBuilder(
+          builder: (context) {
+            usePreloadAds(
+              context,
+              publisherToken: 'test-token',
+              conversationId: 'conv1',
+              userId: 'user1',
+              userEmail: null,
+              enabledPlacementCodes: const ['inlineAd'],
+              messages: messages,
+              isDisabled: false, // allow calling the API
+              vendorId: null,
+              advertisingId: null,
+              regulatory: null,
+              character: null,
+              variantId: null,
+              iosAppStoreId: null,
+              setBids: (bids) => lastBids = bids,
+              setReadyForStreamingAssistant: (ready) => readyAssistant = ready,
+              setReadyForStreamingUser: (ready) => readyUser = ready,
+              onEvent: (e) => events.add(e),
+            );
+            return const SizedBox.shrink();
+          },
+        ),
+      );
+
+      await tester.pump();
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+    });
+
+    expect(lastBids, isEmpty);
+    expect(readyUser, isFalse);
+    expect(readyAssistant, isFalse);
+    expect(events.length, 0);
   });
 }
