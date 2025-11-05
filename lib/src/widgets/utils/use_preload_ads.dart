@@ -105,7 +105,6 @@ void usePreloadAds(
 
       try {
         final api = Api();
-        print('callled preload api');
         final response = await api.preload(
           publisherToken: publisherToken,
           conversationId: conversationId,
@@ -122,8 +121,6 @@ void usePreloadAds(
           iosAppStoreId: iosAppStoreId,
           isDisabled: isDisabled,
         );
-
-        print('callled preload');
 
         if (!context.mounted) {
           return;
@@ -170,11 +167,9 @@ void usePreloadAds(
           notifyAdNoFill(AdEvent.skipCodeUnFilledBid);
         }
       } catch (e) {
-        print('callled preload error: $e');
         Logger.error('Preload ads error: $e');
         notifyAdError(e.toString(), AdEvent.skipCodeRequestFailed);
       } finally {
-        print('callled preload finally');
         loading.value = false;
       }
     }
