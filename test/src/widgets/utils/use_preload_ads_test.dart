@@ -1,11 +1,67 @@
+import 'dart:convert' show jsonDecode;
+
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:http/http.dart' as http;
+
 import 'package:kontext_flutter_sdk/src/models/message.dart';
 import 'package:kontext_flutter_sdk/src/widgets/utils/use_preload_ads.dart';
+import 'package:kontext_flutter_sdk/src/services/api.dart';
+import 'package:kontext_flutter_sdk/src/services/http_client.dart';
+import 'package:kontext_flutter_sdk/src/utils/types.dart' show Json;
+import 'package:kontext_flutter_sdk/src/models/ad_event.dart';
+
+class MockHttp extends Mock implements http.Client {}
 
 void main() {
-  testWidgets('usePreloadAds triggers preload and fails if no event arrives', (tester) async {
+
+  late MockHttp mock;
+
+  setUpAll(() {
+    registerFallbackValue(Uri.parse('https://dummy.local'));
+    mock = MockHttp();
+    HttpClient.resetInstance();
+    Api.resetInstance();
+    HttpClient(baseUrl: 'https://api.test', client: mock);
+  });
+
+  testWidgets('run the simple flow', (tester) async {
+
+   when(() => mock.post(
+      any(),
+      headers: any(named: 'headers'),
+      body: any(named: 'body'),
+    )).thenAnswer((invocation) async {
+      // (Optional) Validate body structure here if you like
+      final body = jsonDecode(invocation.namedArguments[#body] as String) as Json;
+      expect(body['publisherToken'], 'test-token');
+
+      return http.Response(
+        // Minimal valid response your Api.preload understands
+        '''
+        {
+          "sessionId": "sess-1",
+          "remoteLogLevel": "unknown",
+          "bids": [
+            {
+              "bidId": "id1",
+              "code": "code1",
+              "adDisplayPosition": "afterAssistantMessage"
+            }
+          ]
+        }
+        ''',
+        200,
+      );
+    });
+
+    List? lastBids;
+    bool? readyAssistant;
+    bool? readyUser;
+    final events = <AdEvent>[];
+
     final messages = <Message>[
       Message(
         id: 'a1',
@@ -40,22 +96,25 @@ void main() {
               character: null,
               variantId: null,
               iosAppStoreId: null,
-              setBids: (_) {},
-              setReadyForStreamingAssistant: (_) {},
-              setReadyForStreamingUser: (_) {},
-              // Require at least one event; if the API never finishes, this never fires -> test FAILS.
-              onEvent: expectAsync1((_) {}, count: 1, reason: 'Expected an ad event from preload'),
+              setBids: (bids) => lastBids = bids,
+              setReadyForStreamingAssistant: (ready) => readyAssistant = ready,
+              setReadyForStreamingUser: (ready) => readyUser = ready,
+              onEvent: (e) => events.add(e),
             );
             return const SizedBox.shrink();
           },
         ),
       );
 
-      // Let the effects schedule the async work.
       await tester.pump();
-
-      // Give some real time; the callback won’t fire -> test will fail due to unmet expectAsync1.
-      await Future<void>.delayed(const Duration(seconds: 2));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
     });
+
+    expect(lastBids, isNotNull);
+    expect(lastBids, isNotEmpty);
+    expect(readyUser, isTrue);
+    expect(readyAssistant, isFalse);
+    expect(events.length, 1);
+    expect(events.first.type, AdEventType.adFilled);
   });
 }
