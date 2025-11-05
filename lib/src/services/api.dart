@@ -67,6 +67,7 @@ class Api {
     Character? character,
     String? variantId,
     String? iosAppStoreId,
+    required bool isDisabled,
   }) async {
     late final DeviceAppInfo device;
     try {
@@ -83,7 +84,7 @@ class Api {
       final variant = variantId?.nullIfEmpty;
 
       final result = await _client.post(
-        '/preload?publisherToken=$publisherToken',
+        '/preload',
         body: {
           'publisherToken': publisherToken,
           'conversationId': conversationId,
@@ -104,6 +105,10 @@ class Api {
           if (regulatory != null) 'regulatory': regulatory.toJson(),
           if (character != null) 'character': character.toJson(),
           if (variant != null) 'variantId': variant,
+        },
+        headers: {
+          'Kontextso-Publisher-Token': publisherToken,
+          'Kontextso-Is-Disabled': isDisabled ? '1' : '0',
         },
       );
 

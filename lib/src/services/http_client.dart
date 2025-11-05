@@ -26,12 +26,13 @@ class HttpClient {
     String path, {
     Duration timeout = const Duration(seconds: 60),
     Json? body,
+    Json? headers,
   }) async {
     final url = Uri.parse('$baseUrl$path');
     final response = await _client
         .post(
           url,
-          headers: {'Content-Type': 'application/json'},
+          headers: {...headers ?? {}, 'Content-Type': 'application/json'},
           body: jsonEncode(body ?? {}),
         )
         .timeout(timeout);
