@@ -1,5 +1,4 @@
 import 'dart:convert' show jsonEncode;
-import 'dart:io';
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -636,5 +635,4 @@ void main() {
 
 }
 
-// TOSO: session is stored
 // TODO: parallel preloads
