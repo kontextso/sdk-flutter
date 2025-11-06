@@ -127,7 +127,7 @@ class AdFormat extends HookWidget {
   }
 
   void _handleEventIframe({required String adServerUrl, OnEventCallback? onEvent, Json? data}) {
-    if (onEvent == null || data == null) {
+    if (data == null) {
       return;
     }
 
@@ -153,7 +153,7 @@ class AdFormat extends HookWidget {
       };
 
       final adEvent = AdEvent.fromJson(updatedData);
-      onEvent(adEvent);
+      onEvent?.call(adEvent);
     } catch (e, stack) {
       Logger.exception(e, stack);
       return;
