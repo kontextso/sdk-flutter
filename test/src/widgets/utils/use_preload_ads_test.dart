@@ -15,7 +15,6 @@ import 'package:kontext_flutter_sdk/src/models/ad_event.dart';
 
 class MockHttp extends Mock implements http.Client {}
 
-/// Helper function to mock a successful preload API call
 void mockSuccessfulPreload(MockHttp mock) {
   when(() => mock.post(
         any(),
