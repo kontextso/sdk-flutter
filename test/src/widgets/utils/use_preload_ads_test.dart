@@ -3,6 +3,7 @@ import 'dart:convert' show jsonEncode;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:kontext_flutter_sdk/src/models/character.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:http/http.dart' as http;
 
@@ -122,7 +123,11 @@ void main() {
               vendorId: null,
               advertisingId: null,
               regulatory: null,
-              character: null,
+              character: Character(
+                id: 'char1',
+                name: 'John Doe',
+                avatarUrl: 'https://example.com/image.png',
+              ),
               variantId: null,
               iosAppStoreId: null,
               setBids: (bids) => lastBids = bids,
@@ -186,7 +191,11 @@ void main() {
               vendorId: null,
               advertisingId: null,
               regulatory: null,
-              character: null,
+              character: Character(
+                id: 'char1',
+                name: 'John Doe',
+                avatarUrl: 'https://example.com/image.png',
+              ),
               variantId: null,
               iosAppStoreId: null,
               setBids: (bids) => lastBids = bids,
@@ -246,7 +255,11 @@ void main() {
               vendorId: null,
               advertisingId: null,
               regulatory: null,
-              character: null,
+              character: Character(
+                id: 'char1',
+                name: 'John Doe',
+                avatarUrl: 'https://example.com/image.png',
+              ),
               variantId: null,
               iosAppStoreId: null,
               setBids: (bids) => lastBids = bids,
@@ -304,7 +317,11 @@ void main() {
               vendorId: null,
               advertisingId: null,
               regulatory: null,
-              character: null,
+              character: Character(
+                id: 'char1',
+                name: 'John Doe',
+                avatarUrl: 'https://example.com/image.png',
+              ),
               variantId: null,
               iosAppStoreId: null,
               setBids: (bids) => lastBids = bids,
@@ -364,7 +381,11 @@ void main() {
               vendorId: null,
               advertisingId: null,
               regulatory: null,
-              character: null,
+              character: Character(
+                id: 'char1',
+                name: 'John Doe',
+                avatarUrl: 'https://example.com/image.png',
+              ),
               variantId: null,
               iosAppStoreId: null,
               setBids: (bids) => lastBids = bids,
@@ -422,7 +443,11 @@ void main() {
               vendorId: null,
               advertisingId: null,
               regulatory: null,
-              character: null,
+              character: Character(
+                id: 'char1',
+                name: 'John Doe',
+                avatarUrl: 'https://example.com/image.png',
+              ),
               variantId: null,
               iosAppStoreId: null,
               setBids: (_) {},
@@ -503,7 +528,11 @@ void main() {
               vendorId: null,
               advertisingId: null,
               regulatory: null,
-              character: null,
+              character: Character(
+                id: 'char1',
+                name: 'John Doe',
+                avatarUrl: 'https://example.com/image.png',
+              ),
               variantId: null,
               iosAppStoreId: null,
               setBids: (_) {},
