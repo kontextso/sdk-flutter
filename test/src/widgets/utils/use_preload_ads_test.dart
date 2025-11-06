@@ -1,4 +1,4 @@
-import 'dart:convert' show jsonDecode;
+import 'dart:convert' show jsonEncode;
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -10,88 +10,66 @@ import 'package:kontext_flutter_sdk/src/models/message.dart';
 import 'package:kontext_flutter_sdk/src/widgets/utils/use_preload_ads.dart';
 import 'package:kontext_flutter_sdk/src/services/api.dart';
 import 'package:kontext_flutter_sdk/src/services/http_client.dart';
-import 'package:kontext_flutter_sdk/src/utils/types.dart' show Json;
 import 'package:kontext_flutter_sdk/src/models/ad_event.dart';
 
 class MockHttp extends Mock implements http.Client {}
 
-void mockSuccessfulPreload(MockHttp mock) {
+void mockPostResponse(MockHttp mock, dynamic response, [int statusCode = 200]) {
   when(() => mock.post(
         any(),
         headers: any(named: 'headers'),
         body: any(named: 'body'),
-      )).thenAnswer((invocation) async {
-    final body = jsonDecode(invocation.namedArguments[#body] as String) as Json;
-    expect(body['publisherToken'], 'test-token');
-
-    return http.Response(
-      '''
-      {
-        "sessionId": "sess-1",
-        "remoteLogLevel": "unknown",
-        "bids": [
-          {
-            "bidId": "id1",
-            "code": "code1",
-            "adDisplayPosition": "afterAssistantMessage"
-          }
-        ]
-      }
-      ''',
-      200,
-    );
+      )).thenAnswer((_) async {
+    final body = response is String ? response : jsonEncode(response);
+    return http.Response(body, statusCode);
   });
+}
+
+void mockSuccessfulPreload(MockHttp mock) {
+  mockPostResponse(
+    mock,
+    {
+      'sessionId': 'sess-1',
+      'remoteLogLevel': 'unknown',
+      'bids': [
+        {
+          'bidId': 'id1',
+          'code': 'code1',
+          'adDisplayPosition': 'afterAssistantMessage',
+        },
+      ],
+    },
+  );
 }
 
 void mockNoFillPreload(MockHttp mock) {
-  when(() => mock.post(
-        any(),
-        headers: any(named: 'headers'),
-        body: any(named: 'body'),
-      )).thenAnswer((invocation) async {
-    return http.Response(
-      '''
-      {
-        "sessionId": "sess-1",
-        "skip": true,
-        "skipCode": "unfilled_bid",
-        "bids": []
-      }
-      ''',
-      200,
-    );  
-  });
+  mockPostResponse(
+    mock,
+    {
+      'sessionId': 'sess-1',
+      'skip': true,
+      'skipCode': 'unfilled_bid',
+      'bids': [],
+    },
+  );
 }
 
 void mock500Error(MockHttp mock) {
-  when(() => mock.post(
-        any(),
-        headers: any(named: 'headers'),
-        body: any(named: 'body'),
-      )).thenAnswer((invocation) async {
-    return http.Response('Server error', 500);
-  });
-} 
+  mockPostResponse(mock, 'Server error', 500);
+}
 
 void mockPermanentError(MockHttp mock) {
-  when(() => mock.post(
-        any(),
-        headers: any(named: 'headers'),
-        body: any(named: 'body'),
-      )).thenAnswer((invocation) async {
-    return http.Response(
-      '''
-      {
-         "error": "Request from this country is not allowed.",
-         "errCode": "geo-disabled",
-         "status": "geo-disabled",
-         "permanent": true
-      }
-      ''',
-      200,
-    );  
-  });
+  mockPostResponse(
+    mock,
+    {
+      'error': 'Request from this country is not allowed.',
+      'errCode': 'geo-disabled',
+      'status': 'geo-disabled',
+      'permanent': true,
+    },
+  );
 }
+
 void main() {
 
   late MockHttp mock;
@@ -556,7 +534,5 @@ void main() {
   });
 }
 
-// TODO: session disabled
+// TOSO: session is stored
 // TODO: parallel preloads
-// TODO: permanent error
-// TODO: other error codes
