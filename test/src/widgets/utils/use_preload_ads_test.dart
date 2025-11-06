@@ -1,4 +1,5 @@
 import 'dart:convert' show jsonEncode;
+import 'dart:io';
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -70,6 +71,7 @@ void mockPermanentError(MockHttp mock) {
     },
   );
 }
+
 
 void main() {
 
@@ -561,6 +563,77 @@ void main() {
     )).called(1);
     verifyNoMoreInteractions(mock);
   });
+
+  testWidgets('handle unexpected error in usePreloadAds', (tester) async {
+    mockSuccessfulPreload(mock);
+
+    final events = <AdEvent>[];
+
+    final messages = <Message>[
+      Message(
+        id: 'a1',
+        role: MessageRole.assistant,
+        content: 'Hi!',
+        createdAt: DateTime.parse('2025-08-31T10:00:00Z'),
+      ),
+      Message(
+        id: 'u1',
+        role: MessageRole.user, 
+        content: 'Please preload.',
+        createdAt: DateTime.parse('2025-08-31T10:00:05Z'),
+      ),
+    ];
+
+    bool firstThrow = true;
+
+    await tester.runAsync(() async {
+      await tester.pumpWidget(
+        HookBuilder(
+          builder: (context) {
+            usePreloadAds(
+              context,
+              publisherToken: 'test-token',
+              conversationId: 'conv1',
+              userId: 'user1',
+              userEmail: null,
+              enabledPlacementCodes: const ['inlineAd'],
+              messages: messages,
+              isDisabled: false,
+              vendorId: null,
+              advertisingId: null,
+              regulatory: null,
+              character: Character(
+                id: 'char1',
+                name: 'John Doe',
+                avatarUrl: 'https://example.com/image.png',
+              ),
+              variantId: null,
+              iosAppStoreId: null,
+              setBids: (_) => {},
+              setReadyForStreamingAssistant: (ready) => {},
+              setReadyForStreamingUser: (ready) => {},
+              onEvent: (e) {
+                if (firstThrow) {
+                  firstThrow = false;
+                  throw Exception('boom in onEvent');
+                }
+                events.add(e);
+              },
+            );
+            return const SizedBox.shrink();
+          },
+        ),
+      );
+
+      await tester.pump();
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+    });
+
+    expect(events.length, 1);
+    expect(events.first.type, AdEventType.adError);
+    expect(events.first.errCode, AdEvent.skipCodeRequestFailed);
+  });
+
 }
 
 // TOSO: session is stored
