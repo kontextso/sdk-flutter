@@ -73,6 +73,25 @@ void mock500Error(MockHttp mock) {
   });
 } 
 
+void mockPermanentError(MockHttp mock) {
+  when(() => mock.post(
+        any(),
+        headers: any(named: 'headers'),
+        body: any(named: 'body'),
+      )).thenAnswer((invocation) async {
+    return http.Response(
+      '''
+      {
+         "error": "Request from this country is not allowed.",
+         "errCode": "geo-disabled",
+         "status": "geo-disabled",
+         "permanent": true
+      }
+      ''',
+      200,
+    );  
+  });
+}
 void main() {
 
   late MockHttp mock;
@@ -444,6 +463,87 @@ void main() {
     await tester.runAsync(() async {
       await pumpWithSameMessages();
       await pumpWithSameMessages(); // re-render with the same last user message
+    });
+
+    // assert: HTTP POST called exactly once
+    verify(() => mock.post(
+      any(),
+      headers: any(named: 'headers'),
+      body: any(named: 'body'),
+    )).called(1);
+    verifyNoMoreInteractions(mock);
+  });
+
+  testWidgets('handle permament error (session disabled)', (tester) async {
+    // arrange
+    mockPermanentError(mock);
+
+    final messages1 = <Message>[
+      Message(
+        id: 'a1',
+        role: MessageRole.assistant,
+        content: 'Hi!',
+        createdAt: DateTime.parse('2025-08-31T10:00:00Z'),
+      ),
+      Message(
+        id: 'u1',
+        role: MessageRole.user,
+        content: 'Please preload.',
+        createdAt: DateTime.parse('2025-08-31T10:00:05Z'),
+      ),
+    ];
+
+    final messages2 = <Message>[
+      ...messages1,
+      Message(
+        id: 'a2',
+        role: MessageRole.assistant,
+        content: 'Hello!',
+        createdAt: DateTime.parse('2025-08-31T10:00:00Z'),
+      ),
+      Message(
+        id: 'u2',
+        role: MessageRole.user,
+        content: 'Please preload again.',
+        createdAt: DateTime.parse('2025-08-31T10:00:05Z'),
+      ),
+    ];
+
+    Future<void> pumpWithMessages(List<Message> messages) async {
+      await tester.pumpWidget(
+        HookBuilder(
+          builder: (context) {
+            usePreloadAds(
+              context,
+              publisherToken: 'test-token',
+              conversationId: 'conv1',
+              userId: 'user1',
+              userEmail: null,
+              enabledPlacementCodes: const ['inlineAd'],
+              messages: messages,
+              isDisabled: false,
+              vendorId: null,
+              advertisingId: null,
+              regulatory: null,
+              character: null,
+              variantId: null,
+              iosAppStoreId: null,
+              setBids: (_) {},
+              setReadyForStreamingAssistant: (_) {},
+              setReadyForStreamingUser: (_) {},
+              onEvent: (_) {},
+            );
+            return const SizedBox.shrink();
+          },
+        ),
+      );
+      await tester.pump(); // let effects run
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+    }
+
+    await tester.runAsync(() async {
+      await pumpWithMessages(messages1);
+      await pumpWithMessages(messages2);
     });
 
     // assert: HTTP POST called exactly once
