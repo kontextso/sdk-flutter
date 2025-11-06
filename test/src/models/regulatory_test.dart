@@ -27,11 +27,8 @@ void main() {
 
     test('omits null and empty-string values', () {
       final regulatory = Regulatory(
-        gdpr: null,
         gdprConsent: '',
-        coppa: null,
         gpp: '',
-        gppSid: null,
         usPrivacy: '',
       );
 
