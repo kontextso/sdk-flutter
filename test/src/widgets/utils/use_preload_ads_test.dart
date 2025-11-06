@@ -77,9 +77,10 @@ void main() {
 
   late MockHttp mock;
 
-  setUpAll(() {
-    registerFallbackValue(Uri.parse('https://dummy.local'));
+  setUp(() {
+    registerFallbackValue(Uri.parse('https://dummy.local')); // keep here or in setUpAll
     mock = MockHttp();
+
     HttpClient.resetInstance();
     Api.resetInstance();
     HttpClient(baseUrl: 'https://api.test', client: mock);
@@ -328,7 +329,6 @@ void main() {
     expect(events.first.type, AdEventType.adNoFill);
     expect(events.first.skipCode, AdEvent.skipCodeUnFilledBid);
   });
-  
 
   testWidgets('handle 500 error (without errCode)', (tester) async {
     mock500Error(mock);
@@ -390,10 +390,73 @@ void main() {
     expect(events.first.type, AdEventType.adError);
   });
   
-  // TODO: ignore if user messages count is not changed
-  // TODO: session disabled
-  // TODO: parallel preloads
-  // TODO: error handling
-  // TODO: permanent error
+  testWidgets('dedupes: same user message triggers preload only once', (tester) async {
+    // arrange
+    mockSuccessfulPreload(mock);
 
+    final messages = <Message>[
+      Message(
+        id: 'a1',
+        role: MessageRole.assistant,
+        content: 'Hi!',
+        createdAt: DateTime.parse('2025-08-31T10:00:00Z'),
+      ),
+      Message(
+        id: 'u1',
+        role: MessageRole.user,
+        content: 'Please preload.',
+        createdAt: DateTime.parse('2025-08-31T10:00:05Z'),
+      ),
+    ];
+
+    Future<void> pumpWithSameMessages() async {
+      await tester.pumpWidget(
+        HookBuilder(
+          builder: (context) {
+            usePreloadAds(
+              context,
+              publisherToken: 'test-token',
+              conversationId: 'conv1',
+              userId: 'user1',
+              userEmail: null,
+              enabledPlacementCodes: const ['inlineAd'],
+              messages: messages, // same array, same last user message id
+              isDisabled: false,
+              vendorId: null,
+              advertisingId: null,
+              regulatory: null,
+              character: null,
+              variantId: null,
+              iosAppStoreId: null,
+              setBids: (_) {},
+              setReadyForStreamingAssistant: (_) {},
+              setReadyForStreamingUser: (_) {},
+              onEvent: (_) {},
+            );
+            return const SizedBox.shrink();
+          },
+        ),
+      );
+      await tester.pump(); // let effects run
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+    }
+
+    await tester.runAsync(() async {
+      await pumpWithSameMessages();
+      await pumpWithSameMessages(); // re-render with the same last user message
+    });
+
+    // assert: HTTP POST called exactly once
+    verify(() => mock.post(
+      any(),
+      headers: any(named: 'headers'),
+      body: any(named: 'body'),
+    )).called(1);
+    verifyNoMoreInteractions(mock);
+  });
 }
+
+// TODO: session disabled
+// TODO: parallel preloads
+// TODO: permanent error
+// TODO: other error codes
