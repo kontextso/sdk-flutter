@@ -63,6 +63,16 @@ void mockNoFillPreload(MockHttp mock) {
   });
 }
 
+void mock500Error(MockHttp mock) {
+  when(() => mock.post(
+        any(),
+        headers: any(named: 'headers'),
+        body: any(named: 'body'),
+      )).thenAnswer((invocation) async {
+    return http.Response('Server error', 500);
+  });
+} 
+
 void main() {
 
   late MockHttp mock;
@@ -139,7 +149,7 @@ void main() {
     expect(events.first.type, AdEventType.adFilled);
   });
 
-  testWidgets('ignore preload if user message count is 0', (tester) async {
+  testWidgets('skip preload if user message count is 0', (tester) async {
     mockSuccessfulPreload(mock);
 
     List? lastBids = [];
@@ -201,7 +211,7 @@ void main() {
     expect(events.length, 0);
   });
 
-  testWidgets('call preload if disabled flag is set true, ignore the output', (tester) async {
+  testWidgets('call preload even if disabled flag is set true, ignore the output', (tester) async {
       mockNoFillPreload(mock);
 
     List? lastBids = [];
@@ -258,14 +268,132 @@ void main() {
     expect(lastBids, []);
     expect(events.length, 0);
   });
+
+  testWidgets('handle unfilled bid (no fill) + skip code', (tester) async {
+      mockNoFillPreload(mock);
+
+    List? lastBids = [];
+    final events = <AdEvent>[];
+
+    final messages = <Message>[
+      Message(
+        id: 'a1',
+        role: MessageRole.assistant,
+        content: 'Hi!',
+        createdAt: DateTime.parse('2025-08-31T10:00:00Z'),
+      ),
+      Message(
+        id: 'u1',
+        role: MessageRole.user, 
+        content: 'Please preload.',
+        createdAt: DateTime.parse('2025-08-31T10:00:05Z'),
+      ),
+    ];
+
+    await tester.runAsync(() async {
+      await tester.pumpWidget(
+        HookBuilder(
+          builder: (context) {
+            usePreloadAds(
+              context,
+              publisherToken: 'test-token',
+              conversationId: 'conv1',
+              userId: 'user1',
+              userEmail: null,
+              enabledPlacementCodes: const ['inlineAd'],
+              messages: messages,
+              isDisabled: false,
+              vendorId: null,
+              advertisingId: null,
+              regulatory: null,
+              character: null,
+              variantId: null,
+              iosAppStoreId: null,
+              setBids: (bids) => lastBids = bids,
+              setReadyForStreamingAssistant: (ready) => {},
+              setReadyForStreamingUser: (ready) => {},
+              onEvent: (e) => events.add(e),
+            );
+            return const SizedBox.shrink();
+          },
+        ),
+      );
+
+      await tester.pump();
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+    });
+
+    expect(lastBids, isEmpty);
+    expect(events.length, 1);
+    expect(events.first.type, AdEventType.adNoFill);
+    expect(events.first.skipCode, AdEvent.skipCodeUnFilledBid);
+  });
   
+
+  testWidgets('handle 500 error (without errCode)', (tester) async {
+    mock500Error(mock);
+
+    List? lastBids = [];
+    final events = <AdEvent>[];
+
+    final messages = <Message>[
+      Message(
+        id: 'a1',
+        role: MessageRole.assistant,
+        content: 'Hi!',
+        createdAt: DateTime.parse('2025-08-31T10:00:00Z'),
+      ),
+      Message(
+        id: 'u1',
+        role: MessageRole.user, 
+        content: 'Please preload.',
+        createdAt: DateTime.parse('2025-08-31T10:00:05Z'),
+      ),
+    ];
+
+    await tester.runAsync(() async {
+      await tester.pumpWidget(
+        HookBuilder(
+          builder: (context) {
+            usePreloadAds(
+              context,
+              publisherToken: 'test-token',
+              conversationId: 'conv1',
+              userId: 'user1',
+              userEmail: null,
+              enabledPlacementCodes: const ['inlineAd'],
+              messages: messages,
+              isDisabled: false,
+              vendorId: null,
+              advertisingId: null,
+              regulatory: null,
+              character: null,
+              variantId: null,
+              iosAppStoreId: null,
+              setBids: (bids) => lastBids = bids,
+              setReadyForStreamingAssistant: (ready) => {},
+              setReadyForStreamingUser: (ready) => {},
+              onEvent: (e) => events.add(e),
+            );
+            return const SizedBox.shrink();
+          },
+        ),
+      );
+
+      await tester.pump();
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+    });
+
+    
+    expect(lastBids, isEmpty);
+    expect(events.length, 1);
+    expect(events.first.type, AdEventType.adError);
+  });
   
   // TODO: ignore if user messages count is not changed
   // TODO: session disabled
   // TODO: parallel preloads
   // TODO: error handling
-  // TODO: skip
   // TODO: permanent error
-  // TODO: unfilled bid
 
 }
