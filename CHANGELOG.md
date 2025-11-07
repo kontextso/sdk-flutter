@@ -1,5 +1,40 @@
 # Changelog
 
+## 2.0.0
+### Breaking
+`AdEvent` structure changed. The event now exposes normalized typed fields instead of loose payload maps. If you previously accessed dynamic payload values, you must update your code.
+
+> `onEvent(AdEvent event)` callback stays the same - only the event model changed.
+
+### Migration
+Use the new typed fields + switch on `event.type`.
+
+```dart
+AdsProvider(
+    ...
+    onEvent: (AdEvent event) {
+      switch (event.type) {
+        case AdEventType.adClicked:
+          break;
+        case AdEventType.videoCompleted:
+          break;
+        // Handle other event types...
+      }
+    },
+    ...
+);
+```
+
+### Additional note
+When `AdEventType.adNoFill` is returned, check `event.skipCode`.  
+`skipCode` explains why the ad could not be rendered (reason of no-fill).
+
+### Other changes
+* Clicking on an ad now opens an in-app browser instead of external browser
+* Added optional `userEmail` property to `AdsProvider`
+* Added more tests
+* Minor optimizations and internal clean-up
+
 ## 1.1.2
 * Updated README.
 * Updated `AdEvent` documentation.

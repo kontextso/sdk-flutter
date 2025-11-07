@@ -12,8 +12,8 @@ import 'package:kontext_flutter_sdk/src/widgets/ads_provider_data.dart';
 import 'package:kontext_flutter_sdk/src/models/message.dart';
 import 'package:kontext_flutter_sdk/src/models/character.dart';
 import 'package:kontext_flutter_sdk/src/utils/constants.dart';
-import 'package:kontext_flutter_sdk/src/widgets/hooks/use_last_messages.dart';
-import 'package:kontext_flutter_sdk/src/widgets/hooks/use_preload_ads.dart';
+import 'package:kontext_flutter_sdk/src/widgets/utils/use_last_messages.dart';
+import 'package:kontext_flutter_sdk/src/widgets/utils/use_preload_ads.dart';
 
 /// [AdsProvider] handles data fetching and state management for ads.
 class AdsProvider extends HookWidget {
@@ -22,6 +22,7 @@ class AdsProvider extends HookWidget {
     this.adServerUrl = kDefaultAdServerUrl,
     required this.publisherToken,
     required this.userId,
+    this.userEmail,
     required this.conversationId,
     required this.messages,
     this.isDisabled = false,
@@ -49,6 +50,9 @@ class AdsProvider extends HookWidget {
   /// A unique string that should remain the same during the user’s
   /// lifetime (used for retargeting and rewarded ads).
   final String userId;
+
+  /// The email of the user.
+  final String? userEmail;
 
   /// Unique identifier of the conversation.
   final String conversationId;
@@ -158,6 +162,7 @@ class AdsProvider extends HookWidget {
       context,
       publisherToken: publisherToken,
       userId: userId,
+      userEmail: userEmail,
       conversationId: conversationId,
       messages: messages,
       enabledPlacementCodes: enabledPlacementCodes,

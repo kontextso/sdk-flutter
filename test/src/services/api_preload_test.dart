@@ -44,6 +44,7 @@ void main() {
       conversationId: 'conv-456',
       messages: [],
       enabledPlacementCodes: [],
+      isDisabled: false,
     );
 
     expect(response, isA<PreloadResponse>());
@@ -56,7 +57,11 @@ void main() {
 
     verify(() => mock.post(
           Uri.parse('https://api.test/preload'),
-          headers: {'Content-Type': 'application/json'},
+          headers: {
+            'Content-Type': 'application/json',
+            'Kontextso-Publisher-Token': 'test-token',
+            'Kontextso-Is-Disabled': '0',
+          },
           body: any(
             named: 'body',
             that: predicate<String>((b) {
@@ -86,6 +91,7 @@ void main() {
       conversationId: 'conv-456',
       messages: [],
       enabledPlacementCodes: [],
+      isDisabled: false,
     );
 
     expect(response, isA<PreloadResponse>());
@@ -108,6 +114,7 @@ void main() {
       conversationId: 'conv-456',
       messages: [],
       enabledPlacementCodes: [],
+      isDisabled: false,
     );
 
     expect(response, isA<PreloadResponse>());
@@ -117,6 +124,31 @@ void main() {
     expect(response.error, 'Bad');
     expect(response.errorCode, 'X1');
     expect(response.permanentError, true);
+  });
+
+  test('skip info in payload', () async {
+    when(() => mock.post(
+          any(),
+          headers: any(named: 'headers'),
+          body: any(named: 'body'),
+        )).thenAnswer((_) async {
+      return http.Response('{"skip":true,"skipCode":"S123"}', 200);
+    });
+
+    final response = await api.preload(
+      publisherToken: 'test-token',
+      userId: 'user-123',
+      conversationId: 'conv-456',
+      messages: [],
+      enabledPlacementCodes: [],
+      isDisabled: false,
+    );
+
+    expect(response, isA<PreloadResponse>());
+    expect(response.sessionId, isNull);
+    expect(response.bids, isEmpty);
+    expect(response.skip, true);
+    expect(response.skipCode, 'S123');
   });
 
   test('exception -> safe fallback', () async {
@@ -132,6 +164,7 @@ void main() {
       conversationId: 'conv-456',
       messages: [],
       enabledPlacementCodes: [],
+      isDisabled: false,
     );
 
     expect(response, isA<PreloadResponse>());
@@ -167,11 +200,16 @@ void main() {
         gpp: '',
         gppSid: [],
       ),
+      isDisabled: false,
     );
 
     verify(() => mock.post(
           Uri.parse('https://api.test/preload'),
-          headers: {'Content-Type': 'application/json'},
+          headers: {
+            'Content-Type': 'application/json',
+            'Kontextso-Publisher-Token': 'test-token',
+            'Kontextso-Is-Disabled': '0',
+          },
           body: any(
             named: 'body',
             that: predicate<String>((b) {
@@ -192,10 +230,10 @@ void main() {
 
   test('device provider throws -> falls back to empty device payload', () async {
     when(() => mock.post(
-      any(),
-      headers: any(named: 'headers'),
-      body: any(named: 'body'),
-    )).thenAnswer((_) async {
+          any(),
+          headers: any(named: 'headers'),
+          body: any(named: 'body'),
+        )).thenAnswer((_) async {
       return http.Response('{"sessionId": "123", "bids": []}', 200);
     });
 
@@ -209,29 +247,34 @@ void main() {
       conversationId: 'conv-456',
       messages: [],
       enabledPlacementCodes: [],
+      isDisabled: false,
     );
 
     verify(() => mock.post(
-      Uri.parse('https://api.test/preload'),
-      headers: {'Content-Type': 'application/json'},
-      body: any(
-        named: 'body',
-        that: predicate<String>((raw) {
-          final body = jsonDecode(raw) as Map<String, dynamic>;
-          final device = body['device'];
-          if (device is! Map<String, dynamic>) return false;
+          Uri.parse('https://api.test/preload'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Kontextso-Publisher-Token': 'test-token',
+            'Kontextso-Is-Disabled': '0',
+          },
+          body: any(
+            named: 'body',
+            that: predicate<String>((raw) {
+              final body = jsonDecode(raw) as Map<String, dynamic>;
+              final device = body['device'];
+              if (device is! Map<String, dynamic>) return false;
 
-          const requiredKeys = {
-            'os',
-            'hardware',
-            'screen',
-            'power',
-            'audio',
-            'network',
-          };
-          return requiredKeys.every(device.containsKey);
-        }),
-      ),
-    )).called(1);
+              const requiredKeys = {
+                'os',
+                'hardware',
+                'screen',
+                'power',
+                'audio',
+                'network',
+              };
+              return requiredKeys.every(device.containsKey);
+            }),
+          ),
+        )).called(1);
   });
 }

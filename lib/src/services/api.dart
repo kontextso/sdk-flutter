@@ -20,6 +20,8 @@ class PreloadResponse {
     this.error,
     this.errorCode,
     this.permanentError,
+    this.skip,
+    this.skipCode,
   });
 
   final String? sessionId;
@@ -29,6 +31,8 @@ class PreloadResponse {
   final String? error;
   final String? errorCode;
   final bool? permanentError;
+  final bool? skip;
+  final String? skipCode;
 }
 
 class Api {
@@ -53,6 +57,7 @@ class Api {
     required String publisherToken,
     required String conversationId,
     required String userId,
+    String? userEmail,
     required List<String> enabledPlacementCodes,
     required List<Message> messages,
     String? sessionId,
@@ -62,6 +67,7 @@ class Api {
     Character? character,
     String? variantId,
     String? iosAppStoreId,
+    required bool isDisabled,
   }) async {
     late final DeviceAppInfo device;
     try {
@@ -69,19 +75,21 @@ class Api {
     } catch (_) {
       device = DeviceAppInfo.empty();
     }
-    final deviceJson = await device.toJsonFresh();
-
-    final vendor = vendorId?.nullIfEmpty;
-    final advertising = advertisingId?.nullIfEmpty;
-    final variant = variantId?.nullIfEmpty;
 
     try {
+      final deviceJson = await device.toJsonFresh();
+
+      final vendor = vendorId?.nullIfEmpty;
+      final advertising = advertisingId?.nullIfEmpty;
+      final variant = variantId?.nullIfEmpty;
+
       final result = await _client.post(
         '/preload',
         body: {
           'publisherToken': publisherToken,
           'conversationId': conversationId,
           'userId': userId,
+          if (userEmail != null) 'userEmail': userEmail,
           'enabledPlacementCodes': enabledPlacementCodes,
           'messages': messages.map((message) => message.toJson()).toList(),
           if (sessionId != null) 'sessionId': sessionId,
@@ -98,6 +106,10 @@ class Api {
           if (character != null) 'character': character.toJson(),
           if (variant != null) 'variantId': variant,
         },
+        headers: {
+          'Kontextso-Publisher-Token': publisherToken,
+          'Kontextso-Is-Disabled': isDisabled ? '1' : '0',
+        },
       );
 
       final statusCode = result.response.statusCode;
@@ -109,6 +121,8 @@ class Api {
       final error = data['error'] as String?;
       final errorCode = data['errCode'] as String?;
       final permanentError = data['permanent'] as bool?;
+      final skip = data['skip'] as bool?;
+      final skipCode = data['skipCode'] as String?;
 
       return PreloadResponse(
         sessionId: sessionIdJson,
@@ -122,6 +136,8 @@ class Api {
         error: error,
         errorCode: errorCode,
         permanentError: permanentError,
+        skip: skip,
+        skipCode: skipCode,
       );
     } catch (e, stack) {
       Logger.exception(e, stack);

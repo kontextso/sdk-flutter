@@ -8,7 +8,6 @@ import 'package:kontext_flutter_sdk/src/models/regulatory.dart';
 import 'package:kontext_flutter_sdk/src/services/api.dart';
 import 'package:kontext_flutter_sdk/src/services/logger.dart';
 import 'package:kontext_flutter_sdk/src/utils/constants.dart';
-import 'package:kontext_flutter_sdk/src/utils/extensions.dart';
 import 'package:kontext_flutter_sdk/src/utils/types.dart' show OnEventCallback;
 
 void usePreloadAds(
@@ -16,6 +15,7 @@ void usePreloadAds(
   required String publisherToken,
   required String conversationId,
   required String userId,
+  required String? userEmail,
   required List<String> enabledPlacementCodes,
   required List<Message> messages,
   required bool isDisabled,
@@ -60,12 +60,11 @@ void usePreloadAds(
         'character': character?.toJson(),
         'vendorId': vendorId,
         'variantId': variantId,
-        'advertisingId': advertisingId,
       });
     }
 
     return null;
-  }, [sessionId.value, publisherToken, userId, conversationId, character, vendorId, variantId, advertisingId]);
+  }, [sessionId.value, publisherToken, userId, conversationId, character, vendorId, variantId]);
 
   final loading = useRef<bool>(false);
 
@@ -91,8 +90,15 @@ void usePreloadAds(
     setReadyForStreamingAssistant(false);
     setReadyForStreamingUser(false);
 
+    notifyAdFilled() => onEvent?.call(AdEvent(type: AdEventType.adFilled));
+    notifyAdNoFill(String skipCode) => onEvent?.call(AdEvent(type: AdEventType.adNoFill, skipCode: skipCode));
+    notifyAdError(String error, String errorCode) => onEvent?.call(AdEvent(type: AdEventType.adError, message: error, errCode: errorCode));
+
     Future<void> preload() async {
-      if (isDisabled || sessionDisabled.value) return;
+      if (sessionDisabled.value) {
+        Logger.log('Preload ads dropped (disabled mid-flight)');
+        return;
+      }
 
       Logger.log('Preload ads started');
       loading.value = true;
@@ -103,8 +109,9 @@ void usePreloadAds(
           publisherToken: publisherToken,
           conversationId: conversationId,
           userId: userId,
+          userEmail: userEmail,
           enabledPlacementCodes: enabledPlacementCodes,
-          messages: messages.getLastMessages(),
+          messages: messages,
           sessionId: sessionId.value,
           vendorId: vendorId,
           advertisingId: advertisingId,
@@ -112,43 +119,53 @@ void usePreloadAds(
           character: character,
           variantId: variantId,
           iosAppStoreId: iosAppStoreId,
+          isDisabled: isDisabled,
         );
 
-        if (!context.mounted) return;
-
-        if (isDisabled || sessionDisabled.value) {
-          Logger.log('Preload ads dropped (disabled mid-flight)');
+        if (!context.mounted) {
           return;
         }
 
-        if (response.statusCode == 204) {
-          Logger.log('Preload ads finished (204)');
-          return;
-        }
-
+        // 1) Skip everything if there was an error
         if (response.error != null || response.errorCode != null || response.sessionId == null) {
           if (response.permanentError == true) {
             // Geo disabled or other reason, ads are permanently disabled
             sessionDisabled.value = true;
+            notifyAdError(response.error ?? 'Session is disabled', response.errorCode ?? AdEvent.skipCodeSessionDisabled);
             Logger.info('Session is disabled. Reason: Error=${response.error}, ErrorCode=${response.errorCode}');
-            return;
+          } else {
+            notifyAdError(response.error ?? 'Ad generation skipped', response.errorCode ?? AdEvent.skipCodeUnknown);
+            Logger.info('Ad generation skipped. Reason: Error=${response.error}, ErrorCode=${response.errorCode}');
           }
-          Logger.info('Ad generation skipped. Reason: Error=${response.error}, ErrorCode=${response.errorCode}');
           return;
         }
 
-        if (response.remoteLogLevel != null) {
-          Logger.setRemoteLogLevel(response.remoteLogLevel!);
-        }
-
+        // 2) Save session ID
         sessionId.value = response.sessionId;
 
+        // 3) Skip everything else if ads are disabled manually
+        if (isDisabled) {
+          Logger.log('Preload ads finished (disabled)');
+          return;
+        }
+
         final bids = response.bids;
+
+        // 4) Handle unfilled response
+        if (response.skip == true || bids.isEmpty) {
+          notifyAdNoFill(response.skipCode ?? AdEvent.skipCodeUnknown);
+          Logger.info('Ad generation skipped. Reason: ${response.skipCode}');
+          return;
+        }
+
         setBids([...bids]);
         setReadyForStreamingUser(true);
         Logger.log('Preload Ads finished');
-
-        onEvent?.call(AdEvent(name: bids.isNotEmpty ? 'ad.filled' : 'ad.no-fill'));
+        notifyAdFilled();
+        
+      } catch (e) {
+        Logger.error('Preload ads error: $e');
+        notifyAdError(e.toString(), AdEvent.skipCodeRequestFailed);
       } finally {
         loading.value = false;
       }
