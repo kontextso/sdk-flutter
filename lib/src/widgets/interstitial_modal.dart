@@ -5,6 +5,14 @@ import 'package:flutter/services.dart' show DeviceOrientation, SystemChrome;
 import 'package:kontext_flutter_sdk/src/utils/types.dart' show Json, OpenIframeComponent;
 import 'package:kontext_flutter_sdk/src/widgets/kontext_webview.dart';
 
+typedef InterstitialModalShowFunc = void Function(
+  BuildContext context, {
+  required String adServerUrl,
+  required Uri uri,
+  required Duration initTimeout,
+  required void Function(Json? data) onEventIframe,
+});
+
 class InterstitialModal {
   static OverlayEntry? _entry;
   static Timer? _initTimer;
@@ -16,12 +24,30 @@ class InterstitialModal {
     BuildContext context, {
     required String adServerUrl,
     required Uri uri,
-    Duration initTimeout = const Duration(seconds: 5),
+    required Duration initTimeout,
     required void Function(Json? data) onEventIframe,
+    @visibleForTesting Key? animatedOpacityKey,
+    @visibleForTesting KontextWebviewBuilder? webviewBuilder,
   }) {
     close();
 
     final visible = ValueNotifier<bool>(false);
+
+    final buildWebview = webviewBuilder ??
+        ({
+          Key? key,
+          required Uri uri,
+          required List<String> allowedOrigins,
+          required void Function(Json? data) onEventIframe,
+          required OnMessageReceived onMessageReceived,
+        }) =>
+            KontextWebview(
+              key: key,
+              uri: uri,
+              allowedOrigins: allowedOrigins,
+              onEventIframe: onEventIframe,
+              onMessageReceived: onMessageReceived,
+            );
 
     _entry = OverlayEntry(
       builder: (context) {
@@ -31,13 +57,14 @@ class InterstitialModal {
             return IgnorePointer(
               ignoring: !isVisible,
               child: AnimatedOpacity(
+                key: animatedOpacityKey,
                 opacity: isVisible ? 1.0 : 0.0,
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeInOut,
                 child: SizedBox(
                   width: double.infinity,
                   height: double.infinity,
-                  child: KontextWebview(
+                  child: buildWebview(
                     uri: uri,
                     allowedOrigins: [adServerUrl],
                     onEventIframe: onEventIframe,

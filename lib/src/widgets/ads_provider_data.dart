@@ -58,4 +58,40 @@ class AdsProviderData extends InheritedWidget {
         lastUserMessageId != oldWidget.lastUserMessageId ||
         onEvent != oldWidget.onEvent;
   }
+
+  @visibleForTesting
+  AdsProviderData copyWith({
+    String? adServerUrl,
+    List<Message>? messages,
+    List<Bid>? bids,
+    bool? isDisabled,
+    List<String>? enabledPlacementCodes,
+    Map<String, dynamic>? otherParams,
+    bool? readyForStreamingAssistant,
+    bool? readyForStreamingUser,
+    String? lastAssistantMessageId,
+    String? lastUserMessageId,
+    String? relevantAssistantMessageId,
+    void Function(String?)? setRelevantAssistantMessageId,
+    VoidCallback? resetAll,
+    OnEventCallback? onEvent,
+  }) {
+    return AdsProviderData(
+      adServerUrl: adServerUrl ?? this.adServerUrl,
+      messages: messages ?? this.messages,
+      bids: bids ?? this.bids,
+      isDisabled: isDisabled ?? this.isDisabled,
+      enabledPlacementCodes: enabledPlacementCodes ?? this.enabledPlacementCodes,
+      otherParams: otherParams ?? this.otherParams,
+      readyForStreamingAssistant: readyForStreamingAssistant ?? this.readyForStreamingAssistant,
+      readyForStreamingUser: readyForStreamingUser ?? this.readyForStreamingUser,
+      lastAssistantMessageId: lastAssistantMessageId ?? this.lastAssistantMessageId,
+      lastUserMessageId: lastUserMessageId ?? this.lastUserMessageId,
+      relevantAssistantMessageId: relevantAssistantMessageId ?? this.relevantAssistantMessageId,
+      setRelevantAssistantMessageId: setRelevantAssistantMessageId ?? this.setRelevantAssistantMessageId,
+      resetAll: resetAll ?? this.resetAll,
+      onEvent: onEvent ?? this.onEvent,
+      child: child,
+    );
+  }
 }
