@@ -22,11 +22,21 @@ class AdFormat extends HookWidget {
     required this.code,
     required this.messageId,
     required this.onActiveChanged,
+    @visibleForTesting this.webviewBuilder,
+    @visibleForTesting this.showInterstitial,
   });
+
+  static const Duration defaultTimeout = Duration(seconds: 5);
 
   final String code;
   final String messageId;
   final ValueChanged<bool> onActiveChanged;
+
+  @visibleForTesting
+  final KontextWebviewBuilder? webviewBuilder;
+
+  @visibleForTesting
+  final InterstitialModalShowFunc? showInterstitial;
 
   Rect _visibleWindowRect(BuildContext context) {
     final mediaQuery = MediaQuery.of(context);
@@ -229,12 +239,12 @@ class AdFormat extends HookWidget {
 
     final milliseconds = data['timeout'];
     final timeout =
-        (milliseconds is int && milliseconds > 0) ? Duration(milliseconds: milliseconds) : const Duration(seconds: 5);
+        (milliseconds is int && milliseconds > 0) ? Duration(milliseconds: milliseconds) : AdFormat.defaultTimeout;
 
     switch (component) {
       case OpenIframeComponent.modal:
         final modalUri = inlineUri.replacePath('/api/${component.name}/$bidId');
-        InterstitialModal.show(
+        (showInterstitial ?? InterstitialModal.show)(
           context,
           adServerUrl: adServerUrl,
           uri: modalUri,
@@ -376,6 +386,22 @@ class AdFormat extends HookWidget {
       setActive(false);
     }
 
+    final buildWebview = webviewBuilder ??
+        ({
+          Key? key,
+          required Uri uri,
+          required List<String> allowedOrigins,
+          required void Function(Json? data) onEventIframe,
+          required OnMessageReceived onMessageReceived,
+        }) =>
+            KontextWebview(
+              key: key,
+              uri: uri,
+              allowedOrigins: allowedOrigins,
+              onEventIframe: onEventIframe,
+              onMessageReceived: onMessageReceived,
+            );
+
     return Offstage(
       offstage: !iframeLoaded.value || !showIframe.value,
       child: Container(
@@ -383,8 +409,8 @@ class AdFormat extends HookWidget {
         height: height.value,
         width: double.infinity,
         color: Colors.transparent,
-        child: KontextWebview(
-          key: ValueKey('ad-$messageId-$bidId'), // Force rebuild on bidId or messageId change
+        child: buildWebview(
+          key: ValueKey('ad-$messageId-$bidId'),
           uri: inlineUri,
           allowedOrigins: [adServerUrl],
           onEventIframe: (data) => _handleEventIframe(
