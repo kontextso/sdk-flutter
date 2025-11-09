@@ -1,5 +1,8 @@
 # Changelog
 
+## 2.0.1
+* Added tests for AdFormat, InterstitialAd, and InlineAd widgets.
+
 ## 2.0.0
 ### Breaking
 `AdEvent` structure changed. The event now exposes normalized typed fields instead of loose payload maps. If you previously accessed dynamic payload values, you must update your code.

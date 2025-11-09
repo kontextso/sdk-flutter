@@ -7,6 +7,7 @@ class InlineAd extends StatefulWidget {
     super.key,
     required this.code,
     required this.messageId,
+    @visibleForTesting this.adFormatBuilder,
   });
 
   /// The ad format code that identifies the ad to be displayed.
@@ -14,6 +15,9 @@ class InlineAd extends StatefulWidget {
 
   /// A unique identifier for the message associated with this ad.
   final String messageId;
+
+  @visibleForTesting
+  final AdFormat Function(void Function(bool value) setKeepAlive)? adFormatBuilder;
 
   @override
   InlineAdState createState() => InlineAdState();
@@ -34,10 +38,11 @@ class InlineAdState extends State<InlineAd> with AutomaticKeepAliveClientMixin {
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    return AdFormat(
-      code: widget.code,
-      messageId: widget.messageId,
-      onActiveChanged: _setKeepAlive,
-    );
+    return widget.adFormatBuilder?.call(_setKeepAlive) ??
+        AdFormat(
+          code: widget.code,
+          messageId: widget.messageId,
+          onActiveChanged: _setKeepAlive,
+        );
   }
 }

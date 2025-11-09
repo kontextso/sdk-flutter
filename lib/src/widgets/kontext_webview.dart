@@ -56,6 +56,15 @@ final _flushMsgQueue = '''
   })();
 ''';
 
+typedef OnMessageReceived = void Function(InAppWebViewController controller, String messageType, Json? data);
+typedef KontextWebviewBuilder = Widget Function({
+  Key? key,
+  required Uri uri,
+  required List<String> allowedOrigins,
+  required void Function(Json? data) onEventIframe,
+  required OnMessageReceived onMessageReceived,
+});
+
 class KontextWebview extends StatelessWidget {
   const KontextWebview({
     super.key,
@@ -68,7 +77,7 @@ class KontextWebview extends StatelessWidget {
   final Uri uri;
   final List<String> allowedOrigins;
   final void Function(Json? data) onEventIframe;
-  final void Function(InAppWebViewController controller, String messageType, Json? data) onMessageReceived;
+  final OnMessageReceived onMessageReceived;
 
   @override
   Widget build(BuildContext context) {
