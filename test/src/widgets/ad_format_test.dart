@@ -23,12 +23,13 @@ void main() {
       (WidgetTester tester) async {
         await tester.pumpWidget(
           createDefaultProvider(
+            isDisabled: true,
             child: const AdFormat(
               code: 'test_code',
               messageId: 'msg_1',
               onActiveChanged: onActiveChanged,
             ),
-          ).copyWith(isDisabled: true),
+          ),
         );
 
         final offstageFinder = find.descendant(of: find.byType(AdFormat), matching: find.byType(Offstage));
@@ -103,14 +104,13 @@ void main() {
       (WidgetTester tester) async {
         await tester.pumpWidget(
           createDefaultProvider(
+            relevantAssistantMessageId: 'msg_3',
+            lastAssistantMessageId: 'msg_4',
             child: const AdFormat(
               code: 'test_code',
               messageId: 'msg_2',
               onActiveChanged: onActiveChanged,
             ),
-          ).copyWith(
-            relevantAssistantMessageId: 'msg_3',
-            lastAssistantMessageId: 'msg_4',
           ),
         );
 
@@ -126,12 +126,13 @@ void main() {
       (WidgetTester tester) async {
         await tester.pumpWidget(
           createDefaultProvider(
+            readyForStreamingAssistant: false,
             child: const AdFormat(
               code: 'test_code',
               messageId: 'msg_1',
               onActiveChanged: onActiveChanged,
             ),
-          ).copyWith(readyForStreamingAssistant: false),
+          ),
         );
 
         final offstageFinder = find.descendant(of: find.byType(AdFormat), matching: find.byType(Offstage));
@@ -146,12 +147,13 @@ void main() {
       (WidgetTester tester) async {
         await tester.pumpWidget(
           createDefaultProvider(
+            lastUserMessageId: 'msg_3',
             child: const AdFormat(
               code: 'test_code',
               messageId: 'msg_2',
               onActiveChanged: onActiveChanged,
             ),
-          ).copyWith(lastUserMessageId: 'msg_3'),
+          ),
         );
 
         final offstageFinder = find.descendant(of: find.byType(AdFormat), matching: find.byType(Offstage));
@@ -166,15 +168,14 @@ void main() {
       (WidgetTester tester) async {
         await tester.pumpWidget(
           createDefaultProvider(
+            bids: [Bid(id: '1', code: 'test_code', position: AdDisplayPosition.afterUserMessage)],
+            lastUserMessageId: 'msg_1',
+            readyForStreamingUser: false,
             child: const AdFormat(
               code: 'test_code',
               messageId: 'msg_1',
               onActiveChanged: onActiveChanged,
             ),
-          ).copyWith(
-            bids: [Bid(id: '1', code: 'test_code', position: AdDisplayPosition.afterUserMessage)],
-            lastUserMessageId: 'msg_1',
-            readyForStreamingUser: false,
           ),
         );
 
@@ -190,12 +191,13 @@ void main() {
       (WidgetTester tester) async {
         await tester.pumpWidget(
           createDefaultProvider(
+            adServerUrl: ':::invalid-url:::',
             child: const AdFormat(
               code: 'test_code',
               messageId: 'msg_1',
               onActiveChanged: onActiveChanged,
             ),
-          ).copyWith(adServerUrl: ':::invalid-url:::'),
+          ),
         );
 
         final offstageFinder = find.descendant(of: find.byType(AdFormat), matching: find.byType(Offstage));
@@ -581,13 +583,14 @@ void main() {
 
       await tester.pumpWidget(
         createDefaultProvider(
+          onEvent: (event) => capturedEvents.add(event),
           child: AdFormat(
             code: 'test_code',
             messageId: 'msg_1',
             onActiveChanged: onActiveChanged,
             webviewBuilder: webviewBuilder,
           ),
-        ).copyWith(onEvent: (event) => capturedEvents.add(event)),
+        ),
       );
 
       onMessage(fakeController, 'init-iframe', null);
@@ -643,13 +646,14 @@ void main() {
 
       await tester.pumpWidget(
         createDefaultProvider(
+          onEvent: (event) => capturedEvents.add(event),
           child: AdFormat(
             code: 'test_code',
             messageId: 'msg_1',
             onActiveChanged: onActiveChanged,
             webviewBuilder: webviewBuilder,
           ),
-        ).copyWith(onEvent: (event) => capturedEvents.add(event)),
+        ),
       );
 
       onMessage(fakeController, 'init-iframe', null);

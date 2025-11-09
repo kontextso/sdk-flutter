@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:kontext_flutter_sdk/src/models/bid.dart';
-import 'package:kontext_flutter_sdk/src/utils/types.dart' show Json;
+import 'package:kontext_flutter_sdk/src/utils/types.dart' show Json, OnEventCallback;
 import 'package:kontext_flutter_sdk/src/widgets/ads_provider_data.dart';
 import 'package:kontext_flutter_sdk/src/widgets/kontext_webview.dart' show OnMessageReceived;
 import 'package:mocktail/mocktail.dart';
@@ -29,25 +29,32 @@ class MockInAppWebViewController extends Mock implements InAppWebViewController 
 void onActiveChanged(bool _) {}
 
 AdsProviderData createDefaultProvider({
-  bool isDisabled = false,
+  String? adServerUrl,
+  bool? isDisabled,
   List<Bid>? bids,
+  bool? readyForStreamingAssistant,
+  bool? readyForStreamingUser,
+  String? lastAssistantMessageId,
+  String? lastUserMessageId,
+  String? relevantAssistantMessageId,
   VoidCallback? resetAll,
+  OnEventCallback? onEvent,
   required Widget child,
 }) {
   return AdsProviderData(
-    adServerUrl: 'https://example.com/ad',
+    adServerUrl: adServerUrl ?? 'https://example.com/ad',
     messages: const [],
-    bids: bids ?? [Bid(id: '1', code: 'test_code', position: AdDisplayPosition.afterAssistantMessage)],
+    bids: bids ?? [Bid(id: '1', code: 'test_code', position: AdDisplayPosition.afterAssistantMessage),],
     enabledPlacementCodes: ['test_code'],
-    isDisabled: isDisabled,
-    readyForStreamingAssistant: true,
-    readyForStreamingUser: false,
-    lastAssistantMessageId: 'msg_1',
-    lastUserMessageId: null,
-    relevantAssistantMessageId: null,
+    isDisabled: isDisabled ?? false,
+    readyForStreamingAssistant: readyForStreamingAssistant ?? true,
+    readyForStreamingUser: readyForStreamingUser ?? false,
+    lastAssistantMessageId: lastAssistantMessageId ?? 'msg_1',
+    lastUserMessageId: lastUserMessageId,
+    relevantAssistantMessageId: relevantAssistantMessageId,
     setRelevantAssistantMessageId: (_) {},
     resetAll: resetAll ?? () {},
-    onEvent: (_) {},
+    onEvent: onEvent ?? (_) {},
     child: child,
   );
 }
