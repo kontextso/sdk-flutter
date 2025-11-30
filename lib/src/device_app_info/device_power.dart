@@ -10,25 +10,25 @@ class DevicePower {
   DevicePower._({
     required this.batteryLevel,
     required this.batteryState,
-    required this.lowerPowerMode,
+    required this.lowPowerMode,
   });
 
   final double? batteryLevel;
   final BatteryState? batteryState;
-  final bool? lowerPowerMode;
+  final bool? lowPowerMode;
 
   static const _ch = MethodChannel('kontext_flutter_sdk/device_power');
 
   factory DevicePower.empty() => DevicePower._(
         batteryLevel: null,
         batteryState: null,
-        lowerPowerMode: null,
+        lowPowerMode: null,
       );
 
   Map<String, dynamic> toJson() => {
         if (batteryLevel != null) 'batteryLevel': batteryLevel,
         if (batteryState != null) 'batteryState': batteryState!.name,
-        if (lowerPowerMode != null) 'lowerPowerMode': lowerPowerMode,
+        if (lowPowerMode != null) 'lowPowerMode': lowPowerMode,
       };
 
   static Future<DevicePower> init(PlatformDispatcher dispatcher) async {
@@ -41,12 +41,12 @@ class DevicePower {
       final m = await _ch.invokeMapMethod<String, dynamic>('getPowerInfo');
       final batteryLevel = (m?['level'] as num?)?.toDouble();
       final batteryState = _parse(m?['state'] as String?);
-      final lowerPowerMode = m?['lowPower'] as bool?;
+      final lowPowerMode = m?['lowPower'] as bool?;
 
       return DevicePower._(
         batteryLevel: batteryLevel,
         batteryState: batteryState,
-        lowerPowerMode: lowerPowerMode,
+        lowPowerMode: lowPowerMode,
       );
     } catch (e) {
       Logger.error('Failed to get power info: $e');

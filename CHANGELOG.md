@@ -1,5 +1,8 @@
 # Changelog
 
+## 2.0.2
+* Rename `lowerPowerMode` to `lowPowerMode` in the preload API request body.
+
 ## 2.0.1
 * Added tests for AdFormat, InterstitialAd, and InlineAd widgets.
 
