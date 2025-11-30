@@ -1,4 +1,4 @@
-import 'package:flutter_inappwebview/flutter_inappwebview.dart'
+import 'package:flutter_inappwebview_kontext/flutter_inappwebview_kontext.dart'
     show ChromeSafariBrowser, WebUri, ChromeSafariBrowserSettings;
 import 'package:kontext_flutter_sdk/src/services/logger.dart';
 import 'package:kontext_flutter_sdk/src/utils/helper_methods.dart';
