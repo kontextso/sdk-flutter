@@ -5,7 +5,8 @@ typedef OnEventCallback = void Function(AdEvent event);
 typedef Json = Map<String, dynamic>;
 
 enum OpenIframeComponent {
-  modal;
+  modal,
+  skoverlay;
 
   static OpenIframeComponent? fromValue(dynamic value) {
     return OpenIframeComponent.values.firstWhereOrElse(
