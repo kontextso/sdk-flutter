@@ -55,7 +55,7 @@ final class AdAttributionManager {
                 attributionView = nil
             }
             hostWindow = nil
-            completion(true)
+            completion(false)
             return
         }
         

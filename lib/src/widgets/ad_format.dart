@@ -149,7 +149,12 @@ class AdFormat extends HookWidget {
     }
   }
 
-  void _handleEventIframe({required String adServerUrl, OnEventCallback? onEvent, Json? data}) {
+  Future<void> _handleEventIframe({
+    required GlobalKey adSlotKey,
+    required String adServerUrl,
+    OnEventCallback? onEvent,
+    Json? data,
+  }) async {
     if (data == null) {
       return;
     }
@@ -169,6 +174,22 @@ class AdFormat extends HookWidget {
       };
 
       final adEvent = AdEvent.fromJson(updatedData);
+      switch (adEvent.type) {
+        case AdEventType.adRenderCompleted:
+          final frameSet = await _setAttributionFrame(adSlotKey);
+          if (frameSet) {
+            await AdAttributionKit.beginView();
+          }
+          break;
+        case AdEventType.adClicked:
+          AdAttributionKit.handleTap(uri);
+          if (uri != null) {
+            uri.openInAppBrowser();
+          }
+          break;
+        default:
+      }
+
       onEvent?.call(adEvent);
     } catch (e, stack) {
       Logger.exception(e, stack);
@@ -194,6 +215,7 @@ class AdFormat extends HookWidget {
     switch (messageType) {
       case 'init-iframe':
         iframeLoaded.value = true;
+        _handleAdAttributionJws(data);
         break;
       case 'show-iframe':
         showIframe.value = true;
@@ -224,6 +246,7 @@ class AdFormat extends HookWidget {
 
         _handleOpenComponentIframe(
           context,
+          adSlotKey: adSlotKey,
           adServerUrl: adServerUrl,
           inlineUri: inlineUri,
           bidId: bidId,
@@ -231,9 +254,6 @@ class AdFormat extends HookWidget {
           data: data,
           onEvent: adsProviderData.onEvent,
         );
-        break;
-      case "ad-attribution-kit":
-        _handleAdAttributionJws(data);
         break;
       case 'error-iframe':
         resetIframe();
@@ -244,6 +264,7 @@ class AdFormat extends HookWidget {
 
   void _handleOpenComponentIframe(
     BuildContext context, {
+    required GlobalKey adSlotKey,
     required String adServerUrl,
     required Uri inlineUri,
     required String bidId,
@@ -273,6 +294,7 @@ class AdFormat extends HookWidget {
             data: data,
           ),
           onEventIframe: (data) => _handleEventIframe(
+            adSlotKey: adSlotKey,
             adServerUrl: adServerUrl,
             onEvent: onEvent,
             data: data,
@@ -282,26 +304,27 @@ class AdFormat extends HookWidget {
     }
   }
 
-  void _handleAdAttributionJws(Json? data) {
-    final jws = data?['jws'];
+  Future<void> _handleAdAttributionJws(Json? data) async {
+    final jws = data?['payload']['adAttributionKit']['jws'];
+    if (jws == null) return;
+
     if (jws is! String || jws.isEmpty) {
       Logger.error('Ad attribution JWS is missing or invalid. Data: $data');
       return;
     }
-    AdAttributionKit.initImpression(jws);
+    await AdAttributionKit.initImpression(jws);
   }
 
-  void _setAttributionFrame(GlobalKey key) {
+  Future<bool> _setAttributionFrame(GlobalKey key) async {
     final adContainer = _slotRectInWindow(key);
-    if (adContainer == null) return;
+    if (adContainer == null) return false;
 
-    AdAttributionKit.setAttributionFrame(adContainer);
+    return AdAttributionKit.setAttributionFrame(adContainer);
   }
 
   Future<void> _cleanupAdResources() async {
-    await Future.wait([
-      AdAttributionKit.dispose(),
-    ]);
+    await AdAttributionKit.endView();
+    await AdAttributionKit.dispose();
   }
 
   @override
@@ -472,6 +495,7 @@ class AdFormat extends HookWidget {
           uri: inlineUri,
           allowedOrigins: [adServerUrl],
           onEventIframe: (data) => _handleEventIframe(
+            adSlotKey: adSlotKey,
             adServerUrl: adServerUrl,
             onEvent: adsProviderData.onEvent,
             data: data,
