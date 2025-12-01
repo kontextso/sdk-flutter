@@ -150,10 +150,6 @@ class AdFormat extends HookWidget {
         uri = KontextUrlBuilder(baseUrl: adServerUrl, path: path).buildUri();
       }
 
-      if (uri != null && data['name'] == AdEventType.adClicked.value) {
-        uri.openInAppBrowser();
-      }
-
       final updatedData = {
         ...data,
         if (payload != null)
@@ -164,6 +160,15 @@ class AdFormat extends HookWidget {
       };
 
       final adEvent = AdEvent.fromJson(updatedData);
+      switch (adEvent.type) {
+        case AdEventType.adClicked:
+          if (uri != null) {
+            uri.openInAppBrowser();
+          }
+          break;
+        default:
+      }
+
       onEvent?.call(adEvent);
     } catch (e, stack) {
       Logger.exception(e, stack);
