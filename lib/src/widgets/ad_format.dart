@@ -6,6 +6,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:kontext_flutter_sdk/src/models/ad_event.dart';
 import 'package:kontext_flutter_sdk/src/models/message.dart';
+import 'package:kontext_flutter_sdk/src/services/ad_attribution_kit.dart';
 import 'package:kontext_flutter_sdk/src/services/logger.dart';
 import 'package:kontext_flutter_sdk/src/utils/constants.dart';
 import 'package:kontext_flutter_sdk/src/utils/extensions.dart';
@@ -68,7 +69,7 @@ class AdFormat extends HookWidget {
 
   void _postDimensions({
     required BuildContext context,
-    required GlobalKey key,
+    required GlobalKey adSlotKey,
     InAppWebViewController? controller,
     required String adServerUrl,
     required bool Function() disposed,
@@ -77,17 +78,17 @@ class AdFormat extends HookWidget {
   }) {
     if (disposed()) return;
 
-    final slot = _slotRectInWindow(key);
-    if (slot == null || controller == null) return;
+    final adSlot = _slotRectInWindow(adSlotKey);
+    if (adSlot == null || controller == null) return;
 
     final viewport = _visibleWindowRect(context);
     final mq = MediaQueryData.fromView(View.of(context));
     final keyboardHeight = mq.viewInsets.bottom;
 
-    final containerWidth = slot.width.nullIfNaN;
-    final containerHeight = slot.height.nullIfNaN;
-    final containerX = slot.left.nullIfNaN;
-    final containerY = slot.top.nullIfNaN;
+    final containerWidth = adSlot.width.nullIfNaN;
+    final containerHeight = adSlot.height.nullIfNaN;
+    final containerX = adSlot.left.nullIfNaN;
+    final containerY = adSlot.top.nullIfNaN;
 
     final isAnyNullDimension =
         containerWidth == null || containerHeight == null || containerX == null || containerY == null;
@@ -101,10 +102,10 @@ class AdFormat extends HookWidget {
       'data': {
         'windowWidth': viewport.width.nullIfNaN,
         'windowHeight': viewport.height.nullIfNaN,
-        'containerWidth': slot.width.nullIfNaN,
-        'containerHeight': slot.height.nullIfNaN,
-        'containerX': slot.left.nullIfNaN,
-        'containerY': slot.top.nullIfNaN,
+        'containerWidth': adSlot.width.nullIfNaN,
+        'containerHeight': adSlot.height.nullIfNaN,
+        'containerX': adSlot.left.nullIfNaN,
+        'containerY': adSlot.top.nullIfNaN,
         'keyboardHeight': keyboardHeight.nullIfNaN,
       },
     };
@@ -136,7 +137,12 @@ class AdFormat extends HookWidget {
     ''');
   }
 
-  void _handleEventIframe({required String adServerUrl, OnEventCallback? onEvent, Json? data}) {
+  Future<void> _handleEventIframe({
+    required GlobalKey adSlotKey,
+    required String adServerUrl,
+    OnEventCallback? onEvent,
+    Json? data,
+  }) async {
     if (data == null) {
       return;
     }
@@ -149,10 +155,6 @@ class AdFormat extends HookWidget {
         uri = KontextUrlBuilder(baseUrl: adServerUrl, path: path).buildUri();
       }
 
-      if (uri != null && data['name'] == AdEventType.adClicked.value) {
-        uri.openInAppBrowser();
-      }
-
       final updatedData = {
         ...data,
         if (payload != null)
@@ -163,6 +165,22 @@ class AdFormat extends HookWidget {
       };
 
       final adEvent = AdEvent.fromJson(updatedData);
+      switch (adEvent.type) {
+        case AdEventType.adRenderCompleted:
+          final frameSet = await _setAttributionFrame(adSlotKey);
+          if (frameSet) {
+            await AdAttributionKit.beginView();
+          }
+          break;
+        case AdEventType.adClicked:
+          AdAttributionKit.handleTap(uri);
+          if (uri != null) {
+            uri.openInAppBrowser();
+          }
+          break;
+        default:
+      }
+
       onEvent?.call(adEvent);
     } catch (e, stack) {
       Logger.exception(e, stack);
@@ -174,6 +192,7 @@ class AdFormat extends HookWidget {
     BuildContext context, {
     required String messageType,
     Json? data,
+    required GlobalKey adSlotKey,
     required bool Function() isDisposed,
     required String adServerUrl,
     required Uri inlineUri,
@@ -187,6 +206,7 @@ class AdFormat extends HookWidget {
     switch (messageType) {
       case 'init-iframe':
         iframeLoaded.value = true;
+        _handleAdAttributionJws(data);
         break;
       case 'show-iframe':
         showIframe.value = true;
@@ -208,6 +228,7 @@ class AdFormat extends HookWidget {
 
         _handleOpenComponentIframe(
           context,
+          adSlotKey: adSlotKey,
           adServerUrl: adServerUrl,
           inlineUri: inlineUri,
           bidId: bidId,
@@ -225,6 +246,7 @@ class AdFormat extends HookWidget {
 
   void _handleOpenComponentIframe(
     BuildContext context, {
+    required GlobalKey adSlotKey,
     required String adServerUrl,
     required Uri inlineUri,
     required String bidId,
@@ -250,6 +272,7 @@ class AdFormat extends HookWidget {
           uri: modalUri,
           initTimeout: timeout,
           onEventIframe: (data) => _handleEventIframe(
+            adSlotKey: adSlotKey,
             adServerUrl: adServerUrl,
             onEvent: onEvent,
             data: data,
@@ -259,9 +282,32 @@ class AdFormat extends HookWidget {
     }
   }
 
+  Future<void> _handleAdAttributionJws(Json? data) async {
+    final jws = data?['payload']['adAttributionKit']['jws'];
+    if (jws == null) return;
+
+    if (jws is! String || jws.isEmpty) {
+      Logger.error('Ad attribution JWS is missing or invalid. Data: $data');
+      return;
+    }
+    await AdAttributionKit.initImpression(jws);
+  }
+
+  Future<bool> _setAttributionFrame(GlobalKey key) async {
+    final adContainer = _slotRectInWindow(key);
+    if (adContainer == null) return false;
+
+    return AdAttributionKit.setAttributionFrame(adContainer);
+  }
+
+  Future<void> _cleanupAdResources() async {
+    await AdAttributionKit.endView();
+    await AdAttributionKit.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final slotKey = useMemoized(() => GlobalKey(), const []);
+    final adSlotKey = useMemoized(() => GlobalKey(), const []);
 
     final ticker = useRef<Timer?>(null);
     void cancelTimer() {
@@ -304,6 +350,10 @@ class AdFormat extends HookWidget {
     final otherParams = adsProviderData.otherParams;
 
     useEffect(() {
+      return () => _cleanupAdResources();
+    }, const []);
+
+    useEffect(() {
       return () => setActive(false);
     }, const []);
 
@@ -334,7 +384,7 @@ class AdFormat extends HookWidget {
       void postDimensions() => _postDimensions(
             context: context,
             controller: webViewController.value,
-            key: slotKey,
+            adSlotKey: adSlotKey,
             adServerUrl: adServerUrl,
             disposed: () => disposed.value,
             isNullDimensions: isNullDimensions.value,
@@ -378,6 +428,7 @@ class AdFormat extends HookWidget {
     }, [iframeLoaded.value, webViewController.value, otherParamsHash]);
 
     void resetIframe() {
+      _cleanupAdResources();
       iframeLoaded.value = false;
       showIframe.value = false;
       height.value = 0.0;
@@ -405,7 +456,7 @@ class AdFormat extends HookWidget {
     return Offstage(
       offstage: !iframeLoaded.value || !showIframe.value,
       child: Container(
-        key: slotKey,
+        key: adSlotKey,
         height: height.value,
         width: double.infinity,
         color: Colors.transparent,
@@ -414,6 +465,7 @@ class AdFormat extends HookWidget {
           uri: inlineUri,
           allowedOrigins: [adServerUrl],
           onEventIframe: (data) => _handleEventIframe(
+            adSlotKey: adSlotKey,
             adServerUrl: adServerUrl,
             onEvent: adsProviderData.onEvent,
             data: data,
@@ -425,6 +477,7 @@ class AdFormat extends HookWidget {
               messageType: messageType,
               isDisposed: () => disposed.value,
               data: data,
+              adSlotKey: adSlotKey,
               adServerUrl: adServerUrl,
               inlineUri: inlineUri!,
               bidId: bidId,
