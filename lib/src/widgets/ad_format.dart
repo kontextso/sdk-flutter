@@ -306,7 +306,7 @@ class AdFormat extends HookWidget {
             data: data,
             onEvent: onEvent,
           ),
-          closeSKOverlay: () => _handleCloseComponentIframe(OpenIframeComponent.skoverlay),
+          onCloseComponentIframe: (component) => _handleCloseComponentIframe(component),
         );
         break;
       case OpenIframeComponent.skoverlay:

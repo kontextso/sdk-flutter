@@ -1,7 +1,3 @@
-import 'package:kontext_flutter_sdk/src/services/logger.dart' show Logger;
-import 'package:kontext_flutter_sdk/src/utils/extensions.dart';
-import 'package:kontext_flutter_sdk/src/utils/types.dart' show OpenIframeComponent;
-
 int deepHashObject(Object? value) {
   if (value is Map) {
     final entries = value.entries.toList()..sort((a, b) => a.key.toString().compareTo(b.key.toString()));

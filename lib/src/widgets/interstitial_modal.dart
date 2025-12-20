@@ -13,7 +13,7 @@ typedef InterstitialModalShowFunc = void Function(
   required void Function(Json? data) onClickIframe,
   required void Function(Json? data) onEventIframe,
   required void Function(OpenIframeComponent component, Json? data) onOpenComponentIframe,
-  required VoidCallback closeSKOverlay,
+  required void Function(OpenIframeComponent component) onCloseComponentIframe,
 });
 
 class InterstitialModal {
@@ -31,16 +31,17 @@ class InterstitialModal {
     required void Function(Json? data) onClickIframe,
     required void Function(Json? data) onEventIframe,
     required void Function(OpenIframeComponent component, Json? data) onOpenComponentIframe,
-    required VoidCallback closeSKOverlay,
+    required void Function(OpenIframeComponent component) onCloseComponentIframe,
     @visibleForTesting Key? animatedOpacityKey,
     @visibleForTesting KontextWebviewBuilder? webviewBuilder,
   }) {
+    closeSKOverlay() => onCloseComponentIframe(OpenIframeComponent.skoverlay);
     closeAll() {
       closeSKOverlay();
       closeModal();
     }
 
-    closeAll();
+    closeModal();
 
     final visible = ValueNotifier<bool>(false);
 

@@ -56,7 +56,7 @@ void main() {
         required void Function(Json? data) onClickIframe,
         required void Function(Json? data) onEventIframe,
         required void Function(OpenIframeComponent component, Json? data) onOpenComponentIframe,
-        required VoidCallback closeSKOverlay,
+        required void Function(OpenIframeComponent component) onCloseComponentIframe,
       }) {
         openCount++;
         seenAdServerUrl = adServerUrl;
@@ -112,7 +112,7 @@ void main() {
         onClickIframe: (_) {},
         onEventIframe: (_) {},
         onOpenComponentIframe: (_, __) {},
-        closeSKOverlay: () {},
+        onCloseComponentIframe: (_) {},
         webviewBuilder: ({
           Key? key,
           required Uri uri,
@@ -159,7 +159,7 @@ void main() {
         onClickIframe: (_) {},
         onEventIframe: (_) {},
         onOpenComponentIframe: (_, __) {},
-        closeSKOverlay: () {},
+        onCloseComponentIframe: (_) {},
         webviewBuilder: ({
           Key? key,
           required Uri uri,
@@ -210,7 +210,7 @@ void main() {
         onClickIframe: (_) {},
         onEventIframe: (_) {},
         onOpenComponentIframe: (_, __) {},
-        closeSKOverlay: () {},
+        onCloseComponentIframe: (_) {},
         webviewBuilder: ({
           Key? key,
           required Uri uri,
@@ -262,7 +262,7 @@ void main() {
         onClickIframe: (_) {},
         onEventIframe: (data) => receivedData = data,
         onOpenComponentIframe: (_, __) {},
-        closeSKOverlay: () {},
+        onCloseComponentIframe: (_) {},
         webviewBuilder: ({
           Key? key,
           required Uri uri,
@@ -305,7 +305,7 @@ void main() {
         onClickIframe: (_) {},
         onEventIframe: (_) {},
         onOpenComponentIframe: (_, __) {},
-        closeSKOverlay: () {},
+        onCloseComponentIframe: (_) {},
         animatedOpacityKey: const Key('first_modal_opacity'),
         webviewBuilder: ({
           Key? key,
@@ -340,7 +340,7 @@ void main() {
         onClickIframe: (_) {},
         onEventIframe: (_) {},
         onOpenComponentIframe: (_, __) {},
-        closeSKOverlay: () {},
+        onCloseComponentIframe: (_) {},
         animatedOpacityKey: const Key('second_modal_opacity'),
         webviewBuilder: ({
           Key? key,
@@ -389,7 +389,7 @@ void main() {
         onClickIframe: (_) {},
         onEventIframe: (_) {},
         onOpenComponentIframe: (_, __) {},
-        closeSKOverlay: () {},
+        onCloseComponentIframe: (_) {},
         webviewBuilder: ({
           Key? key,
           required Uri uri,

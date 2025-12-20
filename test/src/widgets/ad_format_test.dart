@@ -717,7 +717,7 @@ void main() {
         required void Function(Json? data) onClickIframe,
         required void Function(Json? data) onEventIframe,
         required void Function(OpenIframeComponent component, Json? data) onOpenComponentIframe,
-        required VoidCallback closeSKOverlay,
+        required void Function(OpenIframeComponent component) onCloseComponentIframe,
       }) {
         capturedModalUri = uri;
         capturedAdServerUrl = adServerUrl;
@@ -781,7 +781,7 @@ void main() {
         required void Function(Json? data) onClickIframe,
         required void Function(Json? data) onEventIframe,
         required void Function(OpenIframeComponent component, Json? data) onOpenComponentIframe,
-        required VoidCallback closeSKOverlay,
+        required void Function(OpenIframeComponent component) onCloseComponentIframe,
       }) {
         capturedTimeout = initTimeout;
       }
@@ -968,7 +968,7 @@ void main() {
         required void Function(Json? data) onClickIframe,
         required void Function(Json? data) onEventIframe,
         required void Function(OpenIframeComponent component, Json? data) onOpenComponentIframe,
-        required VoidCallback closeSKOverlay,
+        required void Function(OpenIframeComponent component) onCloseComponentIframe,
       }) {
         showInterstitialCalled = true;
       }
@@ -1024,7 +1024,7 @@ void main() {
         required void Function(Json? data) onClickIframe,
         required void Function(Json? data) onEventIframe,
         required void Function(OpenIframeComponent component, Json? data) onOpenComponentIframe,
-        required VoidCallback closeSKOverlay,
+        required void Function(OpenIframeComponent component) onCloseComponentIframe,
       }) {
         showInterstitialCalled = true;
       }
