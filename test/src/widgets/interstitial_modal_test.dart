@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kontext_flutter_sdk/src/utils/types.dart' show Json;
+import 'package:kontext_flutter_sdk/src/utils/types.dart' show Json, OpenIframeComponent;
 import 'package:kontext_flutter_sdk/src/widgets/ad_format.dart';
 import 'package:kontext_flutter_sdk/src/widgets/interstitial_modal.dart' show InterstitialModal;
 import 'package:kontext_flutter_sdk/src/widgets/kontext_webview.dart' show OnMessageReceived;
@@ -55,6 +55,8 @@ void main() {
         required Duration initTimeout,
         required void Function(Json? data) onClickIframe,
         required void Function(Json? data) onEventIframe,
+        required void Function(OpenIframeComponent component, Json? data) onOpenComponentIframe,
+        required VoidCallback closeSKOverlay,
       }) {
         openCount++;
         seenAdServerUrl = adServerUrl;

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kontext_flutter_sdk/src/models/bid.dart';
 import 'package:kontext_flutter_sdk/src/models/ad_event.dart';
-import 'package:kontext_flutter_sdk/src/utils/types.dart' show Json;
+import 'package:kontext_flutter_sdk/src/utils/types.dart' show Json, OpenIframeComponent;
 import 'package:kontext_flutter_sdk/src/widgets/ad_format.dart';
 import 'package:kontext_flutter_sdk/src/widgets/interstitial_modal.dart' show InterstitialModal;
 import 'package:kontext_flutter_sdk/src/widgets/kontext_webview.dart' show OnMessageReceived;
@@ -716,6 +716,8 @@ void main() {
         required Duration initTimeout,
         required void Function(Json? data) onClickIframe,
         required void Function(Json? data) onEventIframe,
+        required void Function(OpenIframeComponent component, Json? data) onOpenComponentIframe,
+        required VoidCallback closeSKOverlay,
       }) {
         capturedModalUri = uri;
         capturedAdServerUrl = adServerUrl;
@@ -778,6 +780,8 @@ void main() {
         required Duration initTimeout,
         required void Function(Json? data) onClickIframe,
         required void Function(Json? data) onEventIframe,
+        required void Function(OpenIframeComponent component, Json? data) onOpenComponentIframe,
+        required VoidCallback closeSKOverlay,
       }) {
         capturedTimeout = initTimeout;
       }
@@ -963,6 +967,8 @@ void main() {
         required Duration initTimeout,
         required void Function(Json? data) onClickIframe,
         required void Function(Json? data) onEventIframe,
+        required void Function(OpenIframeComponent component, Json? data) onOpenComponentIframe,
+        required VoidCallback closeSKOverlay,
       }) {
         showInterstitialCalled = true;
       }
@@ -1020,6 +1026,8 @@ void main() {
         required Duration initTimeout,
         required void Function(Json? data) onClickIframe,
         required void Function(Json? data) onEventIframe,
+        required void Function(OpenIframeComponent component, Json? data) onOpenComponentIframe,
+        required VoidCallback closeSKOverlay,
       }) {
         showInterstitialCalled = true;
       }
