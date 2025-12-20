@@ -12,6 +12,8 @@ typedef InterstitialModalShowFunc = void Function(
   required Duration initTimeout,
   required void Function(Json? data) onClickIframe,
   required void Function(Json? data) onEventIframe,
+  required void Function(OpenIframeComponent component, Json? data) onOpenComponentIframe,
+  required VoidCallback closeSKOverlay,
 });
 
 class InterstitialModal {
@@ -33,11 +35,12 @@ class InterstitialModal {
     @visibleForTesting Key? animatedOpacityKey,
     @visibleForTesting KontextWebviewBuilder? webviewBuilder,
   }) {
-    close() {
+    handleClose() {
       closeSKOverlay();
-      closeModal();
+      close();
     }
-    close();
+
+    handleClose();
 
     final visible = ValueNotifier<bool>(false);
 
@@ -96,7 +99,7 @@ class InterstitialModal {
                           break;
                         case 'close-component-iframe':
                         case 'error-component-iframe':
-                          close();
+                          handleClose();
                           break;
                         case 'click-iframe':
                           onClickIframe(data);
@@ -114,10 +117,10 @@ class InterstitialModal {
     );
 
     Overlay.of(context, rootOverlay: true).insert(_entry!);
-    _initTimer = Timer(initTimeout, () => close());
+    _initTimer = Timer(initTimeout, () => handleClose());
   }
 
-  static void closeModal() {
+  static void close() {
     _initTimer?.cancel();
     _initTimer = null;
     _entry?.remove();
