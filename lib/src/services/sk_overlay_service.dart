@@ -16,12 +16,12 @@ class SKOverlayService {
 
   static const MethodChannel _channel = MethodChannel('kontext_flutter_sdk/sk_overlay');
 
-  static Future<void> present({
+  static Future<bool> present({
     required String appStoreId,
     required SKOverlayPosition position,
     bool dismissible = true,
   }) async {
-    if (!Platform.isIOS) return;
+    if (!Platform.isIOS) return false;
 
     try {
       final result = await _channel.invokeMethod('present', {
@@ -30,19 +30,23 @@ class SKOverlayService {
         'dismissible': dismissible,
       });
       Logger.debug('SKOverlay presented: $result');
+      return result == true;
     } catch (e, stack) {
       Logger.exception('Error presenting SKOverlay: $e', stack);
+      return false;
     }
   }
 
-  static Future<void> dismiss() async {
-    if (!Platform.isIOS) return;
+  static Future<bool> dismiss() async {
+    if (!Platform.isIOS) return false;
 
     try {
       final result = await _channel.invokeMethod('dismiss');
       Logger.debug('SKOverlay dismissed: $result');
+      return result == true;
     } catch (e, stack) {
-      Logger.exception('Error dismissing SKOverlay: $e',stack);
+      Logger.exception('Error dismissing SKOverlay: $e', stack);
+      return false;
     }
   }
 }

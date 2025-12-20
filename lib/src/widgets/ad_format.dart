@@ -110,9 +110,7 @@ class AdFormat extends HookWidget {
       },
     };
 
-    controller.evaluateJavascript(source: '''
-      window.postMessage(${jsonEncode(payload)}, '$adServerUrl');
-    ''');
+    _postMessageToWebView(adServerUrl, controller, payload);
   }
 
   void _postUpdateIframe(
@@ -132,6 +130,14 @@ class AdFormat extends HookWidget {
       },
     };
 
+    _postMessageToWebView(adServerUrl, controller, payload);
+  }
+
+  void _postMessageToWebView(
+    String adServerUrl,
+    InAppWebViewController controller,
+    Json payload,
+  ) {
     controller.evaluateJavascript(source: '''
       window.postMessage(${jsonEncode(payload)}, '$adServerUrl');
     ''');
@@ -192,10 +198,11 @@ class AdFormat extends HookWidget {
 
   void _handleWebViewCreated(
     BuildContext context, {
+    required String adServerUrl,
+    required InAppWebViewController controller,
     required String messageType,
     Json? data,
     required bool Function() isDisposed,
-    required String adServerUrl,
     required Uri inlineUri,
     required String bidId,
     required ValueNotifier<bool> iframeLoaded,
@@ -239,6 +246,7 @@ class AdFormat extends HookWidget {
         _handleOpenComponentIframe(
           context,
           adServerUrl: adServerUrl,
+          controller: controller,
           inlineUri: inlineUri,
           bidId: bidId,
           component: component,
@@ -253,7 +261,7 @@ class AdFormat extends HookWidget {
           return;
         }
 
-        _handleCloseComponentIframe(component);
+        _handleCloseComponentIframe(component, adServerUrl: adServerUrl, controller: controller);
         break;
       case 'error-iframe':
         resetIframe();
@@ -265,12 +273,13 @@ class AdFormat extends HookWidget {
   void _handleOpenComponentIframe(
     BuildContext context, {
     required String adServerUrl,
+    required InAppWebViewController controller,
     required Uri inlineUri,
     required String bidId,
     required OpenIframeComponent component,
     Json? data,
     OnEventCallback? onEvent,
-  }) {
+  }) async {
     if (data == null) {
       Logger.error('Ad component data is missing. Component: $component');
       return;
@@ -300,13 +309,18 @@ class AdFormat extends HookWidget {
           onOpenComponentIframe: (component, data) => _handleOpenComponentIframe(
             context,
             adServerUrl: adServerUrl,
+            controller: controller,
             inlineUri: inlineUri,
             bidId: bidId,
             component: component,
             data: data,
             onEvent: onEvent,
           ),
-          onCloseComponentIframe: (component) => _handleCloseComponentIframe(component),
+          onCloseComponentIframe: (component) => _handleCloseComponentIframe(
+            component,
+            adServerUrl: adServerUrl,
+            controller: controller,
+          ),
         );
         break;
       case OpenIframeComponent.skoverlay:
@@ -322,21 +336,37 @@ class AdFormat extends HookWidget {
         );
 
         final dismissible = data['dismissible'];
-        SKOverlayService.present(
+        final success = await SKOverlayService.present(
           appStoreId: appStoreId,
           position: position,
           dismissible: dismissible is bool ? dismissible : true,
         );
+        if (success) {
+          _postMessageToWebView(adServerUrl, controller, {
+            'type': 'update-skoverlay-iframe',
+            'data': {'code': code, 'open': true},
+          });
+        }
         break;
     }
   }
 
-  void _handleCloseComponentIframe(OpenIframeComponent component) {
+  Future<void> _handleCloseComponentIframe(
+    OpenIframeComponent component, {
+    required String adServerUrl,
+    required InAppWebViewController controller,
+  }) async {
     switch (component) {
       case OpenIframeComponent.modal:
         break; // Do nothing, already handled by InterstitialModal
       case OpenIframeComponent.skoverlay:
-        SKOverlayService.dismiss();
+        final success = await SKOverlayService.dismiss();
+        if (success) {
+          _postMessageToWebView(adServerUrl, controller, {
+            'type': 'update-skoverlay-iframe',
+            'data': {'code': code, 'open': false},
+          });
+        }
         break;
     }
   }
@@ -521,10 +551,11 @@ class AdFormat extends HookWidget {
             webViewController.value = controller;
             _handleWebViewCreated(
               context,
+              adServerUrl: adServerUrl,
+              controller: controller,
               messageType: messageType,
               isDisposed: () => disposed.value,
               data: data,
-              adServerUrl: adServerUrl,
               inlineUri: inlineUri!,
               bidId: bidId,
               iframeLoaded: iframeLoaded,
