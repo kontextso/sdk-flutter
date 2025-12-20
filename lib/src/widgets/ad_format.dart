@@ -231,7 +231,7 @@ class AdFormat extends HookWidget {
         }
         break;
       case 'open-component-iframe':
-        final component = OpenIframeComponent.fromValue(data?['component']);
+        final component = OpenIframeComponent.fromMessageType(messageType);
         if (component == null) {
           return;
         }
@@ -247,7 +247,7 @@ class AdFormat extends HookWidget {
         );
         break;
       case 'close-component-iframe':
-        final component = toOpenIframeComponent(data?['component']);
+        final component = OpenIframeComponent.fromMessageType(messageType);
         if (component == null) {
           return;
         }
@@ -316,7 +316,7 @@ class AdFormat extends HookWidget {
         }
 
         final position = SKOverlayPosition.values.firstWhere(
-              (e) => e.name == (data['position'] is String ? data['position'].toLowerCase() : null),
+          (e) => e.name == (data['position'] is String ? data['position'].toLowerCase() : null),
           orElse: () => SKOverlayPosition.bottom,
         );
 

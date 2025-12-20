@@ -940,7 +940,7 @@ void main() {
   );
 
   testWidgets(
-    'open-component-iframe with invalid component is ignored',
+    'open-*-iframe with invalid component is ignored',
     (WidgetTester tester) async {
       late OnMessageReceived onMessage;
       bool showInterstitialCalled = false;
@@ -988,10 +988,7 @@ void main() {
       onMessage(fakeController, 'init-iframe', null);
       await tester.pump();
 
-      onMessage(fakeController, 'open-component-iframe', {
-        'component': 'invalid_component',
-        'timeout': 3000,
-      });
+      onMessage(fakeController, 'open-invalid-iframe', {'timeout': 3000});
       await tester.pump();
 
       expect(showInterstitialCalled, equals(false));

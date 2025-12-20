@@ -92,10 +92,11 @@ class InterstitialModal {
                           visible.value = true;
                           break;
                         case 'open-component-iframe':
-                          final component = OpenIframeComponent.fromValue(data?['component']);
-                          if (component != null) {
-                            onOpenComponentIframe(component, data);
+                          final component = OpenIframeComponent.fromMessageType(messageType);
+                          if (component == null) {
+                            return;
                           }
+                          onOpenComponentIframe(component, data);
                           break;
                         case 'close-component-iframe':
                         case 'error-component-iframe':

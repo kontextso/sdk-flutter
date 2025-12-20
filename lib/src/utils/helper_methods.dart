@@ -14,16 +14,3 @@ int deepHashObject(Object? value) {
   }
   return value.hashCode;
 }
-
-OpenIframeComponent? toOpenIframeComponent(dynamic value) {
-  final component = OpenIframeComponent.values.firstWhereOrElse(
-    (e) => e.name == (value is String ? value.toLowerCase() : null),
-  );
-
-  if (component == null) {
-    Logger.error('Iframe component "$value" is not supported.');
-    return null;
-  }
-
-  return component;
-}
