@@ -35,12 +35,12 @@ class InterstitialModal {
     @visibleForTesting Key? animatedOpacityKey,
     @visibleForTesting KontextWebviewBuilder? webviewBuilder,
   }) {
-    handleClose() {
+    closeAll() {
       closeSKOverlay();
-      close();
+      closeModal();
     }
 
-    handleClose();
+    closeAll();
 
     final visible = ValueNotifier<bool>(false);
 
@@ -92,6 +92,7 @@ class InterstitialModal {
                           visible.value = true;
                           break;
                         case 'open-component-iframe':
+                        case 'open-skoverlay-iframe':
                           final component = OpenIframeComponent.fromMessageType(messageType);
                           if (component == null) {
                             return;
@@ -99,8 +100,13 @@ class InterstitialModal {
                           onOpenComponentIframe(component, data);
                           break;
                         case 'close-component-iframe':
+                          closeModal();
+                          break;
+                        case 'close-skoverlay-iframe':
+                          closeSKOverlay();
+                          break;
                         case 'error-component-iframe':
-                          handleClose();
+                          closeAll();
                           break;
                         case 'click-iframe':
                           onClickIframe(data);
@@ -118,10 +124,10 @@ class InterstitialModal {
     );
 
     Overlay.of(context, rootOverlay: true).insert(_entry!);
-    _initTimer = Timer(initTimeout, () => handleClose());
+    _initTimer = Timer(initTimeout, () => closeAll());
   }
 
-  static void close() {
+  static void closeModal() {
     _initTimer?.cancel();
     _initTimer = null;
     _entry?.remove();

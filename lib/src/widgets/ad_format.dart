@@ -12,7 +12,6 @@ import 'package:kontext_flutter_sdk/src/services/sk_overlay_service.dart';
 import 'package:kontext_flutter_sdk/src/services/sk_store_product_service.dart';
 import 'package:kontext_flutter_sdk/src/utils/constants.dart';
 import 'package:kontext_flutter_sdk/src/utils/extensions.dart';
-import 'package:kontext_flutter_sdk/src/utils/helper_methods.dart';
 import 'package:kontext_flutter_sdk/src/utils/kontext_url_builder.dart';
 import 'package:kontext_flutter_sdk/src/utils/types.dart' show OnEventCallback, Json, OpenIframeComponent;
 import 'package:kontext_flutter_sdk/src/widgets/ads_provider_data.dart';
@@ -231,6 +230,7 @@ class AdFormat extends HookWidget {
         }
         break;
       case 'open-component-iframe':
+      case 'open-skoverlay-iframe':
         final component = OpenIframeComponent.fromMessageType(messageType);
         if (component == null) {
           return;
@@ -247,6 +247,7 @@ class AdFormat extends HookWidget {
         );
         break;
       case 'close-component-iframe':
+      case 'close-skoverlay-iframe':
         final component = OpenIframeComponent.fromMessageType(messageType);
         if (component == null) {
           return;
