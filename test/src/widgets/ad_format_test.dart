@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kontext_flutter_sdk/src/models/bid.dart';
 import 'package:kontext_flutter_sdk/src/models/ad_event.dart';
 import 'package:kontext_flutter_sdk/src/services/sk_overlay_service.dart';
+import 'package:kontext_flutter_sdk/src/services/sk_store_product_service.dart';
 import 'package:kontext_flutter_sdk/src/utils/types.dart' show Json, OpenIframeComponent;
 import 'package:kontext_flutter_sdk/src/widgets/ad_format.dart';
 import 'package:kontext_flutter_sdk/src/widgets/interstitial_modal.dart' show InterstitialModal;
@@ -1202,6 +1203,164 @@ void main() {
         jsCalls.any(
           (s) =>
               s.contains('update-skoverlay-iframe') && s.contains('"open":false') && s.contains('"code":"test_code"'),
+        ),
+        isTrue,
+      );
+
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, null);
+    },
+  );
+
+  testWidgets(
+    'open-skstoreproduct-iframe presents SKStoreProduct and posts open=true update',
+    (WidgetTester tester) async {
+      late OnMessageReceived onMessage;
+
+      FakeWebview webviewBuilder({
+        Key? key,
+        required Uri uri,
+        required List<String> allowedOrigins,
+        required OnEventIframe onEventIframe,
+        required OnMessageReceived onMessageReceived,
+      }) {
+        onMessage = onMessageReceived;
+        return FakeWebview(
+          key: key,
+          onEventIframe: onEventIframe,
+          onMessageReceived: onMessageReceived,
+        );
+      }
+
+      final methodCalls = <MethodCall>[];
+      final jsCalls = <String>[];
+
+      final originalIsIOS = SkStoreProductService.isIOS;
+      SkStoreProductService.isIOS = () => true;
+      addTearDown(() => SkStoreProductService.isIOS = originalIsIOS);
+
+      when(() => fakeController.evaluateJavascript(source: any(named: 'source'))).thenAnswer((invocation) async {
+        final source = invocation.namedArguments[const Symbol('source')] as String;
+        jsCalls.add(source);
+        return null;
+      });
+
+      const channel = MethodChannel('kontext_flutter_sdk/sk_store_product');
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, (call) async {
+        methodCalls.add(call);
+        return true;
+      });
+
+      await tester.pumpWidget(
+        createDefaultProvider(
+          child: AdFormat(
+            code: 'test_code',
+            messageId: 'msg_1',
+            onActiveChanged: onActiveChanged,
+            webviewBuilder: webviewBuilder,
+          ),
+        ),
+      );
+
+      onMessage(fakeController, 'init-iframe', null);
+      await tester.pump();
+
+      methodCalls.clear();
+      jsCalls.clear();
+
+      onMessage(fakeController, 'open-skstoreproduct-iframe', {
+        'appStoreId': '123',
+      });
+
+      await tester.pumpAndSettle();
+
+      expect(methodCalls.any((c) => c.method == 'present'), isTrue);
+
+      final presentCall = methodCalls.firstWhere((c) => c.method == 'present');
+      final args = presentCall.arguments as Map<dynamic, dynamic>;
+      expect(args['appStoreId'], equals('123'));
+
+      expect(
+        jsCalls.any(
+          (s) =>
+              s.contains('update-skstoreproduct-iframe') &&
+              s.contains('"open":true') &&
+              s.contains('"code":"test_code"'),
+        ),
+        isTrue,
+      );
+
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, null);
+    },
+  );
+
+  testWidgets(
+    'close-skstoreproduct-iframe dismisses SKStoreProduct and posts open=false update',
+    (WidgetTester tester) async {
+      late OnMessageReceived onMessage;
+
+      FakeWebview webviewBuilder({
+        Key? key,
+        required Uri uri,
+        required List<String> allowedOrigins,
+        required OnEventIframe onEventIframe,
+        required OnMessageReceived onMessageReceived,
+      }) {
+        onMessage = onMessageReceived;
+        return FakeWebview(
+          key: key,
+          onEventIframe: onEventIframe,
+          onMessageReceived: onMessageReceived,
+        );
+      }
+
+      final methodCalls = <MethodCall>[];
+      final jsCalls = <String>[];
+
+      final originalIsIOS = SkStoreProductService.isIOS;
+      SkStoreProductService.isIOS = () => true;
+      addTearDown(() => SkStoreProductService.isIOS = originalIsIOS);
+
+      when(() => fakeController.evaluateJavascript(source: any(named: 'source'))).thenAnswer((invocation) async {
+        final source = invocation.namedArguments[const Symbol('source')] as String;
+        jsCalls.add(source);
+        return null;
+      });
+
+      const channel = MethodChannel('kontext_flutter_sdk/sk_store_product');
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, (call) async {
+        methodCalls.add(call);
+        return true;
+      });
+
+      await tester.pumpWidget(
+        createDefaultProvider(
+          child: AdFormat(
+            code: 'test_code',
+            messageId: 'msg_1',
+            onActiveChanged: onActiveChanged,
+            webviewBuilder: webviewBuilder,
+          ),
+        ),
+      );
+
+      onMessage(fakeController, 'init-iframe', null);
+      await tester.pump();
+
+      methodCalls.clear();
+      jsCalls.clear();
+
+      onMessage(fakeController, 'close-skstoreproduct-iframe', null);
+
+      await tester.pumpAndSettle();
+
+      expect(methodCalls.any((c) => c.method == 'dismiss'), isTrue);
+
+      expect(
+        jsCalls.any(
+          (s) =>
+              s.contains('update-skstoreproduct-iframe') &&
+              s.contains('"open":false') &&
+              s.contains('"code":"test_code"'),
         ),
         isTrue,
       );

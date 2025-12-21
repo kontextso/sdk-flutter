@@ -14,8 +14,10 @@ class SkStoreProductService {
 
   static const MethodChannel _channel = MethodChannel('kontext_flutter_sdk/sk_store_product');
 
+  static bool Function() isIOS = () => Platform.isIOS;
+
   static Future<bool> present({required String appStoreId}) async {
-    if (!Platform.isIOS) return false;
+    if (!isIOS()) return false;
 
     try {
       final result = await _channel.invokeMethod('present', {'appStoreId': appStoreId});
@@ -28,7 +30,7 @@ class SkStoreProductService {
   }
 
   static Future<bool> dismiss() async {
-    if (!Platform.isIOS) return false;
+    if (!isIOS()) return false;
 
     try {
       final result = await _channel.invokeMethod('dismiss');
