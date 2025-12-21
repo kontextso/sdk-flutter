@@ -16,12 +16,14 @@ class SKOverlayService {
 
   static const MethodChannel _channel = MethodChannel('kontext_flutter_sdk/sk_overlay');
 
+  static bool Function() isIOS = () => Platform.isIOS;
+
   static Future<bool> present({
     required String appStoreId,
     required SKOverlayPosition position,
     bool dismissible = true,
   }) async {
-    if (!Platform.isIOS) return false;
+    if (!isIOS()) return false;
 
     try {
       final result = await _channel.invokeMethod('present', {
@@ -38,7 +40,7 @@ class SKOverlayService {
   }
 
   static Future<bool> dismiss() async {
-    if (!Platform.isIOS) return false;
+    if (!isIOS()) return false;
 
     try {
       final result = await _channel.invokeMethod('dismiss');
