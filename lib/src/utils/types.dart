@@ -5,17 +5,18 @@ typedef OnEventCallback = void Function(AdEvent event);
 typedef Json = Map<String, dynamic>;
 
 enum OpenIframeComponent {
-  modal('open-component-iframe'),
-  skoverlay('open-skoverlay-iframe'),
-  skstoreproduct('open-skstoreproduct-iframe');
+  modal({'open-component-iframe', 'close-component-iframe'}),
+  skoverlay({'open-skoverlay-iframe', 'close-skoverlay-iframe'}),
+  skstoreproduct({'open-skstoreproduct-iframe', 'close-skstoreproduct-iframe'});
 
-  const OpenIframeComponent(this.type);
+  const OpenIframeComponent(this.types);
 
-  final String type;
+  final Set<String> types;
 
-  static OpenIframeComponent? fromMessageType(dynamic type) {
+  static OpenIframeComponent? fromMessageType(Object? type) {
+    if (type is! String) return null;
     return OpenIframeComponent.values.firstWhereOrElse(
-      (e) => e.type == (type is String ? type.toLowerCase() : null),
+      (component) => component.types.contains(type),
     );
   }
 }
