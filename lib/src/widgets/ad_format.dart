@@ -282,6 +282,17 @@ class AdFormat extends HookWidget {
     }
   }
 
+  Future<bool> _dismissSkOverlay(String adServerUrl, {required InAppWebViewController? controller}) async {
+    final success = await SKOverlayService.dismiss();
+    if (success && controller != null) {
+      _postMessageToWebView(adServerUrl, controller, {
+        'type': 'update-skoverlay-iframe',
+        'data': {'code': code, 'open': false},
+      });
+    }
+    return success;
+  }
+
   Future<bool> _presentSkStoreProduct(
       String adServerUrl,
       InAppWebViewController controller,
@@ -407,13 +418,7 @@ class AdFormat extends HookWidget {
       case OpenIframeComponent.modal:
         break; // Do nothing, already handled by InterstitialModal
       case OpenIframeComponent.skoverlay:
-        final success = await SKOverlayService.dismiss();
-        if (success) {
-          _postMessageToWebView(adServerUrl, controller, {
-            'type': 'update-skoverlay-iframe',
-            'data': {'code': code, 'open': false},
-          });
-        }
+        await _dismissSkOverlay(adServerUrl, controller: controller);
         break;
       case OpenIframeComponent.skstoreproduct:
         await _dismissSkStoreProduct(adServerUrl, controller: controller);
@@ -473,7 +478,7 @@ class AdFormat extends HookWidget {
 
     useEffect(() {
       return () {
-        SKOverlayService.dismiss();
+        _dismissSkOverlay(adServerUrl, controller: webviewController.value);
         _dismissSkStoreProduct(adServerUrl, controller: webviewController.value);
       };
     }, const []);
@@ -555,7 +560,7 @@ class AdFormat extends HookWidget {
     }, [iframeLoaded.value, webviewController.value, otherParamsHash]);
 
     void resetIframe() {
-      SKOverlayService.dismiss();
+      _dismissSkOverlay(adServerUrl, controller: webviewController.value);
       _dismissSkStoreProduct(adServerUrl, controller: webviewController.value);
 
       iframeLoaded.value = false;
