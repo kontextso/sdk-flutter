@@ -27,14 +27,16 @@ class SkStoreProductService {
     }
   }
 
-  static Future<void> dismiss() async {
-    if (!Platform.isIOS) return;
+  static Future<bool> dismiss() async {
+    if (!Platform.isIOS) return false;
 
     try {
       final result = await _channel.invokeMethod('dismiss');
       Logger.debug('SKStoreProduct dismissed: $result');
+      return result == true;
     } catch (e, stack) {
       Logger.exception('Error dismissing SKStoreProduct: $e',stack);
+      return false;
     }
   }
 }

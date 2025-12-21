@@ -6,7 +6,8 @@ typedef Json = Map<String, dynamic>;
 
 enum OpenIframeComponent {
   modal('open-component-iframe'),
-  skoverlay('open-skoverlay-iframe');
+  skoverlay('open-skoverlay-iframe'),
+  skstoreproduct('open-skstoreproduct-iframe');
 
   const OpenIframeComponent(this.type);
 

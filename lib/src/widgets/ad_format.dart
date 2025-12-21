@@ -143,59 +143,6 @@ class AdFormat extends HookWidget {
     ''');
   }
 
-  void _handleClickIframe({required String adServerUrl, Json? data}) {
-    try {
-      final path = data?['url'] as String?;
-      final uri = (path is String) ? KontextUrlBuilder(baseUrl: adServerUrl, path: path).buildUri() : null;
-      if (uri != null) {
-        browserOpener.open(uri);
-      }
-    } catch (e, stack) {
-      Logger.exception(e, stack);
-      return;
-    }
-  }
-
-  void _handleEventIframe({required String adServerUrl, OnEventCallback? onEvent, Json? data}) {
-    if (data == null) {
-      return;
-    }
-
-    try {
-      final payload = data['payload'] as Json?;
-      final path = payload?['url'] as String?;
-      final uri = (path is String) ? KontextUrlBuilder(baseUrl: adServerUrl, path: path).buildUri() : null;
-
-      final updatedData = {
-        ...data,
-        if (payload != null)
-          'payload': {
-            ...payload,
-            if (uri != null) 'url': uri.toString(),
-          }
-      };
-
-      final adEvent = AdEvent.fromJson(updatedData);
-      onEvent?.call(adEvent);
-    } catch (e, stack) {
-      Logger.exception(e, stack);
-      return;
-    }
-  }
-
-  Future<void> _handleAdClickedEvent(Uri uri, {Json? payload}) async {
-    bool storeProductOpened = false;
-    final appStoreId = payload?['appStoreId'];
-    if (appStoreId is String && appStoreId.isNotEmpty) {
-      final result = await SkStoreProductService.present(appStoreId: appStoreId);
-      storeProductOpened = result;
-    }
-
-    if (!storeProductOpened) {
-      uri.openInAppBrowser();
-    }
-  }
-
   void _handleWebViewCreated(
     BuildContext context, {
     required String adServerUrl,
@@ -238,6 +185,7 @@ class AdFormat extends HookWidget {
         break;
       case 'open-component-iframe':
       case 'open-skoverlay-iframe':
+      case 'open-skstoreproduct-iframe':
         final component = OpenIframeComponent.fromMessageType(messageType);
         if (component == null) {
           return;
@@ -256,6 +204,7 @@ class AdFormat extends HookWidget {
         break;
       case 'close-component-iframe':
       case 'close-skoverlay-iframe':
+      case 'close-skstoreproduct-iframe':
         final component = OpenIframeComponent.fromMessageType(messageType);
         if (component == null) {
           return;
@@ -270,7 +219,101 @@ class AdFormat extends HookWidget {
     }
   }
 
-  void _handleOpenComponentIframe(
+  void _handleClickIframe({required String adServerUrl, Json? data}) {
+    try {
+      final path = data?['url'] as String?;
+      final uri = (path is String) ? KontextUrlBuilder(baseUrl: adServerUrl, path: path).buildUri() : null;
+      if (uri != null) {
+        browserOpener.open(uri);
+      }
+    } catch (e, stack) {
+      Logger.exception(e, stack);
+      return;
+    }
+  }
+
+  void _handleEventIframe({required String adServerUrl, OnEventCallback? onEvent, Json? data}) {
+    if (data == null) {
+      return;
+    }
+
+    try {
+      final payload = data['payload'] as Json?;
+      final path = payload?['url'] as String?;
+      final uri = (path is String) ? KontextUrlBuilder(baseUrl: adServerUrl, path: path).buildUri() : null;
+
+      final updatedData = {
+        ...data,
+        if (payload != null)
+          'payload': {
+            ...payload,
+            if (uri != null) 'url': uri.toString(),
+          }
+      };
+
+      final adEvent = AdEvent.fromJson(updatedData);
+      onEvent?.call(adEvent);
+    } catch (e, stack) {
+      Logger.exception(e, stack);
+      return;
+    }
+  }
+
+  Future<void> _handleAdClickedEvent(
+      Uri uri, {
+        required String adServerUrl,
+        required InAppWebViewController controller,
+        Json? payload,
+      }) async {
+    final appStoreId = payload?['appStoreId'];
+    if (appStoreId == null) {
+      uri.openInAppBrowser();
+      return;
+    }
+
+    final storeProductOpened = await _presentSkStoreProduct(
+      adServerUrl,
+      controller,
+      appStoreId,
+    );
+
+    if (!storeProductOpened) {
+      uri.openInAppBrowser();
+    }
+  }
+
+  Future<bool> _presentSkStoreProduct(
+      String adServerUrl,
+      InAppWebViewController controller,
+      dynamic appStoreId,
+      ) async {
+    if (appStoreId is! String || appStoreId.isEmpty) {
+      Logger.error('App Store ID is required to open SKStoreProduct. Data: $appStoreId');
+      return false;
+    }
+
+    final success = await SkStoreProductService.present(appStoreId: appStoreId);
+    if (success) {
+      _postMessageToWebView(adServerUrl, controller, {
+        'type': 'update-skstoreproduct-iframe',
+        'data': {'code': code, 'open': true},
+      });
+    }
+    return success;
+  }
+
+  Future<bool> _dismissSkStoreProduct(String adServerUrl, {required InAppWebViewController? controller}) async {
+    final success = await SkStoreProductService.dismiss();
+    if (success && controller != null) {
+      _postMessageToWebView(adServerUrl, controller, {
+        'type': 'update-skstoreproduct-iframe',
+        'data': {'code': code, 'open': false},
+      });
+    }
+    return success;
+  }
+
+  Future<void> _handleOpenComponentIframe(
     BuildContext context, {
     required String adServerUrl,
     required InAppWebViewController controller,
@@ -349,6 +392,9 @@ class AdFormat extends HookWidget {
           });
         }
         break;
+      case OpenIframeComponent.skstoreproduct:
+        await _presentSkStoreProduct(adServerUrl, controller, data['appStoreId']);
+        break;
     }
   }
 
@@ -368,6 +414,9 @@ class AdFormat extends HookWidget {
             'data': {'code': code, 'open': false},
           });
         }
+        break;
+      case OpenIframeComponent.skstoreproduct:
+        await _dismissSkStoreProduct(adServerUrl, controller: controller);
         break;
     }
   }
@@ -420,10 +469,12 @@ class AdFormat extends HookWidget {
     final adServerUrl = adsProviderData.adServerUrl;
     final otherParams = adsProviderData.otherParams;
 
+    final webviewController = useRef<InAppWebViewController?>(null);
+
     useEffect(() {
       return () {
         SKOverlayService.dismiss();
-        SkStoreProductService.dismiss();
+        _dismissSkStoreProduct(adServerUrl, controller: webviewController.value);
       };
     }, const []);
 
@@ -451,13 +502,11 @@ class AdFormat extends HookWidget {
       return null;
     }, [showIframe.value]);
 
-    final webViewController = useRef<InAppWebViewController?>(null);
-
     final isNullDimensions = useRef(false);
     useEffect(() {
       void postDimensions() => _postDimensions(
             context: context,
-            controller: webViewController.value,
+            controller: webviewController.value,
             key: slotKey,
             adServerUrl: adServerUrl,
             disposed: () => disposed.value,
@@ -491,27 +540,28 @@ class AdFormat extends HookWidget {
 
     final otherParamsHash = otherParams?.deepHash;
     useEffect(() {
-      if (!iframeLoaded.value || webViewController.value == null) {
+      if (!iframeLoaded.value || webviewController.value == null) {
         return null;
       }
 
       _postUpdateIframe(
-        webViewController.value!,
+        webviewController.value!,
         adServerUrl: adsProviderData.adServerUrl,
         messages: adsProviderData.messages.getLastMessages(),
         otherParams: otherParams,
       );
 
       return null;
-    }, [iframeLoaded.value, webViewController.value, otherParamsHash]);
+    }, [iframeLoaded.value, webviewController.value, otherParamsHash]);
 
     void resetIframe() {
       SKOverlayService.dismiss();
-      SkStoreProductService.dismiss();
+      _dismissSkStoreProduct(adServerUrl, controller: webviewController.value);
+
       iframeLoaded.value = false;
       showIframe.value = false;
       height.value = 0.0;
-      webViewController.value = null;
+      webviewController.value = null;
       adsProviderData.resetAll();
       setActive(false);
     }
@@ -550,7 +600,7 @@ class AdFormat extends HookWidget {
             data: data,
           ),
           onMessageReceived: (controller, messageType, data) {
-            webViewController.value = controller;
+            webviewController.value = controller;
             _handleWebViewCreated(
               context,
               adServerUrl: adServerUrl,
