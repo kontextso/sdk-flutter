@@ -312,7 +312,7 @@ class AdFormat extends HookWidget {
     return success;
   }
 
-  Future<bool> _dismissSkOverlay(String adServerUrl, {required InAppWebViewController? controller}) async {
+  Future<bool> _dismissSkOverlay(String adServerUrl, InAppWebViewController? controller) async {
     final success = await SKOverlayService.dismiss();
     if (success && controller != null) {
       _postMessageToWebView(adServerUrl, controller, {
@@ -343,7 +343,7 @@ class AdFormat extends HookWidget {
     return success;
   }
 
-  Future<bool> _dismissSkStoreProduct(String adServerUrl, {required InAppWebViewController? controller}) async {
+  Future<bool> _dismissSkStoreProduct(String adServerUrl, InAppWebViewController? controller) async {
     final success = await SkStoreProductService.dismiss();
     if (success && controller != null) {
       _postMessageToWebView(adServerUrl, controller, {
@@ -426,10 +426,10 @@ class AdFormat extends HookWidget {
       case OpenIframeComponent.modal:
         break; // Do nothing, already handled by InterstitialModal
       case OpenIframeComponent.skoverlay:
-        await _dismissSkOverlay(adServerUrl, controller: controller);
+        await _dismissSkOverlay(adServerUrl, controller);
         break;
       case OpenIframeComponent.skstoreproduct:
-        await _dismissSkStoreProduct(adServerUrl, controller: controller);
+        await _dismissSkStoreProduct(adServerUrl, controller);
         break;
     }
   }
@@ -486,8 +486,8 @@ class AdFormat extends HookWidget {
 
     useEffect(() {
       return () {
-        _dismissSkOverlay(adServerUrl, controller: webviewController.value);
-        _dismissSkStoreProduct(adServerUrl, controller: webviewController.value);
+        _dismissSkOverlay(adServerUrl, webviewController.value);
+        _dismissSkStoreProduct(adServerUrl, webviewController.value);
       };
     }, const []);
 
@@ -568,8 +568,8 @@ class AdFormat extends HookWidget {
     }, [iframeLoaded.value, webviewController.value, otherParamsHash]);
 
     void resetIframe() {
-      _dismissSkOverlay(adServerUrl, controller: webviewController.value);
-      _dismissSkStoreProduct(adServerUrl, controller: webviewController.value);
+      _dismissSkOverlay(adServerUrl, webviewController.value);
+      _dismissSkStoreProduct(adServerUrl, webviewController.value);
 
       iframeLoaded.value = false;
       showIframe.value = false;
