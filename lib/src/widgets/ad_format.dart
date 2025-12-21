@@ -282,6 +282,36 @@ class AdFormat extends HookWidget {
     }
   }
 
+  Future<bool> _presentSkOverlay(String adServerUrl, InAppWebViewController controller, Json data) async {
+    final appStoreId = data['appStoreId'];
+    if (appStoreId is! String || appStoreId.isEmpty) {
+      Logger.error('App Store ID is required to open SKOverlay. Data: $data');
+      return false;
+    }
+
+    final position = SKOverlayPosition.values.firstWhere(
+      (e) => e.name == (data['position'] is String ? (data['position'] as String).toLowerCase() : null),
+      orElse: () => SKOverlayPosition.bottom,
+    );
+
+    final dismissible = data['dismissible'];
+
+    final success = await SKOverlayService.present(
+      appStoreId: appStoreId,
+      position: position,
+      dismissible: dismissible is bool ? dismissible : true,
+    );
+
+    if (success) {
+      _postMessageToWebView(adServerUrl, controller, {
+        'type': 'update-skoverlay-iframe',
+        'data': {'code': code, 'open': true},
+      });
+    }
+
+    return success;
+  }
+
   Future<bool> _dismissSkOverlay(String adServerUrl, {required InAppWebViewController? controller}) async {
     final success = await SKOverlayService.dismiss();
     if (success && controller != null) {
@@ -379,29 +409,7 @@ class AdFormat extends HookWidget {
         );
         break;
       case OpenIframeComponent.skoverlay:
-        final appStoreId = data['appStoreId'];
-        if (appStoreId is! String || appStoreId.isEmpty) {
-          Logger.error('App Store ID is required to open SKOverlay. Data: $data');
-          return;
-        }
-
-        final position = SKOverlayPosition.values.firstWhere(
-          (e) => e.name == (data['position'] is String ? data['position'].toLowerCase() : null),
-          orElse: () => SKOverlayPosition.bottom,
-        );
-
-        final dismissible = data['dismissible'];
-        final success = await SKOverlayService.present(
-          appStoreId: appStoreId,
-          position: position,
-          dismissible: dismissible is bool ? dismissible : true,
-        );
-        if (success) {
-          _postMessageToWebView(adServerUrl, controller, {
-            'type': 'update-skoverlay-iframe',
-            'data': {'code': code, 'open': true},
-          });
-        }
+        await _presentSkOverlay(adServerUrl, controller, data);
         break;
       case OpenIframeComponent.skstoreproduct:
         await _presentSkStoreProduct(adServerUrl, controller, data['appStoreId']);
