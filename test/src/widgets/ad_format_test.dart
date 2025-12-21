@@ -5,7 +5,7 @@ import 'package:kontext_flutter_sdk/src/models/ad_event.dart';
 import 'package:kontext_flutter_sdk/src/utils/types.dart' show Json, OpenIframeComponent;
 import 'package:kontext_flutter_sdk/src/widgets/ad_format.dart';
 import 'package:kontext_flutter_sdk/src/widgets/interstitial_modal.dart' show InterstitialModal;
-import 'package:kontext_flutter_sdk/src/widgets/kontext_webview.dart' show OnMessageReceived;
+import 'package:kontext_flutter_sdk/src/widgets/kontext_webview.dart' show OnEventIframe, OnMessageReceived;
 import 'package:mocktail/mocktail.dart';
 
 import 'test_helpers.dart';
@@ -226,7 +226,7 @@ void main() {
         Key? key,
         required Uri uri,
         required List<String> allowedOrigins,
-        required void Function(Json? data) onEventIframe,
+        required OnEventIframe onEventIframe,
         required OnMessageReceived onMessageReceived,
       }) {
         onMessage = onMessageReceived;
@@ -285,7 +285,7 @@ void main() {
         Key? key,
         required Uri uri,
         required List<String> allowedOrigins,
-        required void Function(Json? data) onEventIframe,
+        required OnEventIframe onEventIframe,
         required OnMessageReceived onMessageReceived,
       }) {
         onMessage = onMessageReceived;
@@ -335,7 +335,7 @@ void main() {
         Key? key,
         required Uri uri,
         required List<String> allowedOrigins,
-        required void Function(Json? data) onEventIframe,
+        required OnEventIframe onEventIframe,
         required OnMessageReceived onMessageReceived,
       }) {
         onMessage = onMessageReceived;
@@ -406,7 +406,7 @@ void main() {
         Key? key,
         required Uri uri,
         required List<String> allowedOrigins,
-        required void Function(Json? data) onEventIframe,
+        required OnEventIframe onEventIframe,
         required OnMessageReceived onMessageReceived,
       }) {
         onMessage = onMessageReceived;
@@ -467,7 +467,7 @@ void main() {
         Key? key,
         required Uri uri,
         required List<String> allowedOrigins,
-        required void Function(Json? data) onEventIframe,
+        required OnEventIframe onEventIframe,
         required OnMessageReceived onMessageReceived,
       }) {
         onMessage = onMessageReceived;
@@ -539,7 +539,7 @@ void main() {
         Key? key,
         required Uri uri,
         required List<String> allowedOrigins,
-        required void Function(Json? data) onEventIframe,
+        required OnEventIframe onEventIframe,
         required OnMessageReceived onMessageReceived,
       }) {
         onMessage = onMessageReceived;
@@ -572,14 +572,14 @@ void main() {
     'AdEvent.adClicked is emitted with correct data',
     (WidgetTester tester) async {
       late OnMessageReceived onMessage;
-      late void Function(Json? data) onEvent;
+      late OnEventIframe onEvent;
       final capturedEvents = <AdEvent>[];
 
       FakeWebview webviewBuilder({
         Key? key,
         required Uri uri,
         required List<String> allowedOrigins,
-        required void Function(Json? data) onEventIframe,
+        required OnEventIframe onEventIframe,
         required OnMessageReceived onMessageReceived,
       }) {
         onMessage = onMessageReceived;
@@ -617,7 +617,7 @@ void main() {
         },
       };
 
-      onEvent(eventData);
+      onEvent(fakeController, eventData);
       await tester.pump();
 
       expect(capturedEvents.length, equals(1));
@@ -635,14 +635,14 @@ void main() {
     'OnEventIframe with invalid payload is ignored',
     (WidgetTester tester) async {
       late OnMessageReceived onMessage;
-      late void Function(Json? data) onEvent;
+      late OnEventIframe onEvent;
       final capturedEvents = <AdEvent>[];
 
       FakeWebview webviewBuilder({
         Key? key,
         required Uri uri,
         required List<String> allowedOrigins,
-        required void Function(Json? data) onEventIframe,
+        required OnEventIframe onEventIframe,
         required OnMessageReceived onMessageReceived,
       }) {
         onMessage = onMessageReceived;
@@ -679,7 +679,7 @@ void main() {
         },
       };
 
-      onEvent(eventData);
+      onEvent(fakeController, eventData);
       await tester.pump();
 
       expect(capturedEvents.length, equals(0));
@@ -698,7 +698,7 @@ void main() {
         Key? key,
         required Uri uri,
         required List<String> allowedOrigins,
-        required void Function(Json? data) onEventIframe,
+        required OnEventIframe onEventIframe,
         required OnMessageReceived onMessageReceived,
       }) {
         onMessage = onMessageReceived;
@@ -715,7 +715,7 @@ void main() {
         required Uri uri,
         required Duration initTimeout,
         required void Function(Json? data) onClickIframe,
-        required void Function(Json? data) onEventIframe,
+        required void OnEventIframe onEventIframe,
         required void Function(OpenIframeComponent component, Json? data) onOpenComponentIframe,
         required void Function(OpenIframeComponent component) onCloseComponentIframe,
       }) {
@@ -762,7 +762,7 @@ void main() {
         Key? key,
         required Uri uri,
         required List<String> allowedOrigins,
-        required void Function(Json? data) onEventIframe,
+        required OnEventIframe onEventIframe,
         required OnMessageReceived onMessageReceived,
       }) {
         onMessage = onMessageReceived;
@@ -779,7 +779,7 @@ void main() {
         required Uri uri,
         required Duration initTimeout,
         required void Function(Json? data) onClickIframe,
-        required void Function(Json? data) onEventIframe,
+        required void OnEventIframe onEventIframe,
         required void Function(OpenIframeComponent component, Json? data) onOpenComponentIframe,
         required void Function(OpenIframeComponent component) onCloseComponentIframe,
       }) {
@@ -949,7 +949,7 @@ void main() {
         Key? key,
         required Uri uri,
         required List<String> allowedOrigins,
-        required void Function(Json? data) onEventIframe,
+        required OnEventIframe onEventIframe,
         required OnMessageReceived onMessageReceived,
       }) {
         onMessage = onMessageReceived;
@@ -966,7 +966,7 @@ void main() {
         required Uri uri,
         required Duration initTimeout,
         required void Function(Json? data) onClickIframe,
-        required void Function(Json? data) onEventIframe,
+        required void OnEventIframe onEventIframe,
         required void Function(OpenIframeComponent component, Json? data) onOpenComponentIframe,
         required void Function(OpenIframeComponent component) onCloseComponentIframe,
       }) {
@@ -1005,7 +1005,7 @@ void main() {
         Key? key,
         required Uri uri,
         required List<String> allowedOrigins,
-        required void Function(Json? data) onEventIframe,
+        required OnEventIframe onEventIframe,
         required OnMessageReceived onMessageReceived,
       }) {
         onMessage = onMessageReceived;
@@ -1022,7 +1022,7 @@ void main() {
         required Uri uri,
         required Duration initTimeout,
         required void Function(Json? data) onClickIframe,
-        required void Function(Json? data) onEventIframe,
+        required void OnEventIframe onEventIframe,
         required void Function(OpenIframeComponent component, Json? data) onOpenComponentIframe,
         required void Function(OpenIframeComponent component) onCloseComponentIframe,
       }) {

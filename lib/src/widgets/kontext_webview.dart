@@ -56,12 +56,13 @@ final _flushMsgQueue = '''
   })();
 ''';
 
+typedef OnEventIframe = void Function(InAppWebViewController controller, Json? data);
 typedef OnMessageReceived = void Function(InAppWebViewController controller, String messageType, Json? data);
 typedef KontextWebviewBuilder = Widget Function({
   Key? key,
   required Uri uri,
   required List<String> allowedOrigins,
-  required void Function(Json? data) onEventIframe,
+  required OnEventIframe onEventIframe,
   required OnMessageReceived onMessageReceived,
 });
 
@@ -76,7 +77,7 @@ class KontextWebview extends StatelessWidget {
 
   final Uri uri;
   final List<String> allowedOrigins;
-  final void Function(Json? data) onEventIframe;
+  final OnEventIframe onEventIframe;
   final OnMessageReceived onMessageReceived;
 
   bool _isAllowedUrl(String url) {
@@ -138,11 +139,11 @@ class KontextWebview extends StatelessWidget {
             final messageType = postMessage['type'];
             final data = postMessage['data'];
 
-            if (messageType is String && (data == null || data is Json)) {
+            if (messageType is String && data is Json?) {
               if (messageType == 'event-iframe') {
-                onEventIframe(data);
+                onEventIframe(controller, data);
               }
-              onMessageReceived(controller, messageType, data as Json?);
+              onMessageReceived(controller, messageType, data);
             }
           },
         );

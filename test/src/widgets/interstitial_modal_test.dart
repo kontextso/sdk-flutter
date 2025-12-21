@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kontext_flutter_sdk/src/utils/types.dart' show Json, OpenIframeComponent;
 import 'package:kontext_flutter_sdk/src/widgets/ad_format.dart';
 import 'package:kontext_flutter_sdk/src/widgets/interstitial_modal.dart' show InterstitialModal;
-import 'package:kontext_flutter_sdk/src/widgets/kontext_webview.dart' show OnMessageReceived;
+import 'package:kontext_flutter_sdk/src/widgets/kontext_webview.dart' show OnEventIframe, OnMessageReceived;
 import 'package:mocktail/mocktail.dart';
 
 import 'test_helpers.dart';
@@ -33,7 +33,7 @@ void main() {
         Key? key,
         required Uri uri,
         required List<String> allowedOrigins,
-        required void Function(Json? data) onEventIframe,
+        required OnEventIframe onEventIframe,
         required OnMessageReceived onMessageReceived,
       }) {
         onMessage = onMessageReceived;
@@ -54,7 +54,7 @@ void main() {
         required Uri uri,
         required Duration initTimeout,
         required void Function(Json? data) onClickIframe,
-        required void Function(Json? data) onEventIframe,
+        required OnEventIframe onEventIframe,
         required void Function(OpenIframeComponent component, Json? data) onOpenComponentIframe,
         required void Function(OpenIframeComponent component) onCloseComponentIframe,
       }) {
@@ -110,14 +110,14 @@ void main() {
         uri: Uri.parse('https://example.com/ad?code=test_code'),
         initTimeout: const Duration(milliseconds: 500),
         onClickIframe: (_) {},
-        onEventIframe: (_) {},
+        onEventIframe: (_, __) {},
         onOpenComponentIframe: (_, __) {},
         onCloseComponentIframe: (_) {},
         webviewBuilder: ({
           Key? key,
           required Uri uri,
           required List<String> allowedOrigins,
-          required void Function(Json? data) onEventIframe,
+          required OnEventIframe onEventIframe,
           required OnMessageReceived onMessageReceived,
         }) {
           return FakeWebview(
@@ -157,14 +157,14 @@ void main() {
         uri: Uri.parse('https://example.com/ad?code=test_code'),
         initTimeout: const Duration(milliseconds: 500),
         onClickIframe: (_) {},
-        onEventIframe: (_) {},
+        onEventIframe: (_, __) {},
         onOpenComponentIframe: (_, __) {},
         onCloseComponentIframe: (_) {},
         webviewBuilder: ({
           Key? key,
           required Uri uri,
           required List<String> allowedOrigins,
-          required void Function(Json? data) onEventIframe,
+          required OnEventIframe onEventIframe,
           required OnMessageReceived onMessageReceived,
         }) {
           onMsgModal = onMessageReceived;
@@ -208,14 +208,14 @@ void main() {
         uri: Uri.parse('https://example.com/ad?code=test_code'),
         initTimeout: const Duration(milliseconds: 500),
         onClickIframe: (_) {},
-        onEventIframe: (_) {},
+        onEventIframe: (_, __) {},
         onOpenComponentIframe: (_, __) {},
         onCloseComponentIframe: (_) {},
         webviewBuilder: ({
           Key? key,
           required Uri uri,
           required List<String> allowedOrigins,
-          required void Function(Json? data) onEventIframe,
+          required OnEventIframe onEventIframe,
           required OnMessageReceived onMessageReceived,
         }) {
           onMsgModal = onMessageReceived;
@@ -249,7 +249,7 @@ void main() {
   testWidgets(
     'Forwards onEventIframe calls from interstitial modal',
     (tester) async {
-      late void Function(Json? data) onEventIframeModal;
+      late OnEventIframe onEventIframeModal;
       Json? receivedData;
 
       await tester.pumpWidget(const MaterialApp(home: Scaffold(body: SizedBox.shrink())));
@@ -260,14 +260,14 @@ void main() {
         uri: Uri.parse('https://example.com/ad?code=test_code'),
         initTimeout: const Duration(milliseconds: 500),
         onClickIframe: (_) {},
-        onEventIframe: (data) => receivedData = data,
+        onEventIframe: (_, data) => receivedData = data,
         onOpenComponentIframe: (_, __) {},
         onCloseComponentIframe: (_) {},
         webviewBuilder: ({
           Key? key,
           required Uri uri,
           required List<String> allowedOrigins,
-          required void Function(Json? data) onEventIframe,
+          required OnEventIframe onEventIframe,
           required OnMessageReceived onMessageReceived,
         }) {
           onEventIframeModal = onEventIframe;
@@ -281,7 +281,7 @@ void main() {
 
       await tester.pump();
 
-      onEventIframeModal({'test_key': 'test_value'});
+      onEventIframeModal(fakeController, {'test_key': 'test_value'});
       await tester.pump();
       expect(receivedData!['test_key'], equals('test_value'));
 
@@ -303,7 +303,7 @@ void main() {
         uri: Uri.parse('https://example.com/ad?first=true'),
         initTimeout: const Duration(milliseconds: 1000),
         onClickIframe: (_) {},
-        onEventIframe: (_) {},
+        onEventIframe: (_, __) {},
         onOpenComponentIframe: (_, __) {},
         onCloseComponentIframe: (_) {},
         animatedOpacityKey: const Key('first_modal_opacity'),
@@ -311,7 +311,7 @@ void main() {
           Key? key,
           required Uri uri,
           required List<String> allowedOrigins,
-          required void Function(Json? data) onEventIframe,
+          required OnEventIframe onEventIframe,
           required OnMessageReceived onMessageReceived,
         }) {
           firstModalOnMessage = onMessageReceived;
@@ -338,7 +338,7 @@ void main() {
         uri: Uri.parse('https://example.com/ad?second=true'),
         initTimeout: const Duration(milliseconds: 1000),
         onClickIframe: (_) {},
-        onEventIframe: (_) {},
+        onEventIframe: (_, __) {},
         onOpenComponentIframe: (_, __) {},
         onCloseComponentIframe: (_) {},
         animatedOpacityKey: const Key('second_modal_opacity'),
@@ -346,7 +346,7 @@ void main() {
           Key? key,
           required Uri uri,
           required List<String> allowedOrigins,
-          required void Function(Json? data) onEventIframe,
+          required OnEventIframe onEventIframe,
           required OnMessageReceived onMessageReceived,
         }) {
           secondModalOnMessage = onMessageReceived;
@@ -387,14 +387,14 @@ void main() {
         uri: Uri.parse('https://example.com/ad?code=test_code'),
         initTimeout: const Duration(milliseconds: 500),
         onClickIframe: (_) {},
-        onEventIframe: (_) {},
+        onEventIframe: (_, __) {},
         onOpenComponentIframe: (_, __) {},
         onCloseComponentIframe: (_) {},
         webviewBuilder: ({
           Key? key,
           required Uri uri,
           required List<String> allowedOrigins,
-          required void Function(Json? data) onEventIframe,
+          required OnEventIframe onEventIframe,
           required OnMessageReceived onMessageReceived,
         }) {
           onMsgModal = onMessageReceived;

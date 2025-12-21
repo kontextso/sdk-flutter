@@ -11,7 +11,7 @@ typedef InterstitialModalShowFunc = void Function(
   required Uri uri,
   required Duration initTimeout,
   required void Function(Json? data) onClickIframe,
-  required void Function(Json? data) onEventIframe,
+  required OnEventIframe onEventIframe,
   required void Function(OpenIframeComponent component, Json? data) onOpenComponentIframe,
   required void Function(OpenIframeComponent component) onCloseComponentIframe,
 });
@@ -29,7 +29,7 @@ class InterstitialModal {
     required Uri uri,
     required Duration initTimeout,
     required void Function(Json? data) onClickIframe,
-    required void Function(Json? data) onEventIframe,
+    required OnEventIframe onEventIframe,
     required void Function(OpenIframeComponent component, Json? data) onOpenComponentIframe,
     required void Function(OpenIframeComponent component) onCloseComponentIframe,
     @visibleForTesting Key? animatedOpacityKey,
@@ -50,7 +50,7 @@ class InterstitialModal {
           Key? key,
           required Uri uri,
           required List<String> allowedOrigins,
-          required void Function(Json? data) onEventIframe,
+          required OnEventIframe onEventIframe,
           required OnMessageReceived onMessageReceived,
         }) =>
             KontextWebview(

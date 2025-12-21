@@ -301,8 +301,9 @@ class AdFormat extends HookWidget {
             adServerUrl: adServerUrl,
             data: data,
           ),
-          onEventIframe: (data) => _handleEventIframe(
+          onEventIframe: (controller, data) => _handleEventIframe(
             adServerUrl: adServerUrl,
+            controller: controller,
             onEvent: onEvent,
             data: data,
           ),
@@ -520,7 +521,7 @@ class AdFormat extends HookWidget {
           Key? key,
           required Uri uri,
           required List<String> allowedOrigins,
-          required void Function(Json? data) onEventIframe,
+          required OnEventIframe onEventIframe,
           required OnMessageReceived onMessageReceived,
         }) =>
             KontextWebview(
@@ -542,8 +543,9 @@ class AdFormat extends HookWidget {
           key: ValueKey('ad-$messageId-$bidId'),
           uri: inlineUri,
           allowedOrigins: [adServerUrl],
-          onEventIframe: (data) => _handleEventIframe(
+          onEventIframe: (controller, data) => _handleEventIframe(
             adServerUrl: adServerUrl,
+            controller: controller,
             onEvent: adsProviderData.onEvent,
             data: data,
           ),

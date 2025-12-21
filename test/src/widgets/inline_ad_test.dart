@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kontext_flutter_sdk/src/models/bid.dart';
-import 'package:kontext_flutter_sdk/src/utils/types.dart' show Json;
 import 'package:kontext_flutter_sdk/src/widgets/ad_format.dart';
 import 'package:kontext_flutter_sdk/src/widgets/inline_ad.dart';
 import 'package:kontext_flutter_sdk/src/widgets/interstitial_modal.dart' show InterstitialModal;
-import 'package:kontext_flutter_sdk/src/widgets/kontext_webview.dart' show OnMessageReceived;
+import 'package:kontext_flutter_sdk/src/widgets/kontext_webview.dart' show OnEventIframe, OnMessageReceived;
 import 'package:mocktail/mocktail.dart';
 
 import 'test_helpers.dart';
@@ -26,7 +25,7 @@ void main() {
         Key? key,
         required Uri uri,
         required List<String> allowedOrigins,
-        required void Function(Json? data) onEventIframe,
+        required OnEventIframe onEventIframe,
         required OnMessageReceived onMessageReceived,
       }) {
         onMessage = onMessageReceived;

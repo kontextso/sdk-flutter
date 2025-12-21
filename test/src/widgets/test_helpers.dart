@@ -4,7 +4,7 @@ import 'package:kontext_flutter_sdk/src/models/bid.dart';
 import 'package:kontext_flutter_sdk/src/utils/browser_opener.dart';
 import 'package:kontext_flutter_sdk/src/utils/types.dart' show Json, OnEventCallback;
 import 'package:kontext_flutter_sdk/src/widgets/ads_provider_data.dart';
-import 'package:kontext_flutter_sdk/src/widgets/kontext_webview.dart' show OnMessageReceived;
+import 'package:kontext_flutter_sdk/src/widgets/kontext_webview.dart' show OnEventIframe, OnMessageReceived;
 import 'package:mocktail/mocktail.dart';
 
 typedef IsDisabledAndBids = ({bool isDisabled, List<Bid> bids});
@@ -16,7 +16,7 @@ class FakeWebview extends StatelessWidget {
     required this.onMessageReceived,
   });
 
-  final void Function(Json? data) onEventIframe;
+  final OnEventIframe onEventIframe;
   final OnMessageReceived onMessageReceived;
 
   @override
