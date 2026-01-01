@@ -704,6 +704,7 @@ void main() {
         required String adServerUrl,
         required Uri uri,
         required Duration initTimeout,
+        required void Function(Json? data) onClickIframe,
         required void Function(Json? data) onEventIframe,
       }) {
         capturedModalUri = uri;
@@ -714,11 +715,12 @@ void main() {
       await tester.pumpWidget(
         createDefaultProvider(
           child: AdFormat(
-              code: 'test_code',
-              messageId: 'msg_1',
-              onActiveChanged: onActiveChanged,
-              webviewBuilder: webviewBuilder,
-              showInterstitial: showInterstitial),
+            code: 'test_code',
+            messageId: 'msg_1',
+            onActiveChanged: onActiveChanged,
+            webviewBuilder: webviewBuilder,
+            showInterstitial: showInterstitial,
+          ),
         ),
       );
 
@@ -764,6 +766,7 @@ void main() {
         required String adServerUrl,
         required Uri uri,
         required Duration initTimeout,
+        required void Function(Json? data) onClickIframe,
         required void Function(Json? data) onEventIframe,
       }) {
         capturedTimeout = initTimeout;
@@ -819,6 +822,7 @@ void main() {
         required String adServerUrl,
         required Uri uri,
         required Duration initTimeout,
+        required void Function(Json? data) onClickIframe,
         required void Function(Json? data) onEventIframe,
       }) {
         showInterstitialCalled = true;
@@ -827,11 +831,12 @@ void main() {
       await tester.pumpWidget(
         createDefaultProvider(
           child: AdFormat(
-              code: 'test_code',
-              messageId: 'msg_1',
-              onActiveChanged: onActiveChanged,
-              webviewBuilder: webviewBuilder,
-              showInterstitial: showInterstitial),
+            code: 'test_code',
+            messageId: 'msg_1',
+            onActiveChanged: onActiveChanged,
+            webviewBuilder: webviewBuilder,
+            showInterstitial: showInterstitial,
+          ),
         ),
       );
 
@@ -874,6 +879,7 @@ void main() {
         required String adServerUrl,
         required Uri uri,
         required Duration initTimeout,
+        required void Function(Json? data) onClickIframe,
         required void Function(Json? data) onEventIframe,
       }) {
         showInterstitialCalled = true;

@@ -43,6 +43,7 @@ void main() {
         required String adServerUrl,
         required Uri uri,
         required Duration initTimeout,
+        required void Function(Json? data) onClickIframe,
         required void Function(Json? data) onEventIframe,
       }) {
         openCount++;
@@ -96,6 +97,7 @@ void main() {
         adServerUrl: 'https://example.com/ad',
         uri: Uri.parse('https://example.com/ad?code=test_code'),
         initTimeout: const Duration(milliseconds: 500),
+        onClickIframe: (_) {},
         onEventIframe: (_) {},
         webviewBuilder: ({
           Key? key,
@@ -140,6 +142,7 @@ void main() {
         adServerUrl: 'https://example.com/ad',
         uri: Uri.parse('https://example.com/ad?code=test_code'),
         initTimeout: const Duration(milliseconds: 500),
+        onClickIframe: (_) {},
         onEventIframe: (_) {},
         webviewBuilder: ({
           Key? key,
@@ -188,6 +191,7 @@ void main() {
         adServerUrl: 'https://example.com/ad',
         uri: Uri.parse('https://example.com/ad?code=test_code'),
         initTimeout: const Duration(milliseconds: 500),
+        onClickIframe: (_) {},
         onEventIframe: (_) {},
         webviewBuilder: ({
           Key? key,
@@ -237,6 +241,7 @@ void main() {
         adServerUrl: 'https://example.com/ad',
         uri: Uri.parse('https://example.com/ad?code=test_code'),
         initTimeout: const Duration(milliseconds: 500),
+        onClickIframe: (_) {},
         onEventIframe: (data) => receivedData = data,
         webviewBuilder: ({
           Key? key,
@@ -277,6 +282,7 @@ void main() {
         adServerUrl: 'https://example.com/ad',
         uri: Uri.parse('https://example.com/ad?first=true'),
         initTimeout: const Duration(milliseconds: 1000),
+        onClickIframe: (_) {},
         onEventIframe: (_) {},
         animatedOpacityKey: const Key('first_modal_opacity'),
         webviewBuilder: ({
@@ -309,6 +315,7 @@ void main() {
         adServerUrl: 'https://example.com/ad',
         uri: Uri.parse('https://example.com/ad?second=true'),
         initTimeout: const Duration(milliseconds: 1000),
+        onClickIframe: (_) {},
         onEventIframe: (_) {},
         animatedOpacityKey: const Key('second_modal_opacity'),
         webviewBuilder: ({
@@ -355,6 +362,7 @@ void main() {
         adServerUrl: 'https://example.com/ad',
         uri: Uri.parse('https://example.com/ad?code=test_code'),
         initTimeout: const Duration(milliseconds: 500),
+        onClickIframe: (_) {},
         onEventIframe: (_) {},
         webviewBuilder: ({
           Key? key,
