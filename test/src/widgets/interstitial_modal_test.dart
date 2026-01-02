@@ -9,11 +9,21 @@ import 'package:mocktail/mocktail.dart';
 import 'test_helpers.dart';
 
 void main() {
-  final fakeController = MockInAppWebViewController();
+  late MockInAppWebViewController fakeController;
+  late MockBrowserOpener opener;
+
+  setUpAll(() {
+    registerFallbackValue(Uri.parse('https://dummy.local'));
+  });
+  setUp(() {
+    fakeController = MockInAppWebViewController();
+    opener = MockBrowserOpener();
+
+    when(() => fakeController.evaluateJavascript(source: any(named: 'source'))).thenAnswer((_) async => null);
+    when(() => opener.open(any())).thenAnswer((_) async => true);
+  });
 
   tearDown(() => InterstitialModal.close());
-
-  when(() => fakeController.evaluateJavascript(source: any(named: 'source'))).thenAnswer((_) async => null);
 
   testWidgets(
     'Opens interstitial modal with correct URI and timeout',
@@ -393,6 +403,148 @@ void main() {
       expect(opacityFinder, findsOneWidget);
       final opacity = tester.widget<AnimatedOpacity>(opacityFinder);
       expect(opacity.opacity, equals(1.0));
+    },
+  );
+
+  testWidgets(
+    'click-iframe forwards valid url payload via onClickIframe',
+    (tester) async {
+      late OnMessageReceived onMsgModal;
+
+      await tester.pumpWidget(const MaterialApp(home: Scaffold(body: SizedBox.shrink())));
+
+      InterstitialModal.show(
+        tester.element(find.byType(SizedBox).first),
+        adServerUrl: 'https://example.com/ad',
+        uri: Uri.parse('https://example.com/ad?code=test_code'),
+        initTimeout: const Duration(milliseconds: 500),
+        onClickIframe: (data) {
+          final url = data?['url'];
+          if (url is String) {
+            opener.open(Uri.parse('https://example.com$url'));
+          }
+        },
+        onEventIframe: (_) {},
+        webviewBuilder: ({
+          Key? key,
+          required Uri uri,
+          required List<String> allowedOrigins,
+          required void Function(Json? data) onEventIframe,
+          required OnMessageReceived onMessageReceived,
+        }) {
+          onMsgModal = onMessageReceived;
+          return FakeWebview(
+            key: key,
+            onEventIframe: onEventIframe,
+            onMessageReceived: onMessageReceived,
+          );
+        },
+      );
+
+      await tester.pump();
+
+      onMsgModal(fakeController, 'click-iframe', {'url': '/test-path'});
+      await tester.pump();
+
+      final captured = verify(() => opener.open(captureAny(that: isA<Uri>()))).captured.single as Uri;
+      expect(captured.toString(), equals('https://example.com/test-path'));
+      expect(tester.takeException(), isNull);
+
+      await tester.pump(const Duration(milliseconds: 1000));
+    },
+  );
+
+  testWidgets(
+    'click-iframe ignores non-string url payload via onClickIframe',
+    (tester) async {
+      late OnMessageReceived onMsgModal;
+
+      await tester.pumpWidget(const MaterialApp(home: Scaffold(body: SizedBox.shrink())));
+
+      InterstitialModal.show(
+        tester.element(find.byType(SizedBox).first),
+        adServerUrl: 'https://example.com/ad',
+        uri: Uri.parse('https://example.com/ad?code=test_code'),
+        initTimeout: const Duration(milliseconds: 500),
+        onClickIframe: (data) {
+          final url = data?['url'];
+          if (url is String) {
+            opener.open(Uri.parse('https://example.com$url'));
+          }
+        },
+        onEventIframe: (_) {},
+        webviewBuilder: ({
+          Key? key,
+          required Uri uri,
+          required List<String> allowedOrigins,
+          required void Function(Json? data) onEventIframe,
+          required OnMessageReceived onMessageReceived,
+        }) {
+          onMsgModal = onMessageReceived;
+          return FakeWebview(
+            key: key,
+            onEventIframe: onEventIframe,
+            onMessageReceived: onMessageReceived,
+          );
+        },
+      );
+
+      await tester.pump();
+
+      onMsgModal(fakeController, 'click-iframe', {'url': 12345});
+      await tester.pump();
+
+      verifyNever(() => opener.open(any()));
+      expect(tester.takeException(), isNull);
+
+      await tester.pump(const Duration(milliseconds: 1000));
+    },
+  );
+
+  testWidgets(
+    'click-iframe ignores null data payload via onClickIframe',
+    (tester) async {
+      late OnMessageReceived onMsgModal;
+
+      await tester.pumpWidget(const MaterialApp(home: Scaffold(body: SizedBox.shrink())));
+
+      InterstitialModal.show(
+        tester.element(find.byType(SizedBox).first),
+        adServerUrl: 'https://example.com/ad',
+        uri: Uri.parse('https://example.com/ad?code=test_code'),
+        initTimeout: const Duration(milliseconds: 500),
+        onClickIframe: (data) {
+          final url = data?['url'];
+          if (url is String) {
+            opener.open(Uri.parse('https://example.com$url'));
+          }
+        },
+        onEventIframe: (_) {},
+        webviewBuilder: ({
+          Key? key,
+          required Uri uri,
+          required List<String> allowedOrigins,
+          required void Function(Json? data) onEventIframe,
+          required OnMessageReceived onMessageReceived,
+        }) {
+          onMsgModal = onMessageReceived;
+          return FakeWebview(
+            key: key,
+            onEventIframe: onEventIframe,
+            onMessageReceived: onMessageReceived,
+          );
+        },
+      );
+
+      await tester.pump();
+
+      onMsgModal(fakeController, 'click-iframe', null);
+      await tester.pump();
+
+      verifyNever(() => opener.open(any()));
+      expect(tester.takeException(), isNull);
+
+      await tester.pump(const Duration(milliseconds: 1000));
     },
   );
 }

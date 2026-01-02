@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:kontext_flutter_sdk/src/models/bid.dart';
+import 'package:kontext_flutter_sdk/src/utils/browser_opener.dart';
 import 'package:kontext_flutter_sdk/src/utils/types.dart' show Json, OnEventCallback;
 import 'package:kontext_flutter_sdk/src/widgets/ads_provider_data.dart';
 import 'package:kontext_flutter_sdk/src/widgets/kontext_webview.dart' show OnMessageReceived;
@@ -26,6 +27,8 @@ class FakeWebview extends StatelessWidget {
 
 class MockInAppWebViewController extends Mock implements InAppWebViewController {}
 
+class MockBrowserOpener extends Mock implements BrowserOpener {}
+
 void onActiveChanged(bool _) {}
 
 AdsProviderData createDefaultProvider({
@@ -44,7 +47,10 @@ AdsProviderData createDefaultProvider({
   return AdsProviderData(
     adServerUrl: adServerUrl ?? 'https://example.com/ad',
     messages: const [],
-    bids: bids ?? [Bid(id: '1', code: 'test_code', position: AdDisplayPosition.afterAssistantMessage),],
+    bids: bids ??
+        [
+          Bid(id: '1', code: 'test_code', position: AdDisplayPosition.afterAssistantMessage),
+        ],
     enabledPlacementCodes: ['test_code'],
     isDisabled: isDisabled ?? false,
     readyForStreamingAssistant: readyForStreamingAssistant ?? true,
