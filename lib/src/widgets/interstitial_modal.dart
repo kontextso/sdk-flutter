@@ -2,7 +2,7 @@ import 'dart:async' show Timer;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show DeviceOrientation, SystemChrome;
-import 'package:kontext_flutter_sdk/src/utils/types.dart' show Json, OpenIframeComponent;
+import 'package:kontext_flutter_sdk/src/utils/types.dart' show Json;
 import 'package:kontext_flutter_sdk/src/widgets/kontext_webview.dart';
 
 typedef InterstitialModalShowFunc = void Function(
@@ -10,6 +10,7 @@ typedef InterstitialModalShowFunc = void Function(
   required String adServerUrl,
   required Uri uri,
   required Duration initTimeout,
+  required void Function(Json? data) onClickIframe,
   required void Function(Json? data) onEventIframe,
 });
 
@@ -25,6 +26,7 @@ class InterstitialModal {
     required String adServerUrl,
     required Uri uri,
     required Duration initTimeout,
+    required void Function(Json? data) onClickIframe,
     required void Function(Json? data) onEventIframe,
     @visibleForTesting Key? animatedOpacityKey,
     @visibleForTesting KontextWebviewBuilder? webviewBuilder,
@@ -69,11 +71,6 @@ class InterstitialModal {
                     allowedOrigins: [adServerUrl],
                     onEventIframe: onEventIframe,
                     onMessageReceived: (controller, messageType, data) {
-                      final component = OpenIframeComponent.fromValue(data?['component']);
-                      if (component == null) {
-                        return;
-                      }
-
                       switch (messageType) {
                         case 'init-component-iframe':
                           if (!_orientationLocked) {
@@ -88,6 +85,9 @@ class InterstitialModal {
                         case 'close-component-iframe':
                         case 'error-component-iframe':
                           close();
+                          break;
+                        case 'click-iframe':
+                          onClickIframe(data);
                           break;
                         default:
                       }
