@@ -4,7 +4,7 @@ import 'package:kontext_flutter_sdk/src/models/regulatory.dart';
 void main() {
   group('Regulatory.toJson', () {
     test('returns all non-null properties', () {
-      final regulatory = Regulatory(
+      final regulatory = const Regulatory(
         gdpr: 1,
         gdprConsent: 'consentString123',
         coppa: 0,
@@ -26,7 +26,7 @@ void main() {
     });
 
     test('omits null and empty-string values', () {
-      final regulatory = Regulatory(
+      final regulatory = const Regulatory(
         gdprConsent: '',
         gpp: '',
         usPrivacy: '',
@@ -38,7 +38,7 @@ void main() {
     });
 
     test('includes only provided fields', () {
-      final regulatory = Regulatory(
+      final regulatory = const Regulatory(
         gdpr: 1,
         coppa: 1,
       );

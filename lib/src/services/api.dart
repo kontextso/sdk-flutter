@@ -8,6 +8,7 @@ import 'package:kontext_flutter_sdk/src/services/logger.dart';
 import 'package:kontext_flutter_sdk/src/services/http_client.dart';
 import 'package:kontext_flutter_sdk/src/models/message.dart';
 import 'package:kontext_flutter_sdk/src/models/regulatory.dart';
+import 'package:kontext_flutter_sdk/src/services/transparency_consent_framework_service.dart';
 import 'package:kontext_flutter_sdk/src/utils/constants.dart';
 import 'package:kontext_flutter_sdk/src/utils/extensions.dart';
 
@@ -76,12 +77,19 @@ class Api {
       device = DeviceAppInfo.empty();
     }
 
+    final tcfData = await TransparencyConsentFrameworkService.getTCFData();
+
     try {
       final deviceJson = await device.toJsonFresh();
 
       final vendor = vendorId?.nullIfEmpty;
       final advertising = advertisingId?.nullIfEmpty;
       final variant = variantId?.nullIfEmpty;
+
+      final regulatoryObj = (regulatory ?? const Regulatory()).copyWith(
+        gdpr: tcfData.gdpr,
+        gdprConsent: tcfData.gdprConsent,
+      );
 
       final result = await _client.post(
         '/preload',
@@ -102,7 +110,7 @@ class Api {
           },
           'app': device.appInfo.toJson(),
           'device': deviceJson,
-          if (regulatory != null) 'regulatory': regulatory.toJson(),
+          if (!regulatoryObj.isEmpty) 'regulatory': regulatoryObj.toJson(),
           if (character != null) 'character': character.toJson(),
           if (variant != null) 'variantId': variant,
         },
