@@ -2,7 +2,7 @@ import 'package:kontext_flutter_sdk/src/utils/extensions.dart';
 
 /// Regulatory compliance information.
 class Regulatory {
-  Regulatory({
+  const Regulatory({
     this.gdpr,
     this.gdprConsent,
     this.coppa,
@@ -37,6 +37,16 @@ class Regulatory {
   /// https://github.com/InteractiveAdvertisingBureau/USPrivacy/blob/master/CCPA/US%20Privacy%20String.md
   final String? usPrivacy;
 
+  /// Checks if the Regulatory instance has no data.
+  bool get isEmpty {
+    return gdpr == null &&
+        gdprConsent?.nullIfEmpty == null &&
+        coppa == null &&
+        gpp?.nullIfEmpty == null &&
+        gppSid?.nullIfEmpty == null &&
+        usPrivacy?.nullIfEmpty == null;
+  }
+
   /// Converts the Regulatory instance to a JSON-compatible map.
   Map<String, dynamic> toJson() {
     final consent = gdprConsent?.nullIfEmpty;
@@ -50,5 +60,24 @@ class Regulatory {
       if (gppSid != null) 'gppSid': gppSid,
       if (privacy != null) 'usPrivacy': privacy,
     };
+  }
+
+  /// Creates a copy of the Regulatory instance with optional new values.
+  Regulatory copyWith({
+    int? gdpr,
+    String? gdprConsent,
+    int? coppa,
+    String? gpp,
+    List<int>? gppSid,
+    String? usPrivacy,
+  }) {
+    return Regulatory(
+      gdpr: gdpr ?? this.gdpr,
+      gdprConsent: gdprConsent ?? this.gdprConsent,
+      coppa: coppa ?? this.coppa,
+      gpp: gpp ?? this.gpp,
+      gppSid: gppSid ?? this.gppSid,
+      usPrivacy: usPrivacy ?? this.usPrivacy,
+    );
   }
 }
