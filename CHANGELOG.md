@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.1.0
+* Implement support for the transparency and consent framework.
+* Use click-iframe to handle clicks instead of event-iframe.
+
 ## 2.0.2
 * Rename `lowerPowerMode` to `lowPowerMode` in the preload API request body.
 
