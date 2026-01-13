@@ -7,6 +7,7 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:kontext_flutter_sdk/src/models/ad_event.dart';
 import 'package:kontext_flutter_sdk/src/models/message.dart';
 import 'package:kontext_flutter_sdk/src/services/logger.dart';
+import 'package:kontext_flutter_sdk/src/utils/browser_opener.dart';
 import 'package:kontext_flutter_sdk/src/utils/constants.dart';
 import 'package:kontext_flutter_sdk/src/utils/extensions.dart';
 import 'package:kontext_flutter_sdk/src/utils/kontext_url_builder.dart';
@@ -24,6 +25,7 @@ class AdFormat extends HookWidget {
     required this.onActiveChanged,
     @visibleForTesting this.webviewBuilder,
     @visibleForTesting this.showInterstitial,
+    @visibleForTesting this.browserOpener = const BrowserOpener(),
   });
 
   static const Duration defaultTimeout = Duration(seconds: 5);
@@ -31,12 +33,9 @@ class AdFormat extends HookWidget {
   final String code;
   final String messageId;
   final ValueChanged<bool> onActiveChanged;
-
-  @visibleForTesting
   final KontextWebviewBuilder? webviewBuilder;
-
-  @visibleForTesting
   final InterstitialModalShowFunc? showInterstitial;
+  final BrowserOpener browserOpener;
 
   Rect _visibleWindowRect(BuildContext context) {
     final mediaQuery = MediaQuery.of(context);
@@ -136,6 +135,19 @@ class AdFormat extends HookWidget {
     ''');
   }
 
+  void _handleClickIframe({required String adServerUrl, Json? data}) {
+    try {
+      final path = data?['url'] as String?;
+      final uri = (path is String) ? KontextUrlBuilder(baseUrl: adServerUrl, path: path).buildUri() : null;
+      if (uri != null) {
+        browserOpener.open(uri);
+      }
+    } catch (e, stack) {
+      Logger.exception(e, stack);
+      return;
+    }
+  }
+
   void _handleEventIframe({required String adServerUrl, OnEventCallback? onEvent, Json? data}) {
     if (data == null) {
       return;
@@ -144,14 +156,7 @@ class AdFormat extends HookWidget {
     try {
       final payload = data['payload'] as Json?;
       final path = payload?['url'] as String?;
-      Uri? uri;
-      if (path is String) {
-        uri = KontextUrlBuilder(baseUrl: adServerUrl, path: path).buildUri();
-      }
-
-      if (uri != null && data['name'] == AdEventType.adClicked.value) {
-        uri.openInAppBrowser();
-      }
+      final uri = (path is String) ? KontextUrlBuilder(baseUrl: adServerUrl, path: path).buildUri() : null;
 
       final updatedData = {
         ...data,
@@ -199,6 +204,9 @@ class AdFormat extends HookWidget {
         if (dataHeight is num) {
           height.value = dataHeight.toDouble();
         }
+        break;
+      case 'click-iframe':
+        _handleClickIframe(adServerUrl: adServerUrl, data: data);
         break;
       case 'open-component-iframe':
         final component = OpenIframeComponent.fromValue(data?['component']);
@@ -249,6 +257,10 @@ class AdFormat extends HookWidget {
           adServerUrl: adServerUrl,
           uri: modalUri,
           initTimeout: timeout,
+          onClickIframe: (data) => _handleClickIframe(
+            adServerUrl: adServerUrl,
+            data: data,
+          ),
           onEventIframe: (data) => _handleEventIframe(
             adServerUrl: adServerUrl,
             onEvent: onEvent,

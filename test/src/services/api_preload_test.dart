@@ -193,7 +193,7 @@ void main() {
       vendorId: '',
       variantId: '',
       advertisingId: '',
-      regulatory: Regulatory(
+      regulatory: const Regulatory(
         gdpr: 1,
         gdprConsent: '',
         usPrivacy: '',

@@ -11,11 +11,21 @@ import 'package:mocktail/mocktail.dart';
 import 'test_helpers.dart';
 
 void main() {
-  final fakeController = MockInAppWebViewController();
+  late MockInAppWebViewController fakeController;
+  late MockBrowserOpener opener;
+
+  setUpAll(() {
+    registerFallbackValue(Uri.parse('https://dummy.local'));
+  });
+  setUp(() {
+    fakeController = MockInAppWebViewController();
+    opener = MockBrowserOpener();
+
+    when(() => fakeController.evaluateJavascript(source: any(named: 'source'))).thenAnswer((_) async => null);
+    when(() => opener.open(any())).thenAnswer((_) async => true);
+  });
 
   tearDown(() => InterstitialModal.close());
-
-  when(() => fakeController.evaluateJavascript(source: any(named: 'source'))).thenAnswer((_) async => null);
 
   group('AdFormat disabled', () {
     testWidgets(
@@ -704,6 +714,7 @@ void main() {
         required String adServerUrl,
         required Uri uri,
         required Duration initTimeout,
+        required void Function(Json? data) onClickIframe,
         required void Function(Json? data) onEventIframe,
       }) {
         capturedModalUri = uri;
@@ -714,11 +725,12 @@ void main() {
       await tester.pumpWidget(
         createDefaultProvider(
           child: AdFormat(
-              code: 'test_code',
-              messageId: 'msg_1',
-              onActiveChanged: onActiveChanged,
-              webviewBuilder: webviewBuilder,
-              showInterstitial: showInterstitial),
+            code: 'test_code',
+            messageId: 'msg_1',
+            onActiveChanged: onActiveChanged,
+            webviewBuilder: webviewBuilder,
+            showInterstitial: showInterstitial,
+          ),
         ),
       );
 
@@ -764,6 +776,7 @@ void main() {
         required String adServerUrl,
         required Uri uri,
         required Duration initTimeout,
+        required void Function(Json? data) onClickIframe,
         required void Function(Json? data) onEventIframe,
       }) {
         capturedTimeout = initTimeout;
@@ -794,6 +807,135 @@ void main() {
   );
 
   testWidgets(
+    'click-iframe with valid url',
+    (WidgetTester tester) async {
+      late OnMessageReceived onMessage;
+
+      FakeWebview webviewBuilder({
+        Key? key,
+        required Uri uri,
+        required List<String> allowedOrigins,
+        required void Function(Json? data) onEventIframe,
+        required OnMessageReceived onMessageReceived,
+      }) {
+        onMessage = onMessageReceived;
+        return FakeWebview(
+          key: key,
+          onEventIframe: onEventIframe,
+          onMessageReceived: onMessageReceived,
+        );
+      }
+
+      await tester.pumpWidget(
+        createDefaultProvider(
+          child: AdFormat(
+            code: 'test_code',
+            messageId: 'msg_1',
+            onActiveChanged: onActiveChanged,
+            browserOpener: opener,
+            webviewBuilder: webviewBuilder,
+          ),
+        ),
+      );
+
+      onMessage(fakeController, 'init-iframe', null);
+      await tester.pump();
+
+      onMessage(fakeController, 'click-iframe', {'url': '/test-path'});
+      await tester.pump();
+
+      verify(() => opener.open(any(that: isA<Uri>()))).called(1);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'click-iframe ignores non-string url',
+    (WidgetTester tester) async {
+      late OnMessageReceived onMessage;
+
+      FakeWebview webviewBuilder({
+        Key? key,
+        required Uri uri,
+        required List<String> allowedOrigins,
+        required void Function(Json? data) onEventIframe,
+        required OnMessageReceived onMessageReceived,
+      }) {
+        onMessage = onMessageReceived;
+        return FakeWebview(
+          key: key,
+          onEventIframe: onEventIframe,
+          onMessageReceived: onMessageReceived,
+        );
+      }
+
+      await tester.pumpWidget(
+        createDefaultProvider(
+          child: AdFormat(
+            code: 'test_code',
+            messageId: 'msg_1',
+            onActiveChanged: onActiveChanged,
+            browserOpener: opener,
+            webviewBuilder: webviewBuilder,
+          ),
+        ),
+      );
+
+      onMessage(fakeController, 'init-iframe', null);
+      await tester.pump();
+
+      onMessage(fakeController, 'click-iframe', {'url': 12345});
+      await tester.pump();
+
+      verifyNever(() => opener.open(any()));
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'click-iframe ignores invalid data',
+    (WidgetTester tester) async {
+      late OnMessageReceived onMessage;
+
+      FakeWebview webviewBuilder({
+        Key? key,
+        required Uri uri,
+        required List<String> allowedOrigins,
+        required void Function(Json? data) onEventIframe,
+        required OnMessageReceived onMessageReceived,
+      }) {
+        onMessage = onMessageReceived;
+        return FakeWebview(
+          key: key,
+          onEventIframe: onEventIframe,
+          onMessageReceived: onMessageReceived,
+        );
+      }
+
+      await tester.pumpWidget(
+        createDefaultProvider(
+          child: AdFormat(
+            code: 'test_code',
+            messageId: 'msg_1',
+            onActiveChanged: onActiveChanged,
+            browserOpener: opener,
+            webviewBuilder: webviewBuilder,
+          ),
+        ),
+      );
+
+      onMessage(fakeController, 'init-iframe', null);
+      await tester.pump();
+
+      onMessage(fakeController, 'click-iframe', null);
+      await tester.pump();
+
+      verifyNever(() => opener.open(any()));
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'open-component-iframe with invalid component is ignored',
     (WidgetTester tester) async {
       late OnMessageReceived onMessage;
@@ -819,6 +961,7 @@ void main() {
         required String adServerUrl,
         required Uri uri,
         required Duration initTimeout,
+        required void Function(Json? data) onClickIframe,
         required void Function(Json? data) onEventIframe,
       }) {
         showInterstitialCalled = true;
@@ -827,11 +970,12 @@ void main() {
       await tester.pumpWidget(
         createDefaultProvider(
           child: AdFormat(
-              code: 'test_code',
-              messageId: 'msg_1',
-              onActiveChanged: onActiveChanged,
-              webviewBuilder: webviewBuilder,
-              showInterstitial: showInterstitial),
+            code: 'test_code',
+            messageId: 'msg_1',
+            onActiveChanged: onActiveChanged,
+            webviewBuilder: webviewBuilder,
+            showInterstitial: showInterstitial,
+          ),
         ),
       );
 
@@ -874,6 +1018,7 @@ void main() {
         required String adServerUrl,
         required Uri uri,
         required Duration initTimeout,
+        required void Function(Json? data) onClickIframe,
         required void Function(Json? data) onEventIframe,
       }) {
         showInterstitialCalled = true;

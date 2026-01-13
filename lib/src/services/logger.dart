@@ -39,33 +39,33 @@ class Logger {
     _instance = null;
   }
 
-  static void debug(String message) {
+  static void debug(String message, [StackTrace? stack]) {
     final instance = Logger();
-    instance._logLocal(LogLevel.debug, message);
+    instance._logLocal(LogLevel.debug, message, stackTrace: stack);
     instance._logRemote(LogLevel.debug, message);
   }
 
-  static void info(String message) {
+  static void info(String message, [StackTrace? stack]) {
     final instance = Logger();
-    instance._logLocal(LogLevel.info, message);
+    instance._logLocal(LogLevel.info, message, stackTrace: stack);
     instance._logRemote(LogLevel.info, message);
   }
 
-  static void log(String message) {
+  static void log(String message, [StackTrace? stack]) {
     final instance = Logger();
-    instance._logLocal(LogLevel.log, message);
+    instance._logLocal(LogLevel.log, message, stackTrace: stack);
     instance._logRemote(LogLevel.log, message);
   }
 
-  static void warn(String message) {
+  static void warn(String message, [StackTrace? stack]) {
     final instance = Logger();
-    instance._logLocal(LogLevel.warn, message);
+    instance._logLocal(LogLevel.warn, message, stackTrace: stack);
     instance._logRemote(LogLevel.warn, message);
   }
 
-  static void error(String message) {
+  static void error(String message, [StackTrace? stack]) {
     final instance = Logger();
-    instance._logLocal(LogLevel.error, message);
+    instance._logLocal(LogLevel.error, message, stackTrace: stack);
     instance._logRemote(LogLevel.error, message);
   }
 

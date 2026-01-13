@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = 'kontext_flutter_sdk'
-  s.version          = '2.0.2'
+  s.version          = '2.1.0'
   s.summary          = 'Kontext Flutter SDK plugin.'
   s.description      = <<-DESC
 Kontext Flutter SDK: sound status, app info, hardware, power, network, etc.
