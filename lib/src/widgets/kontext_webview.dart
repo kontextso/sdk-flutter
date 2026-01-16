@@ -92,6 +92,7 @@ class KontextWebview extends StatelessWidget {
         allowsInlineMediaPlayback: true,
         verticalScrollBarEnabled: false,
         horizontalScrollBarEnabled: false,
+        sharedCookiesEnabled: true,
       ),
       shouldOverrideUrlLoading: (controller, navigationAction) async {
         final url = navigationAction.request.url?.toString();
