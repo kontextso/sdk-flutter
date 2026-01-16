@@ -1,5 +1,8 @@
 # Changelog
 
+## 2.1.1
+* Fixed issue with `isDisabled` parameter in the preload API request body.
+
 ## 2.1.0
 * Implement support for the transparency and consent framework.
 * Use click-iframe to handle clicks instead of event-iframe.
