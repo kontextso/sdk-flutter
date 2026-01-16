@@ -1,7 +1,6 @@
 import 'dart:convert' show jsonDecode;
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kontext_flutter_sdk/src/models/bid.dart' show AdDisplayPosition;
 import 'package:kontext_flutter_sdk/src/models/regulatory.dart';
 import 'package:kontext_flutter_sdk/src/services/api.dart';
 import 'package:kontext_flutter_sdk/src/services/http_client.dart';

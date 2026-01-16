@@ -18,6 +18,6 @@ Bid? selectBid(AdsProviderData data, {required String code, required String mess
   if (!isValidMessage) {
     return null;
   }
-;
+
   return bid;
 }

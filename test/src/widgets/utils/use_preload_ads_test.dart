@@ -154,7 +154,7 @@ void main() {
 
     List? lastBids = [];
     bool? readyAssistant = false;
-    bool? readyUser = false;
+    final bool readyUser = false;
     final events = <AdEvent>[];
 
     final messages = <Message>[
