@@ -36,7 +36,6 @@ AdsProviderData createDefaultProvider({
   bool? isDisabled,
   List<Bid>? bids,
   bool? readyForStreamingAssistant,
-  bool? readyForStreamingUser,
   String? lastAssistantMessageId,
   String? lastUserMessageId,
   String? relevantAssistantMessageId,
@@ -49,12 +48,11 @@ AdsProviderData createDefaultProvider({
     messages: const [],
     bids: bids ??
         [
-          Bid(id: '1', code: 'test_code', position: AdDisplayPosition.afterAssistantMessage),
+          Bid(id: '1', code: 'test_code'),
         ],
     enabledPlacementCodes: ['test_code'],
     isDisabled: isDisabled ?? false,
     readyForStreamingAssistant: readyForStreamingAssistant ?? true,
-    readyForStreamingUser: readyForStreamingUser ?? false,
     lastAssistantMessageId: lastAssistantMessageId ?? 'msg_1',
     lastUserMessageId: lastUserMessageId,
     relevantAssistantMessageId: relevantAssistantMessageId,

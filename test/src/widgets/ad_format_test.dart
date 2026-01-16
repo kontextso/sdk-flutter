@@ -174,29 +174,6 @@ void main() {
     );
 
     testWidgets(
-      'AdFormat disabled when bid is after user message but readyForStreamingUser is false',
-      (WidgetTester tester) async {
-        await tester.pumpWidget(
-          createDefaultProvider(
-            bids: [Bid(id: '1', code: 'test_code', position: AdDisplayPosition.afterUserMessage)],
-            lastUserMessageId: 'msg_1',
-            readyForStreamingUser: false,
-            child: const AdFormat(
-              code: 'test_code',
-              messageId: 'msg_1',
-              onActiveChanged: onActiveChanged,
-            ),
-          ),
-        );
-
-        final offstageFinder = find.descendant(of: find.byType(AdFormat), matching: find.byType(Offstage));
-        expect(offstageFinder, findsNothing);
-        final sizedBoxFinder = find.descendant(of: find.byType(AdFormat), matching: find.byType(SizedBox));
-        expect(sizedBoxFinder, findsOneWidget);
-      },
-    );
-
-    testWidgets(
       'AdFormat disabled when inline URI cannot be built',
       (WidgetTester tester) async {
         await tester.pumpWidget(
@@ -347,7 +324,7 @@ void main() {
       }
 
       final bids = ValueNotifier<List<Bid>>([
-        Bid(id: '1', code: 'test_code', position: AdDisplayPosition.afterAssistantMessage),
+        Bid(id: '1', code: 'test_code'),
       ]);
 
       final adsProvider = ValueListenableBuilder<List<Bid>>(

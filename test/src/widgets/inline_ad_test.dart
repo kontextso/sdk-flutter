@@ -88,7 +88,7 @@ void main() {
 
       isDisabledAndBidsNotifier.value = (
         isDisabled: false,
-        bids: [Bid(id: '1', code: 'test_code', position: AdDisplayPosition.afterAssistantMessage)],
+        bids: [Bid(id: '1', code: 'test_code')],
       );
       await tester.pump();
       expect(inlineAdState.wantKeepAlive, isTrue);

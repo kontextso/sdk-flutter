@@ -27,7 +27,6 @@ void usePreloadAds(
   required String? iosAppStoreId,
   required ValueChanged<List<Bid>> setBids,
   required ValueChanged<bool> setReadyForStreamingAssistant,
-  required ValueChanged<bool> setReadyForStreamingUser,
   required OnEventCallback? onEvent,
 }) {
   final sessionId = useRef<String?>(null);
@@ -42,7 +41,6 @@ void usePreloadAds(
     if (!hasMessages) {
       setBids([]);
       setReadyForStreamingAssistant(false);
-      setReadyForStreamingUser(false);
       prevUserMessageCount.value = 0;
     }
     return null;
@@ -88,7 +86,6 @@ void usePreloadAds(
 
     setBids([]);
     setReadyForStreamingAssistant(false);
-    setReadyForStreamingUser(false);
 
     notifyAdFilled() => onEvent?.call(AdEvent(type: AdEventType.adFilled));
     notifyAdNoFill(String skipCode) => onEvent?.call(AdEvent(type: AdEventType.adNoFill, skipCode: skipCode));
@@ -159,7 +156,6 @@ void usePreloadAds(
         }
 
         setBids([...bids]);
-        setReadyForStreamingUser(true);
         Logger.log('Preload Ads finished');
         notifyAdFilled();
         

@@ -33,7 +33,7 @@ void main() {
           body: any(named: 'body'),
         )).thenAnswer((_) async {
       return http.Response(
-        '{"sessionId": "123", "remoteLogLevel": "unknown", "bids": [{"bidId": "id1", "code": "code1", "adDisplayPosition": "afterAssistantMessage"}]}',
+        '{"sessionId": "123", "remoteLogLevel": "unknown", "bids": [{"bidId": "id1", "code": "code1"}]}',
         200,
       );
     });
@@ -52,7 +52,6 @@ void main() {
     expect(response.remoteLogLevel, isNull);
     expect(response.bids.first.id, 'id1');
     expect(response.bids.first.code, 'code1');
-    expect(response.bids.first.position, AdDisplayPosition.afterAssistantMessage);
     expect(response.statusCode, 200);
 
     verify(() => mock.post(

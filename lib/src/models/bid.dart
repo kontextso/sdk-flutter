@@ -1,37 +1,28 @@
-enum AdDisplayPosition { afterAssistantMessage, afterUserMessage }
-
 class Bid {
-  Bid({required this.id, required this.code, required this.position});
+  Bid({required this.id, required this.code});
 
   final String id;
   final String code;
-  final AdDisplayPosition position;
 
-  bool get isAfterAssistantMessage => position == AdDisplayPosition.afterAssistantMessage;
-
-  bool get isAfterUserMessage => position == AdDisplayPosition.afterUserMessage;
+  bool get isAfterAssistantMessage => true;
 
   factory Bid.fromJson(Map<String, dynamic> json) {
     return Bid(
       id: json['bidId'] as String,
-      code: json['code'] as String,
-      position: AdDisplayPosition.values.firstWhere(
-        (position) => position.name == '${json['adDisplayPosition']}',
-        orElse: () => AdDisplayPosition.afterAssistantMessage,
-      ),
+      code: json['code'] as String
     );
   }
 
   @override
   bool operator ==(Object other) {
-    return identical(this, other) || other is Bid && id == other.id && code == other.code && position == other.position;
+    return identical(this, other) || other is Bid && id == other.id && code == other.code;
   }
 
   @override
-  int get hashCode => Object.hash(id, code, position);
+  int get hashCode => Object.hash(id, code);
 
   @override
   String toString() {
-    return 'Bid(id: $id, code: $code, position: $position)';
+    return 'Bid(id: $id, code: $code)';
   }
 }

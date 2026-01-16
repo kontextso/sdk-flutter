@@ -35,8 +35,7 @@ void mockSuccessfulPreload(MockHttp mock) {
       'bids': [
         {
           'bidId': 'id1',
-          'code': 'code1',
-          'adDisplayPosition': 'afterAssistantMessage',
+          'code': 'code1'
         },
       ],
     },
@@ -90,7 +89,6 @@ void main() {
 
     List? lastBids;
     bool? readyAssistant;
-    bool? readyUser;
     final events = <AdEvent>[];
 
     final messages = <Message>[
@@ -133,7 +131,6 @@ void main() {
               iosAppStoreId: null,
               setBids: (bids) => lastBids = bids,
               setReadyForStreamingAssistant: (ready) => readyAssistant = ready,
-              setReadyForStreamingUser: (ready) => readyUser = ready,
               onEvent: (e) => events.add(e),
             );
             return const SizedBox.shrink();
@@ -147,7 +144,6 @@ void main() {
 
     expect(lastBids, isNotNull);
     expect(lastBids, isNotEmpty);
-    expect(readyUser, isTrue);
     expect(readyAssistant, isFalse);
     expect(events.length, 1);
     expect(events.first.type, AdEventType.adFilled);
@@ -201,7 +197,6 @@ void main() {
               iosAppStoreId: null,
               setBids: (bids) => lastBids = bids,
               setReadyForStreamingAssistant: (ready) => readyAssistant = ready,
-              setReadyForStreamingUser: (ready) => readyUser = ready,
               onEvent: (e) => events.add(e),
             );
             return const SizedBox.shrink();
@@ -265,7 +260,6 @@ void main() {
               iosAppStoreId: null,
               setBids: (bids) => lastBids = bids,
               setReadyForStreamingAssistant: (ready) => {},
-              setReadyForStreamingUser: (ready) => {},
               onEvent: (e) => events.add(e),
             );
             return const SizedBox.shrink();
@@ -327,7 +321,6 @@ void main() {
               iosAppStoreId: null,
               setBids: (bids) => lastBids = bids,
               setReadyForStreamingAssistant: (ready) => {},
-              setReadyForStreamingUser: (ready) => {},
               onEvent: (e) => events.add(e),
             );
             return const SizedBox.shrink();
@@ -391,7 +384,6 @@ void main() {
               iosAppStoreId: null,
               setBids: (bids) => lastBids = bids,
               setReadyForStreamingAssistant: (ready) => {},
-              setReadyForStreamingUser: (ready) => {},
               onEvent: (e) => events.add(e),
             );
             return const SizedBox.shrink();
@@ -453,7 +445,6 @@ void main() {
               iosAppStoreId: null,
               setBids: (_) {},
               setReadyForStreamingAssistant: (_) {},
-              setReadyForStreamingUser: (_) {},
               onEvent: (_) {},
             );
             return const SizedBox.shrink();
@@ -538,7 +529,6 @@ void main() {
               iosAppStoreId: null,
               setBids: (_) {},
               setReadyForStreamingAssistant: (_) {},
-              setReadyForStreamingUser: (_) {},
               onEvent: (_) {},
             );
             return const SizedBox.shrink();
@@ -610,7 +600,6 @@ void main() {
               iosAppStoreId: null,
               setBids: (_) => {},
               setReadyForStreamingAssistant: (ready) => {},
-              setReadyForStreamingUser: (ready) => {},
               onEvent: (e) {
                 if (firstThrow) {
                   firstThrow = false;

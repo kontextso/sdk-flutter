@@ -108,14 +108,12 @@ class AdsProvider extends HookWidget {
   Widget build(BuildContext context) {
     final bids = useState<List<Bid>>([]);
     final readyForStreamingAssistant = useState<bool>(false);
-    final readyForStreamingUser = useState<bool>(false);
     final lastAssistantMessageId = useState<String?>(null);
     final lastUserMessageId = useState<String?>(null);
     final relevantAssistantMessageId = useState<String?>(null);
 
     void setBids(List<Bid> newBids) => bids.value = newBids;
     void setReadyForStreamingAssistant(bool ready) => readyForStreamingAssistant.value = ready;
-    void setReadyForStreamingUser(bool ready) => readyForStreamingUser.value = ready;
     void setLastAssistantMessageId(String? id) => lastAssistantMessageId.value = id;
     void setLastUserMessageId(String? id) => lastUserMessageId.value = id;
     void setRelevantAssistantMessageId(String? id) => relevantAssistantMessageId.value = id;
@@ -123,7 +121,6 @@ class AdsProvider extends HookWidget {
     void resetAll() {
       setBids([]);
       setReadyForStreamingAssistant(false);
-      setReadyForStreamingUser(false);
       setLastAssistantMessageId(null);
       setLastUserMessageId(null);
       setRelevantAssistantMessageId(null);
@@ -175,7 +172,6 @@ class AdsProvider extends HookWidget {
       regulatory: regulatory,
       setBids: setBids,
       setReadyForStreamingAssistant: setReadyForStreamingAssistant,
-      setReadyForStreamingUser: setReadyForStreamingUser,
       onEvent: onEvent,
     );
 
@@ -196,7 +192,6 @@ class AdsProvider extends HookWidget {
       enabledPlacementCodes: enabledPlacementCodes,
       otherParams: otherParams,
       readyForStreamingAssistant: readyForStreamingAssistant.value,
-      readyForStreamingUser: readyForStreamingUser.value,
       lastAssistantMessageId: lastAssistantMessageId.value,
       lastUserMessageId: lastUserMessageId.value,
       relevantAssistantMessageId: relevantAssistantMessageId.value,

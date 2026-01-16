@@ -13,12 +13,11 @@ Bid? selectBid(AdsProviderData data, {required String code, required String mess
     return null;
   }
 
-  final isValidMessage = bid.isAfterAssistantMessage
-      ? (data.relevantAssistantMessageId ?? data.lastAssistantMessageId) == messageId && data.readyForStreamingAssistant
-      : data.lastUserMessageId == messageId && data.readyForStreamingUser;
+  final isValidMessage = (data.relevantAssistantMessageId ?? data.lastAssistantMessageId) == messageId && data.readyForStreamingAssistant;
+
   if (!isValidMessage) {
     return null;
   }
-
+;
   return bid;
 }
