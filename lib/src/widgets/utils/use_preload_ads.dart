@@ -32,11 +32,17 @@ void usePreloadAds(
 }) {
   final sessionId = useRef<String?>(null);
   final sessionDisabled = useRef<bool>(false);
+  final isDisabledRef = useRef<bool>(isDisabled);
 
   final prevUserMessageCount = useRef<int>(0);
   final userMessageCount = messages.where((message) => message.isUser).length;
 
   final hasMessages = messages.isNotEmpty;
+
+  useEffect(() {
+    isDisabledRef.value = isDisabled;
+    return null;
+  }, [isDisabled]);
 
   useEffect(() {
     if (!hasMessages) {
@@ -90,9 +96,20 @@ void usePreloadAds(
     setReadyForStreamingAssistant(false);
     setReadyForStreamingUser(false);
 
-    notifyAdFilled() => onEvent?.call(AdEvent(type: AdEventType.adFilled));
-    notifyAdNoFill(String skipCode) => onEvent?.call(AdEvent(type: AdEventType.adNoFill, skipCode: skipCode));
-    notifyAdError(String error, String errorCode) => onEvent?.call(AdEvent(type: AdEventType.adError, message: error, errCode: errorCode));
+    notifyAdFilled() {
+      if (isDisabledRef.value) return;
+      onEvent?.call(AdEvent(type: AdEventType.adFilled));
+    }
+
+    notifyAdNoFill(String skipCode) {
+      if (isDisabledRef.value) return;
+      onEvent?.call(AdEvent(type: AdEventType.adNoFill, skipCode: skipCode));
+    }
+
+    notifyAdError(String error, String errorCode) {
+      if (isDisabledRef.value) return;
+      onEvent?.call(AdEvent(type: AdEventType.adError, message: error, errCode: errorCode));
+    }
 
     Future<void> preload() async {
       if (sessionDisabled.value) {
@@ -131,7 +148,8 @@ void usePreloadAds(
           if (response.permanentError == true) {
             // Geo disabled or other reason, ads are permanently disabled
             sessionDisabled.value = true;
-            notifyAdError(response.error ?? 'Session is disabled', response.errorCode ?? AdEvent.skipCodeSessionDisabled);
+            notifyAdError(
+                response.error ?? 'Session is disabled', response.errorCode ?? AdEvent.skipCodeSessionDisabled);
             Logger.info('Session is disabled. Reason: Error=${response.error}, ErrorCode=${response.errorCode}');
           } else {
             notifyAdError(response.error ?? 'Ad generation skipped', response.errorCode ?? AdEvent.skipCodeUnknown);
@@ -142,6 +160,11 @@ void usePreloadAds(
 
         // 2) Save session ID
         sessionId.value = response.sessionId;
+
+        if (isDisabledRef.value) {
+          Logger.log('Preload ads finished (disabled mid-flight)');
+          return;
+        }
 
         // 3) Skip everything else if ads are disabled manually
         if (isDisabled) {
@@ -160,9 +183,8 @@ void usePreloadAds(
 
         setBids([...bids]);
         setReadyForStreamingUser(true);
-        Logger.log('Preload Ads finished');
+        Logger.log('Preload ads finished');
         notifyAdFilled();
-        
       } catch (e) {
         Logger.error('Preload ads error: $e');
         notifyAdError(e.toString(), AdEvent.skipCodeRequestFailed);

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert' show jsonEncode;
 
 import 'package:flutter/widgets.dart';
@@ -71,9 +72,7 @@ void mockPermanentError(MockHttp mock) {
   );
 }
 
-
 void main() {
-
   late MockHttp mock;
 
   setUp(() {
@@ -102,7 +101,7 @@ void main() {
       ),
       Message(
         id: 'u1',
-        role: MessageRole.user, 
+        role: MessageRole.user,
         content: 'Please preload.',
         createdAt: DateTime.parse('2025-08-31T10:00:05Z'),
       ),
@@ -120,7 +119,8 @@ void main() {
               userEmail: null,
               enabledPlacementCodes: const ['inlineAd'],
               messages: messages,
-              isDisabled: false, // allow calling the API
+              isDisabled: false,
+              // allow calling the API
               vendorId: null,
               advertisingId: null,
               regulatory: null,
@@ -170,12 +170,12 @@ void main() {
       ),
       Message(
         id: 'a2',
-        role: MessageRole.assistant, 
+        role: MessageRole.assistant,
         content: 'Hello!',
         createdAt: DateTime.parse('2025-08-31T10:00:05Z'),
       ),
     ];
-  
+
     await tester.runAsync(() async {
       await tester.pumpWidget(
         HookBuilder(
@@ -188,7 +188,8 @@ void main() {
               userEmail: null,
               enabledPlacementCodes: const ['inlineAd'],
               messages: messages,
-              isDisabled: false, // allow calling the API
+              isDisabled: false,
+              // allow calling the API
               vendorId: null,
               advertisingId: null,
               regulatory: null,
@@ -220,7 +221,7 @@ void main() {
   });
 
   testWidgets('call preload even if disabled flag is set true, ignore the output', (tester) async {
-      mockNoFillPreload(mock);
+    mockNoFillPreload(mock);
 
     List? lastBids = [];
     final events = <AdEvent>[];
@@ -234,7 +235,7 @@ void main() {
       ),
       Message(
         id: 'u1',
-        role: MessageRole.user, 
+        role: MessageRole.user,
         content: 'Please preload.',
         createdAt: DateTime.parse('2025-08-31T10:00:05Z'),
       ),
@@ -281,8 +282,100 @@ void main() {
     expect(events.length, 0);
   });
 
+  testWidgets('ignore preload results when disabled flips true mid-flight', (tester) async {
+    final completer = Completer<http.Response>();
+    when(() => mock.post(
+          any(),
+          headers: any(named: 'headers'),
+          body: any(named: 'body'),
+        )).thenAnswer((_) => completer.future);
+
+    List? lastBids = [];
+    bool? readyUser = false;
+    final events = <AdEvent>[];
+    final isDisabledNotifier = ValueNotifier<bool>(false);
+
+    final messages = <Message>[
+      Message(
+        id: 'a1',
+        role: MessageRole.assistant,
+        content: 'Hi!',
+        createdAt: DateTime.parse('2025-08-31T10:00:00Z'),
+      ),
+      Message(
+        id: 'u1',
+        role: MessageRole.user,
+        content: 'Please preload.',
+        createdAt: DateTime.parse('2025-08-31T10:00:05Z'),
+      ),
+    ];
+
+    await tester.runAsync(() async {
+      await tester.pumpWidget(
+        ValueListenableBuilder<bool>(
+          valueListenable: isDisabledNotifier,
+          builder: (context, isDisabled, _) {
+            return HookBuilder(
+              builder: (context) {
+                usePreloadAds(
+                  context,
+                  publisherToken: 'test-token',
+                  conversationId: 'conv1',
+                  userId: 'user1',
+                  userEmail: null,
+                  enabledPlacementCodes: const ['inlineAd'],
+                  messages: messages,
+                  isDisabled: isDisabled,
+                  vendorId: null,
+                  advertisingId: null,
+                  regulatory: null,
+                  character: Character(
+                    id: 'char1',
+                    name: 'John Doe',
+                    avatarUrl: 'https://example.com/image.png',
+                  ),
+                  variantId: null,
+                  iosAppStoreId: null,
+                  setBids: (bids) => lastBids = bids,
+                  setReadyForStreamingAssistant: (_) {},
+                  setReadyForStreamingUser: (ready) => readyUser = ready,
+                  onEvent: (e) => events.add(e),
+                );
+                return const SizedBox.shrink();
+              },
+            );
+          },
+        ),
+      );
+
+      await tester.pump();
+      isDisabledNotifier.value = true;
+      await tester.pump();
+
+      completer.complete(http.Response(
+          jsonEncode({
+            'sessionId': 'sess-1',
+            'remoteLogLevel': 'unknown',
+            'bids': [
+              {
+                'bidId': 'id1',
+                'code': 'code1',
+                'adDisplayPosition': 'afterAssistantMessage',
+              },
+            ],
+          }),
+          200));
+
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+    });
+
+    expect(lastBids, []);
+    expect(readyUser, isFalse);
+    expect(events, isEmpty);
+  });
+
   testWidgets('handle unfilled bid (no fill) + skip code', (tester) async {
-      mockNoFillPreload(mock);
+    mockNoFillPreload(mock);
 
     List? lastBids = [];
     final events = <AdEvent>[];
@@ -296,7 +389,7 @@ void main() {
       ),
       Message(
         id: 'u1',
-        role: MessageRole.user, 
+        role: MessageRole.user,
         content: 'Please preload.',
         createdAt: DateTime.parse('2025-08-31T10:00:05Z'),
       ),
@@ -360,7 +453,7 @@ void main() {
       ),
       Message(
         id: 'u1',
-        role: MessageRole.user, 
+        role: MessageRole.user,
         content: 'Please preload.',
         createdAt: DateTime.parse('2025-08-31T10:00:05Z'),
       ),
@@ -403,12 +496,11 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 100));
     });
 
-    
     expect(lastBids, isEmpty);
     expect(events.length, 1);
     expect(events.first.type, AdEventType.adError);
   });
-  
+
   testWidgets('dedupes: same user message triggers preload only once', (tester) async {
     // arrange
     mockSuccessfulPreload(mock);
@@ -439,7 +531,8 @@ void main() {
               userId: 'user1',
               userEmail: null,
               enabledPlacementCodes: const ['inlineAd'],
-              messages: messages, // same array, same last user message id
+              messages: messages,
+              // same array, same last user message id
               isDisabled: false,
               vendorId: null,
               advertisingId: null,
@@ -471,10 +564,10 @@ void main() {
 
     // assert: HTTP POST called exactly once
     verify(() => mock.post(
-      any(),
-      headers: any(named: 'headers'),
-      body: any(named: 'body'),
-    )).called(1);
+          any(),
+          headers: any(named: 'headers'),
+          body: any(named: 'body'),
+        )).called(1);
     verifyNoMoreInteractions(mock);
   });
 
@@ -556,10 +649,10 @@ void main() {
 
     // assert: HTTP POST called exactly once
     verify(() => mock.post(
-      any(),
-      headers: any(named: 'headers'),
-      body: any(named: 'body'),
-    )).called(1);
+          any(),
+          headers: any(named: 'headers'),
+          body: any(named: 'body'),
+        )).called(1);
     verifyNoMoreInteractions(mock);
   });
 
@@ -577,7 +670,7 @@ void main() {
       ),
       Message(
         id: 'u1',
-        role: MessageRole.user, 
+        role: MessageRole.user,
         content: 'Please preload.',
         createdAt: DateTime.parse('2025-08-31T10:00:05Z'),
       ),
@@ -632,7 +725,6 @@ void main() {
     expect(events.first.type, AdEventType.adError);
     expect(events.first.errCode, AdEvent.skipCodeRequestFailed);
   });
-
 }
 
 // TODO: parallel preloads
