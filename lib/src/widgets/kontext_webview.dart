@@ -96,8 +96,15 @@ class KontextWebview extends StatelessWidget {
       ),
       shouldOverrideUrlLoading: (controller, navigationAction) async {
         final url = navigationAction.request.url?.toString();
+        if (url == null) {
+          return NavigationActionPolicy.CANCEL;
+        }
 
-        if (url != null && allowedOrigins.any((origin) => url.contains(origin))) {
+        if (url.toString() == 'about:srcdoc') {
+          return NavigationActionPolicy.ALLOW;
+        }
+
+        if (allowedOrigins.any((origin) => url.contains(origin))) {
           return NavigationActionPolicy.ALLOW;
         }
 
