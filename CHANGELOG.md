@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.1.1
+* Allow specific srcdoc navigation in WebView
+* Prevent ad notify events when `isDisabled` flips mid-preload
+
 ## 2.1.0
 * Implement support for the transparency and consent framework.
 * Use click-iframe to handle clicks instead of event-iframe.
