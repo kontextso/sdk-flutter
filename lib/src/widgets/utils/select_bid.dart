@@ -9,6 +9,17 @@ Bid? selectBid(AdsProviderData data, {required String code, required String mess
   }
 
   final bid = data.bids.firstWhereOrElse((bid) => bid.code == code);
+
+  // print('----------');
+  //print('----data.bid: ${bid}');
+  //print('----data.relevantAssistantMessageId: ${data.relevantAssistantMessageId}');
+  //print('----data.lastAssistantMessageId: ${data.lastAssistantMessageId}');
+  //print('----data.lastUserMessageId: ${data.lastUserMessageId}');
+  print('----data.readyForStreamingAssistant: ${data.readyForStreamingAssistant}');
+  //print('----data.readyForStreamingUser: ${data.readyForStreamingUser}');
+  //print('----messageId: $messageId');
+  //print('----------');
+
   if (bid == null) {
     return null;
   }

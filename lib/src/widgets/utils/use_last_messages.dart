@@ -35,6 +35,7 @@ void useLastMessages(
       setLastAssistantMessageId(lastAssistantMessage?.id);
 
       // Ready for streaming if the last message is from the assistant
+      print('----useLastMessages: messages.last.isAssistant: ${messages.last.isAssistant}');
       setReadyForStreamingAssistant(messages.last.isAssistant);
 
       return null;

@@ -58,7 +58,14 @@ class _HomePageState extends State<HomePage> {
   late final String conversationId = _id();
   late final String userId = _id();
 
-  final List<Message> _messages = [];
+  final List<Message> _messages = [
+    Message(
+      id: 'a1',
+      role: MessageRole.assistant,
+      content: 'This is initial message from the assistant.',
+      createdAt: DateTime.now(),
+    ),
+  ];
   final TextEditingController _input = TextEditingController();
   bool _isLoading = false;
 
@@ -113,9 +120,13 @@ class _HomePageState extends State<HomePage> {
         userId: userId,
         conversationId: conversationId,
         messages: _messages,
+        isDisabled: _messages.length > 4,
         enabledPlacementCodes: const [kPlacementCode],
         otherParams: {'theme': theme},
         logLevel: LogLevel.info,
+        onEvent: (event) {
+          print('Event: $event');
+        },
         child: Column(
           children: [
             Expanded(

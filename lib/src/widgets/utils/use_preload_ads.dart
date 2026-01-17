@@ -103,6 +103,8 @@ void usePreloadAds(
       Logger.log('Preload ads started');
       loading.value = true;
 
+      print('----isDisabled before preload: $isDisabled');
+
       try {
         final api = Api();
         final response = await api.preload(
@@ -121,6 +123,8 @@ void usePreloadAds(
           iosAppStoreId: iosAppStoreId,
           isDisabled: isDisabled,
         );
+
+        print('----isDisabled after preload: $isDisabled');
 
         if (!context.mounted) {
           return;
@@ -142,6 +146,8 @@ void usePreloadAds(
 
         // 2) Save session ID
         sessionId.value = response.sessionId;
+
+        print('----response.bids: ${response.bids}');
 
         // 3) Skip everything else if ads are disabled manually
         if (isDisabled) {
