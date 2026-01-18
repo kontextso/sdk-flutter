@@ -4,6 +4,7 @@ import 'package:kontext_flutter_sdk/src/models/ad_event.dart';
 import 'package:kontext_flutter_sdk/src/models/bid.dart';
 import 'package:kontext_flutter_sdk/src/models/character.dart';
 import 'package:kontext_flutter_sdk/src/models/message.dart';
+import 'package:kontext_flutter_sdk/src/utils/extensions.dart';
 import 'package:kontext_flutter_sdk/src/models/regulatory.dart';
 import 'package:kontext_flutter_sdk/src/services/api.dart';
 import 'package:kontext_flutter_sdk/src/services/logger.dart';
@@ -128,7 +129,7 @@ void usePreloadAds(
           userId: userId,
           userEmail: userEmail,
           enabledPlacementCodes: enabledPlacementCodes,
-          messages: messages,
+          messages: messages.getLastMessages(),
           sessionId: sessionId.value,
           vendorId: vendorId,
           advertisingId: advertisingId,
