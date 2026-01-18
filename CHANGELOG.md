@@ -1,5 +1,8 @@
 # Changelog
 
+## 2.1.2
+* Limit the number of messages sent to the server.
+
 ## 2.1.1
 * Allow specific srcdoc navigation in WebView
 * Prevent ad notify events when `isDisabled` flips mid-preload
