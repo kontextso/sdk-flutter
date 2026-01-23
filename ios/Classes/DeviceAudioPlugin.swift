@@ -20,6 +20,7 @@ public class DeviceAudioPlugin: NSObject, FlutterPlugin {
         }
     }
 
+    /*
     // Runs a closure while the audio session is briefly active.
     private func withActivatedSession<T>(_ body: @escaping (AVAudioSession) -> T) -> T {
         let session = AVAudioSession.sharedInstance()
@@ -54,39 +55,41 @@ public class DeviceAudioPlugin: NSObject, FlutterPlugin {
         if Thread.isMainThread { return run() }
         return DispatchQueue.main.sync(execute: run)
     }
+    */
 
     private func readAudioInfo() -> [String: Any] {
-        return withActivatedSession { session in
-            let vol01 = session.outputVolume
-            var volume = Int((vol01 * 100.0).rounded())
-            if volume < 0 { volume = 0 }
-            if volume > 100 { volume = 100 }
-            let muted = vol01 <= 0.0001
+        let session = AVAudioSession.sharedInstance()
 
-            var kinds = [String]()
-            for port in session.currentRoute.outputs {
-                switch port.portType {
-                case .headphones, .lineOut:
-                    kinds.append("wired")
-                case .bluetoothA2DP, .bluetoothHFP, .bluetoothLE:
-                    kinds.append("bluetooth")
-                case .HDMI:
-                    kinds.append("hdmi")
-                case .usbAudio:
-                    kinds.append("usb")
-                default:
-                    kinds.append("other")
-                }
+        let vol01 = session.outputVolume
+        var volume = Int((vol01 * 100.0).rounded())
+        volume = min(100, max(0, volume))
+
+        // NOTE: this is "volume == 0", not the iOS silent switch.
+        let muted = vol01 <= 0.0001
+
+        var kinds = [String]()
+        for port in session.currentRoute.outputs {
+            switch port.portType {
+            case .headphones, .lineOut:
+                kinds.append("wired")
+            case .bluetoothA2DP, .bluetoothHFP, .bluetoothLE:
+                kinds.append("bluetooth")
+            case .HDMI:
+                kinds.append("hdmi")
+            case .usbAudio:
+                kinds.append("usb")
+            default:
+                kinds.append("other")
             }
-
-            let plugged = kinds.contains { $0 != "other" }
-
-            return [
-                "volume": volume,
-                "muted": muted,
-                "outputPluggedIn": plugged,
-                "outputType": kinds
-            ]
         }
+
+        let plugged = kinds.contains { $0 != "other" }
+
+        return [
+            "volume": volume,
+            "muted": muted,
+            "outputPluggedIn": plugged,
+            "outputType": kinds
+        ]
     }
 }
