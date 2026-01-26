@@ -1,5 +1,8 @@
 # Changelog
 
+## 2.1.3
+* Fix the issue on iOS that caused music interruption when the preload request is made.
+
 ## 2.1.2
 * Limit the number of messages sent to the server.
 
