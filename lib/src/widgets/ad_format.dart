@@ -282,7 +282,10 @@ class AdFormat extends HookWidget {
     final slotKey = useMemoized(() => GlobalKey(), const []);
 
     final ticker = useRef<Timer?>(null);
-    void cancelTimer() {
+    final delayedTicker = useRef<Timer?>(null);
+    void cancelTimers() {
+      delayedTicker.value?.cancel();
+      delayedTicker.value = null;
       ticker.value?.cancel();
       ticker.value = null;
     }
@@ -360,9 +363,13 @@ class AdFormat extends HookWidget {
             setIsNullDimensions: (isNull) => isNullDimensions.value = isNull,
           );
       final shouldRun = iframeLoaded.value && showIframe.value;
-      if (shouldRun && ticker.value == null) {
+      if (shouldRun && ticker.value == null && delayedTicker.value == null) {
         // Start after a short delay to allow initial layout to settle
-        Future.delayed(const Duration(milliseconds: 500), () {
+        delayedTicker.value = Timer(const Duration(milliseconds: 500), () {
+          delayedTicker.value = null;
+          if (!iframeLoaded.value || !showIframe.value || disposed.value) {
+            return;
+          }
           // First call immediately without waiting for the first tick
           postDimensions();
           ticker.value = Timer.periodic(
@@ -371,13 +378,13 @@ class AdFormat extends HookWidget {
           );
         });
       } else if (!shouldRun) {
-        cancelTimer();
+        cancelTimers();
       }
       return null;
     }, [iframeLoaded.value, showIframe.value]);
 
     useEffect(() {
-      return () => cancelTimer();
+      return () => cancelTimers();
     }, const []);
 
     final otherParamsHash = otherParams?.deepHash;

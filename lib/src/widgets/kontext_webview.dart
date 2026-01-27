@@ -79,6 +79,22 @@ class KontextWebview extends StatelessWidget {
   final void Function(Json? data) onEventIframe;
   final OnMessageReceived onMessageReceived;
 
+  bool _isAllowedUrl(String url) {
+    final uri = Uri.tryParse(url);
+    if (uri == null) {
+      return false;
+    }
+
+    return allowedOrigins.any((origin) {
+      final originUri = Uri.tryParse(origin);
+      if (originUri == null) {
+        return false;
+      }
+
+      return uri.scheme == originUri.scheme && uri.host == originUri.host;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return InAppWebView(
@@ -104,7 +120,7 @@ class KontextWebview extends StatelessWidget {
           return NavigationActionPolicy.ALLOW;
         }
 
-        if (allowedOrigins.any((origin) => url.contains(origin))) {
+        if (_isAllowedUrl(url)) {
           return NavigationActionPolicy.ALLOW;
         }
 
