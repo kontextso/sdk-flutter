@@ -59,6 +59,8 @@ AdsProviderData createDefaultProvider({
     lastUserMessageId: lastUserMessageId,
     relevantAssistantMessageId: relevantAssistantMessageId,
     setRelevantAssistantMessageId: (_) {},
+    getCachedContent: (_) => null,
+    setCachedContent: (_, __) {},
     resetAll: resetAll ?? () {},
     onEvent: onEvent ?? (_) {},
     child: child,
