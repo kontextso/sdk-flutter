@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_hooks/flutter_hooks.dart' show HookWidget, useState, useEffect;
+import 'package:flutter_hooks/flutter_hooks.dart' show HookWidget, useState, useEffect, useRef;
 import 'package:flutter_inappwebview/flutter_inappwebview.dart'
     show PlatformInAppWebViewController, DebugLoggingSettings;
 import 'package:kontext_flutter_sdk/src/models/bid.dart';
@@ -112,6 +112,7 @@ class AdsProvider extends HookWidget {
     final lastAssistantMessageId = useState<String?>(null);
     final lastUserMessageId = useState<String?>(null);
     final relevantAssistantMessageId = useState<String?>(null);
+    final cachedContents = useRef<Map<String, String>>({});
 
     void setBids(List<Bid> newBids) => bids.value = newBids;
     void setReadyForStreamingAssistant(bool ready) => readyForStreamingAssistant.value = ready;
@@ -119,6 +120,10 @@ class AdsProvider extends HookWidget {
     void setLastAssistantMessageId(String? id) => lastAssistantMessageId.value = id;
     void setLastUserMessageId(String? id) => lastUserMessageId.value = id;
     void setRelevantAssistantMessageId(String? id) => relevantAssistantMessageId.value = id;
+
+    String? getCachedContent(String bidId) => cachedContents.value[bidId];
+    void setCachedContent(String bidId, String content) =>
+        cachedContents.value = {...cachedContents.value, bidId: content};
 
     void resetAll() {
       setBids([]);
@@ -201,6 +206,8 @@ class AdsProvider extends HookWidget {
       lastUserMessageId: lastUserMessageId.value,
       relevantAssistantMessageId: relevantAssistantMessageId.value,
       setRelevantAssistantMessageId: setRelevantAssistantMessageId,
+      getCachedContent: getCachedContent,
+      setCachedContent: setCachedContent,
       resetAll: resetAll,
       onEvent: onEvent,
       child: child,

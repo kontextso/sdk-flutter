@@ -208,6 +208,12 @@ class AdFormat extends HookWidget {
       case 'click-iframe':
         _handleClickIframe(adServerUrl: adServerUrl, data: data);
         break;
+      case 'ad-done-iframe':
+        final content = data?['cachedContent'] as String?;
+        if (content != null) {
+          adsProviderData.setCachedContent(bidId, content);
+        }
+        break;
       case 'open-component-iframe':
         final component = OpenIframeComponent.fromValue(data?['component']);
         if (component == null) {
@@ -300,6 +306,7 @@ class AdFormat extends HookWidget {
           .addParam('messageId', messageId)
           .addParam('sdk', kSdkLabel)
           .addParam('theme', adsProviderData.otherParams?['theme'])
+          .addParam('cachedContent', adsProviderData.getCachedContent(bidId))
           .buildUri();
     }
 
