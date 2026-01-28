@@ -21,12 +21,31 @@ class Bid {
     return Bid(
       id: json['bidId'] as String,
       code: json['code'] as String,
-      value: json['value'] as int?,
+      value: _parseBidValue(json['value']),
       position: AdDisplayPosition.values.firstWhere(
         (position) => position.name == '${json['adDisplayPosition']}',
         orElse: () => AdDisplayPosition.afterAssistantMessage,
       ),
     );
+  }
+
+  static int? _parseBidValue(Object? value) {
+    if (value == null) return null;
+
+    if (value is int) return value;
+
+    if (value is double) {
+      if (!value.isFinite) return null;
+
+      final intValue = value.toInt();
+      return value == intValue ? intValue : null;
+    }
+
+    if (value is String) {
+      final parsed = int.tryParse(value.trim());
+      return parsed;
+    }
+    return null;
   }
 
   @override
