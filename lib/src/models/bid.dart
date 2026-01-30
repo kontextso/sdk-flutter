@@ -5,12 +5,14 @@ class Bid {
     required this.id,
     required this.code,
     this.value,
+    this.url,
     required this.position,
   });
 
   final String id;
   final String code;
   final int? value;
+  final String? url;
   final AdDisplayPosition position;
 
   bool get isAfterAssistantMessage => position == AdDisplayPosition.afterAssistantMessage;
@@ -22,6 +24,7 @@ class Bid {
       id: json['bidId'] as String,
       code: json['code'] as String,
       value: _parseBidValue(json['value']),
+      url: json['url'] as String?,
       position: AdDisplayPosition.values.firstWhere(
         (position) => position.name == '${json['adDisplayPosition']}',
         orElse: () => AdDisplayPosition.afterAssistantMessage,
@@ -51,7 +54,12 @@ class Bid {
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
-        other is Bid && id == other.id && code == other.code && value == other.value && position == other.position;
+        other is Bid &&
+            id == other.id &&
+            code == other.code &&
+            value == other.value &&
+            url == other.url &&
+            position == other.position;
   }
 
   @override
@@ -59,6 +67,6 @@ class Bid {
 
   @override
   String toString() {
-    return 'Bid(id: $id, code: $code, value: $value, position: $position)';
+    return 'Bid(id: $id, code: $code, value: $value, url: $url, position: $position)';
   }
 }

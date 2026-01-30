@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:kontext_flutter_sdk/src/models/ad_event.dart';
+import 'package:kontext_flutter_sdk/src/models/bid.dart';
 import 'package:kontext_flutter_sdk/src/models/message.dart';
 import 'package:kontext_flutter_sdk/src/services/logger.dart';
 import 'package:kontext_flutter_sdk/src/utils/browser_opener.dart';
@@ -16,6 +17,7 @@ import 'package:kontext_flutter_sdk/src/widgets/ads_provider_data.dart';
 import 'package:kontext_flutter_sdk/src/widgets/utils/select_bid.dart';
 import 'package:kontext_flutter_sdk/src/widgets/interstitial_modal.dart';
 import 'package:kontext_flutter_sdk/src/widgets/kontext_webview.dart';
+import 'package:pointer_interceptor/pointer_interceptor.dart';
 
 class AdFormat extends HookWidget {
   const AdFormat({
@@ -135,6 +137,21 @@ class AdFormat extends HookWidget {
     ''');
   }
 
+  void _openBidUrl({required String adServerUrl, required Bid bid}) {
+    try {
+      final fallbackUri = KontextUrlBuilder(
+        baseUrl: adServerUrl,
+        path: '/ad/${bid.id}/redirect',
+      ).buildUri();
+      final uri = (bid.url != null ? Uri.tryParse(bid.url!) : null) ?? fallbackUri;
+      if (uri != null) {
+        browserOpener.open(uri);
+      }
+    } catch (e, stack) {
+      Logger.exception(e, stack);
+    }
+  }
+
   void _handleClickIframe({required String adServerUrl, Json? data}) {
     try {
       final path = data?['url'] as String?;
@@ -144,7 +161,6 @@ class AdFormat extends HookWidget {
       }
     } catch (e, stack) {
       Logger.exception(e, stack);
-      return;
     }
   }
 
@@ -171,7 +187,6 @@ class AdFormat extends HookWidget {
       onEvent?.call(adEvent);
     } catch (e, stack) {
       Logger.exception(e, stack);
-      return;
     }
   }
 
@@ -206,7 +221,7 @@ class AdFormat extends HookWidget {
         }
         break;
       case 'click-iframe':
-        _handleClickIframe(adServerUrl: adServerUrl, data: data);
+        Logger.debug('click-iframe message received');
         break;
       case 'ad-done-iframe':
         final content = data?['cachedContent'] as String?;
@@ -297,7 +312,8 @@ class AdFormat extends HookWidget {
     final adsProviderData = AdsProviderData.of(context);
     final disabled = adsProviderData == null || adsProviderData.isDisabled;
 
-    final bidId = !disabled ? selectBid(adsProviderData, code: code, messageId: messageId)?.id : null;
+    final bid = !disabled ? selectBid(adsProviderData, code: code, messageId: messageId) : null;
+    final bidId = bid?.id;
 
     Uri? inlineUri;
     if (!disabled && bidId != null) {
@@ -313,7 +329,7 @@ class AdFormat extends HookWidget {
           .buildUri();
     }
 
-    final isActive = !disabled && bidId != null && inlineUri != null;
+    final isActive = !disabled && bid != null && bidId != null && inlineUri != null;
 
     useEffect(() {
       setActive(isActive);
@@ -435,32 +451,46 @@ class AdFormat extends HookWidget {
         height: height.value,
         width: double.infinity,
         color: Colors.transparent,
-        child: buildWebview(
-          key: ValueKey('ad-$messageId-$bidId'),
-          uri: inlineUri,
-          allowedOrigins: [adServerUrl],
-          onEventIframe: (data) => _handleEventIframe(
-            adServerUrl: adServerUrl,
-            onEvent: adsProviderData.onEvent,
-            data: data,
-          ),
-          onMessageReceived: (controller, messageType, data) {
-            webViewController.value = controller;
-            _handleWebViewCreated(
-              context,
-              messageType: messageType,
-              isDisposed: () => disposed.value,
-              data: data,
-              adServerUrl: adServerUrl,
-              inlineUri: inlineUri!,
-              bidId: bidId,
-              iframeLoaded: iframeLoaded,
-              showIframe: showIframe,
-              height: height,
-              resetIframe: resetIframe,
-              adsProviderData: adsProviderData,
-            );
-          },
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            buildWebview(
+              key: ValueKey('ad-$messageId-$bidId'),
+              uri: inlineUri,
+              allowedOrigins: [adServerUrl],
+              onEventIframe: (data) => _handleEventIframe(
+                adServerUrl: adServerUrl,
+                onEvent: adsProviderData.onEvent,
+                data: data,
+              ),
+              onMessageReceived: (controller, messageType, data) {
+                webViewController.value = controller;
+                _handleWebViewCreated(
+                  context,
+                  messageType: messageType,
+                  isDisposed: () => disposed.value,
+                  data: data,
+                  adServerUrl: adServerUrl,
+                  inlineUri: inlineUri!,
+                  bidId: bidId,
+                  iframeLoaded: iframeLoaded,
+                  showIframe: showIframe,
+                  height: height,
+                  resetIframe: resetIframe,
+                  adsProviderData: adsProviderData,
+                );
+              },
+            ),
+            Positioned.fill(
+              child: PointerInterceptor(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => _openBidUrl(adServerUrl: adServerUrl, bid: bid),
+                  child: const SizedBox.expand(),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
