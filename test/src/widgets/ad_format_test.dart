@@ -807,7 +807,64 @@ void main() {
   );
 
   testWidgets(
-    'click-iframe with valid url',
+    'tap opens bid url',
+    (WidgetTester tester) async {
+      late OnMessageReceived onMessage;
+
+      FakeWebview webviewBuilder({
+        Key? key,
+        required Uri uri,
+        required List<String> allowedOrigins,
+        required void Function(Json? data) onEventIframe,
+        required OnMessageReceived onMessageReceived,
+      }) {
+        onMessage = onMessageReceived;
+        return FakeWebview(
+          key: key,
+          onEventIframe: onEventIframe,
+          onMessageReceived: onMessageReceived,
+        );
+      }
+
+      await tester.pumpWidget(
+        createDefaultProvider(
+          bids: [
+            Bid(
+              id: '1',
+              code: 'test_code',
+              url: 'https://example.com/landing',
+              position: AdDisplayPosition.afterAssistantMessage,
+            ),
+          ],
+          child: AdFormat(
+            code: 'test_code',
+            messageId: 'msg_1',
+            onActiveChanged: onActiveChanged,
+            browserOpener: opener,
+            webviewBuilder: webviewBuilder,
+          ),
+        ),
+      );
+
+      onMessage(fakeController, 'init-iframe', null);
+      onMessage(fakeController, 'show-iframe', null);
+      await tester.pump();
+
+      await tester.tap(
+        find.descendant(
+          of: find.byType(AdFormat),
+          matching: find.byType(GestureDetector),
+        ),
+      );
+      await tester.pump();
+
+      verify(() => opener.open(Uri.parse('https://example.com/landing'))).called(1);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'tap opens fallback redirect when bid url is missing',
     (WidgetTester tester) async {
       late OnMessageReceived onMessage;
 
@@ -839,61 +896,30 @@ void main() {
       );
 
       onMessage(fakeController, 'init-iframe', null);
+      onMessage(fakeController, 'show-iframe', null);
       await tester.pump();
 
-      onMessage(fakeController, 'click-iframe', {'url': '/test-path'});
-      await tester.pump();
-
-      verify(() => opener.open(any(that: isA<Uri>()))).called(1);
-      expect(tester.takeException(), isNull);
-    },
-  );
-
-  testWidgets(
-    'click-iframe ignores non-string url',
-    (WidgetTester tester) async {
-      late OnMessageReceived onMessage;
-
-      FakeWebview webviewBuilder({
-        Key? key,
-        required Uri uri,
-        required List<String> allowedOrigins,
-        required void Function(Json? data) onEventIframe,
-        required OnMessageReceived onMessageReceived,
-      }) {
-        onMessage = onMessageReceived;
-        return FakeWebview(
-          key: key,
-          onEventIframe: onEventIframe,
-          onMessageReceived: onMessageReceived,
-        );
-      }
-
-      await tester.pumpWidget(
-        createDefaultProvider(
-          child: AdFormat(
-            code: 'test_code',
-            messageId: 'msg_1',
-            onActiveChanged: onActiveChanged,
-            browserOpener: opener,
-            webviewBuilder: webviewBuilder,
-          ),
+      await tester.tap(
+        find.descendant(
+          of: find.byType(AdFormat),
+          matching: find.byType(GestureDetector),
         ),
       );
-
-      onMessage(fakeController, 'init-iframe', null);
       await tester.pump();
 
-      onMessage(fakeController, 'click-iframe', {'url': 12345});
-      await tester.pump();
-
-      verifyNever(() => opener.open(any()));
+      verify(
+        () => opener.open(
+          any(
+            that: predicate<Uri>((uri) => uri.toString().contains('/ad/1/redirect')),
+          ),
+        ),
+      ).called(1);
       expect(tester.takeException(), isNull);
     },
   );
 
   testWidgets(
-    'click-iframe ignores invalid data',
+    'click-iframe does not open browser',
     (WidgetTester tester) async {
       late OnMessageReceived onMessage;
 

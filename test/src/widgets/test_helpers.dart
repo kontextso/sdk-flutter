@@ -63,6 +63,6 @@ AdsProviderData createDefaultProvider({
     setCachedContent: (_, __) {},
     resetAll: resetAll ?? () {},
     onEvent: onEvent ?? (_) {},
-    child: child,
+    child: Directionality(textDirection: TextDirection.ltr, child: child),
   );
 }
