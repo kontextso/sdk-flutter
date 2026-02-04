@@ -3,6 +3,7 @@ import 'dart:collection' show UnmodifiableListView;
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:kontext_flutter_sdk/src/services/logger.dart' show Logger;
+import 'package:kontext_flutter_sdk/src/utils/extensions.dart' show UriExtension;
 import 'package:kontext_flutter_sdk/src/utils/types.dart' show Json;
 
 final _earlyBridge = UserScript(
@@ -79,22 +80,6 @@ class KontextWebview extends StatelessWidget {
   final void Function(Json? data) onEventIframe;
   final OnMessageReceived onMessageReceived;
 
-  bool _isAllowedUrl(String url) {
-    final uri = Uri.tryParse(url);
-    if (uri == null) {
-      return false;
-    }
-
-    return allowedOrigins.any((origin) {
-      final originUri = Uri.tryParse(origin);
-      if (originUri == null) {
-        return false;
-      }
-
-      return uri.scheme == originUri.scheme && uri.host == originUri.host;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return InAppWebView(
@@ -109,21 +94,41 @@ class KontextWebview extends StatelessWidget {
         verticalScrollBarEnabled: false,
         horizontalScrollBarEnabled: false,
         sharedCookiesEnabled: true,
+        supportMultipleWindows: true,
+        javaScriptCanOpenWindowsAutomatically: true,
       ),
+      onCreateWindow: (controller, request) async {
+        final uri = request.request.url?.uriValue;
+        if (uri == null) {
+          return false;
+        }
+
+        return uri.openInAppBrowser();
+      },
       shouldOverrideUrlLoading: (controller, navigationAction) async {
-        final url = navigationAction.request.url?.toString();
-        if (url == null) {
+        final uri = navigationAction.request.url?.uriValue;
+        if (uri == null) {
           return NavigationActionPolicy.CANCEL;
         }
 
-        if (url.toString() == 'about:srcdoc') {
+        if (uri.toString() == 'about:srcdoc') {
           return NavigationActionPolicy.ALLOW;
         }
 
-        if (_isAllowedUrl(url)) {
+        if (!navigationAction.isForMainFrame) {
           return NavigationActionPolicy.ALLOW;
         }
 
+        final url = uri.toString();
+        final isAllowed = allowedOrigins.any(
+          (origin) => url.startsWith(origin) || uri.origin == origin || uri.host == origin,
+        );
+
+        if (isAllowed) {
+          return NavigationActionPolicy.ALLOW;
+        }
+
+        await uri.openInAppBrowser();
         return NavigationActionPolicy.CANCEL;
       },
       onWebViewCreated: (controller) {
