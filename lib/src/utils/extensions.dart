@@ -51,13 +51,31 @@ extension StringExtension on String {
 }
 
 extension UriExtension on Uri {
+  bool get isHttp {
+    final scheme = this.scheme.toLowerCase();
+    return scheme == 'http' || scheme == 'https';
+  }
+
+  bool get isStore => isGooglePlay || isAppStore;
+
+  bool get isGooglePlay {
+    final host = this.host.toLowerCase();
+    final scheme = this.scheme.toLowerCase();
+    return host == 'play.google.com' || host == 'market.android.com' || scheme == 'market' || scheme == 'intent';
+  }
+
+  bool get isAppStore {
+    final host = this.host.toLowerCase();
+    final scheme = this.scheme.toLowerCase();
+    return host == 'apps.apple.com' || scheme == 'itms-apps';
+  }
+
   Future<bool> openInAppBrowser() async {
     try {
-      final normalizedUri = scheme.toLowerCase() == 'itms-apps' ? replace(scheme: 'https') : this;
+      final normalizedUri = isAppStore ? replace(scheme: 'https') : this;
       final webUri = WebUri.uri(normalizedUri);
-      final normalizedScheme = normalizedUri.scheme.toLowerCase();
 
-      if (normalizedScheme != 'http' && normalizedScheme != 'https') {
+      if (!isHttp) {
         await InAppBrowser.openWithSystemBrowser(url: webUri);
         return true;
       }
@@ -75,8 +93,7 @@ extension UriExtension on Uri {
 
   Uri replacePath(String newPath) {
     final params = queryParameters;
-    return replace(
-        path: newPath, queryParameters: params.isEmpty ? null : params);
+    return replace(path: newPath, queryParameters: params.isEmpty ? null : params);
   }
 }
 

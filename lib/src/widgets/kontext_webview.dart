@@ -8,7 +8,12 @@ import 'package:kontext_flutter_sdk/src/services/logger.dart' show Logger;
 import 'package:kontext_flutter_sdk/src/utils/extensions.dart' show UriExtension;
 import 'package:kontext_flutter_sdk/src/utils/types.dart' show Json;
 
-DateTime? _lastUserGestureAt;
+// Prevent duplicate opens of the same store URL in a short window.
+// This can happen during store URL resolution when creatives trigger multiple
+// navigation methods.
+// Some banners trigger the same store URL twice:
+//  - `anchor`: click-through via an HTML link, e.g. `<a href="https://play.google.com/...">`
+//  - `location`: JS navigation, e.g. `window.location`
 final _storeOpenGate = _RecentStringGate(window: const Duration(milliseconds: 1200));
 
 class _RecentStringGate {
@@ -35,23 +40,14 @@ class _RecentStringGate {
 // user tap: -> https://click.liftoff.io/... (hasGesture=true) -> https://play.google.com/... (hasGesture=false)
 // Keep a short (2s) latch so the final request can still be treated as
 // user-initiated.
+DateTime? _lastUserGestureAt;
+
 bool _hasRecentUserGesture() {
   final last = _lastUserGestureAt;
   if (last == null) {
     return false;
   }
   return DateTime.now().difference(last) < const Duration(seconds: 2);
-}
-
-bool _isStoreUrl(Uri uri) {
-  final scheme = uri.scheme.toLowerCase();
-  final host = uri.host.toLowerCase();
-  return scheme == 'itms-apps' ||
-      scheme == 'market' ||
-      scheme == 'intent' ||
-      host == 'apps.apple.com' ||
-      host == 'play.google.com' ||
-      host == 'market.android.com';
 }
 
 final _earlyBridge = UserScript(
@@ -105,6 +101,60 @@ final _flushMsgQueue = '''
   })();
 ''';
 
+final _sandboxIframeFix = UserScript(
+  source: '''
+    (function() {
+      if (window.__kontextSandboxIframeFixInstalled) return;
+      window.__kontextSandboxIframeFixInstalled = true;
+
+      var token = 'allow-same-origin';
+
+      // Ensure a sandboxed iframe includes allow-same-origin.
+      function patchIframe(iframe) {
+        var current = iframe.getAttribute('sandbox');
+        if (!current) return;
+        var parts = String(current).trim().split(/\\s+/).filter(Boolean);
+        if (parts.indexOf(token) !== -1) return;
+        parts.push(token);
+        iframe.setAttribute('sandbox', parts.join(' '));
+      }
+
+      // Patch all currently existing sandboxed iframes.
+      function patchAll() {
+        try {
+          var iframes = document.querySelectorAll('iframe[sandbox]');
+          for (var i = 0; i < iframes.length; i++) patchIframe(iframes[i]);
+        } catch (_) {}
+      }
+
+      // Prevent running patchAll() too many times
+      var queued = false;
+      function schedulePatch() {
+        if (queued) return;
+        queued = true;
+        setTimeout(function() {
+          queued = false;
+          patchAll();
+        }, 0);
+      }
+
+      patchAll();
+
+      try {
+        var observer = new MutationObserver(schedulePatch);
+        observer.observe(document.documentElement || document, {
+          childList: true,
+          subtree: true,
+          attributes: true,
+          attributeFilter: ['sandbox']
+        });
+      } catch (_) {}
+    })();
+  ''',
+  injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
+  forMainFrameOnly: false,
+);
+
 typedef OnMessageReceived = void Function(InAppWebViewController controller, String messageType, Json? data);
 typedef KontextWebviewBuilder = Widget Function({
   Key? key,
@@ -132,7 +182,9 @@ class KontextWebview extends StatelessWidget {
   Widget build(BuildContext context) {
     return InAppWebView(
       initialUrlRequest: URLRequest(url: WebUri.uri(uri)),
-      initialUserScripts: UnmodifiableListView([_earlyBridge]),
+      initialUserScripts: Platform.isIOS
+          ? UnmodifiableListView([_earlyBridge, _sandboxIframeFix])
+          : UnmodifiableListView([_earlyBridge]),
       initialSettings: InAppWebViewSettings(
         transparentBackground: true,
         mixedContentMode: MixedContentMode.MIXED_CONTENT_ALWAYS_ALLOW,
@@ -156,9 +208,7 @@ class KontextWebview extends StatelessWidget {
         }
 
         if (Platform.isIOS) {
-          final scheme = uri.scheme.toLowerCase();
-          final isHttp = scheme == 'http' || scheme == 'https';
-          if (isHttp && !_isStoreUrl(uri)) {
+          if (uri.isHttp && !uri.isStore) {
             // On iOS, keep HTTP(S) redirect chains inside WebView until they
             // resolve to a definitive store URL.
             return false;
@@ -173,18 +223,19 @@ class KontextWebview extends StatelessWidget {
           return NavigationActionPolicy.CANCEL;
         }
 
-        if (_isStoreUrl(uri)) {
-          if (!Platform.isIOS || _storeOpenGate.allow(uri.toString())) {
+        final url = uri.toString();
+
+        if (uri.isStore) {
+          if (!Platform.isIOS || _storeOpenGate.allow(url)) {
             await uri.openInAppBrowser();
           }
           return NavigationActionPolicy.CANCEL;
         }
 
-        if (uri.toString() == 'about:srcdoc') {
+        if (url == 'about:srcdoc' || url == 'about:blank') {
           return NavigationActionPolicy.ALLOW;
         }
 
-        final url = uri.toString();
         final isAllowed = allowedOrigins.any(
           (origin) {
             if (url.startsWith(origin)) return true;
@@ -193,19 +244,15 @@ class KontextWebview extends StatelessWidget {
             } catch (_) {
               return uri.host == origin;
             }
-
           },
         );
-
         if (isAllowed) {
           return NavigationActionPolicy.ALLOW;
         }
 
         final isUserGesture = navigationAction.hasGesture == true;
         if (Platform.isIOS) {
-          final scheme = uri.scheme.toLowerCase();
-          final isHttp = scheme == 'http' || scheme == 'https';
-          if (isHttp) {
+          if (uri.isHttp) {
             return NavigationActionPolicy.ALLOW;
           }
         }
@@ -222,8 +269,6 @@ class KontextWebview extends StatelessWidget {
         }
 
         final uri = request.url.uriValue;
-        final host = uri.host.toLowerCase();
-        final scheme = uri.scheme.toLowerCase();
 
         if (request.hasGesture == true) {
           _lastUserGestureAt = DateTime.now();
@@ -237,13 +282,13 @@ class KontextWebview extends StatelessWidget {
           reasonPhrase: 'No Content',
         );
 
-        if (scheme == 'itms-apps') {
+        if (uri.isAppStore) {
           // Returning a empty response to prevent the WebView from
           // showing an error page on Android when trying to load the Apple itms-apps URL.
           return emptyResponse;
         }
 
-        if (host == 'play.google.com') {
+        if (uri.isGooglePlay) {
           final isUserGesture = request.hasGesture == true || _hasRecentUserGesture();
           if (isUserGesture) {
             await uri.openInAppBrowser();
