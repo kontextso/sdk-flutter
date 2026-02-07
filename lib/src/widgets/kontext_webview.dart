@@ -1,10 +1,58 @@
 import 'dart:collection' show UnmodifiableListView;
+import 'dart:io' show Platform;
+import 'dart:typed_data' show Uint8List;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:kontext_flutter_sdk/src/services/logger.dart' show Logger;
 import 'package:kontext_flutter_sdk/src/utils/extensions.dart' show UriExtension;
 import 'package:kontext_flutter_sdk/src/utils/types.dart' show Json;
+
+DateTime? _lastUserGestureAt;
+final _storeOpenGate = _RecentStringGate(window: const Duration(milliseconds: 1200));
+
+class _RecentStringGate {
+  _RecentStringGate({required this.window});
+
+  final Duration window;
+  String? _lastValue;
+  DateTime? _lastAt;
+
+  bool allow(String value) {
+    final now = DateTime.now();
+    final lastAt = _lastAt;
+    if (lastAt != null && _lastValue == value && now.difference(lastAt) < window) {
+      return false;
+    }
+    _lastValue = value;
+    _lastAt = now;
+    return true;
+  }
+}
+
+// In ad redirect chains, hasGesture can be true on an intermediate click tracker
+// request and false on the final store URL request. Example:
+// user tap: -> https://click.liftoff.io/... (hasGesture=true) -> https://play.google.com/... (hasGesture=false)
+// Keep a short (2s) latch so the final request can still be treated as
+// user-initiated.
+bool _hasRecentUserGesture() {
+  final last = _lastUserGestureAt;
+  if (last == null) {
+    return false;
+  }
+  return DateTime.now().difference(last) < const Duration(seconds: 2);
+}
+
+bool _isStoreUrl(Uri uri) {
+  final scheme = uri.scheme.toLowerCase();
+  final host = uri.host.toLowerCase();
+  return scheme == 'itms-apps' ||
+      scheme == 'market' ||
+      scheme == 'intent' ||
+      host == 'apps.apple.com' ||
+      host == 'play.google.com' ||
+      host == 'market.android.com';
+}
 
 final _earlyBridge = UserScript(
   source: '''
@@ -98,9 +146,23 @@ class KontextWebview extends StatelessWidget {
         javaScriptCanOpenWindowsAutomatically: true,
       ),
       onCreateWindow: (controller, request) async {
+        if (request.hasGesture == true) {
+          _lastUserGestureAt = DateTime.now();
+        }
+
         final uri = request.request.url?.uriValue;
         if (uri == null) {
           return false;
+        }
+
+        if (Platform.isIOS) {
+          final scheme = uri.scheme.toLowerCase();
+          final isHttp = scheme == 'http' || scheme == 'https';
+          if (isHttp && !_isStoreUrl(uri)) {
+            // On iOS, keep HTTP(S) redirect chains inside WebView until they
+            // resolve to a definitive store URL.
+            return false;
+          }
         }
 
         return uri.openInAppBrowser();
@@ -111,25 +173,89 @@ class KontextWebview extends StatelessWidget {
           return NavigationActionPolicy.CANCEL;
         }
 
-        if (uri.toString() == 'about:srcdoc') {
-          return NavigationActionPolicy.ALLOW;
+        if (_isStoreUrl(uri)) {
+          if (!Platform.isIOS || _storeOpenGate.allow(uri.toString())) {
+            await uri.openInAppBrowser();
+          }
+          return NavigationActionPolicy.CANCEL;
         }
 
-        if (!navigationAction.isForMainFrame) {
+        if (uri.toString() == 'about:srcdoc') {
           return NavigationActionPolicy.ALLOW;
         }
 
         final url = uri.toString();
         final isAllowed = allowedOrigins.any(
-          (origin) => url.startsWith(origin) || uri.origin == origin || uri.host == origin,
+          (origin) {
+            if (url.startsWith(origin)) return true;
+            try {
+              return uri.origin == origin || uri.host == origin;
+            } catch (_) {
+              return uri.host == origin;
+            }
+
+          },
         );
 
         if (isAllowed) {
           return NavigationActionPolicy.ALLOW;
         }
 
-        await uri.openInAppBrowser();
-        return NavigationActionPolicy.CANCEL;
+        final isUserGesture = navigationAction.hasGesture == true;
+        if (Platform.isIOS) {
+          final scheme = uri.scheme.toLowerCase();
+          final isHttp = scheme == 'http' || scheme == 'https';
+          if (isHttp) {
+            return NavigationActionPolicy.ALLOW;
+          }
+        }
+        if (isUserGesture) {
+          await uri.openInAppBrowser();
+          return NavigationActionPolicy.CANCEL;
+        }
+
+        return NavigationActionPolicy.ALLOW;
+      },
+      shouldInterceptRequest: (controller, request) async {
+        if (!Platform.isAndroid) {
+          return null;
+        }
+
+        final uri = request.url.uriValue;
+        final host = uri.host.toLowerCase();
+        final scheme = uri.scheme.toLowerCase();
+
+        if (request.hasGesture == true) {
+          _lastUserGestureAt = DateTime.now();
+        }
+
+        final emptyResponse = WebResourceResponse(
+          contentType: 'text/plain',
+          data: Uint8List(0),
+          headers: const {'Content-Type': 'text/plain'},
+          statusCode: 204,
+          reasonPhrase: 'No Content',
+        );
+
+        if (scheme == 'itms-apps') {
+          // Returning a empty response to prevent the WebView from
+          // showing an error page on Android when trying to load the Apple itms-apps URL.
+          return emptyResponse;
+        }
+
+        if (host == 'play.google.com') {
+          final isUserGesture = request.hasGesture == true || _hasRecentUserGesture();
+          if (isUserGesture) {
+            await uri.openInAppBrowser();
+            // Reset the last user gesture timestamp to prevent subsequent non-gesture requests from being treated as gestures.
+            _lastUserGestureAt = null;
+          }
+
+          // Return an empty response so the iframe doesn't render a WebView error page.
+          return emptyResponse;
+        }
+
+        return null;
       },
       onWebViewCreated: (controller) {
         controller.addJavaScriptHandler(

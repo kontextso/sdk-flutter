@@ -1,5 +1,5 @@
 import 'package:flutter_inappwebview/flutter_inappwebview.dart'
-    show ChromeSafariBrowser, WebUri, ChromeSafariBrowserSettings;
+    show ChromeSafariBrowser, WebUri, ChromeSafariBrowserSettings, InAppBrowser;
 import 'package:kontext_flutter_sdk/src/services/logger.dart';
 import 'package:kontext_flutter_sdk/src/utils/helper_methods.dart';
 import 'package:kontext_flutter_sdk/src/models/message.dart';
@@ -53,9 +53,16 @@ extension StringExtension on String {
 extension UriExtension on Uri {
   Future<bool> openInAppBrowser() async {
     try {
-      final webUri = WebUri.uri(this);
-      final browser = ChromeSafariBrowser();
-      browser.open(
+      final normalizedUri = scheme.toLowerCase() == 'itms-apps' ? replace(scheme: 'https') : this;
+      final webUri = WebUri.uri(normalizedUri);
+      final normalizedScheme = normalizedUri.scheme.toLowerCase();
+
+      if (normalizedScheme != 'http' && normalizedScheme != 'https') {
+        await InAppBrowser.openWithSystemBrowser(url: webUri);
+        return true;
+      }
+
+      await ChromeSafariBrowser().open(
         url: webUri,
         settings: ChromeSafariBrowserSettings(barCollapsingEnabled: true),
       );
@@ -68,7 +75,8 @@ extension UriExtension on Uri {
 
   Uri replacePath(String newPath) {
     final params = queryParameters;
-    return replace(path: newPath, queryParameters: params.isEmpty ? null : params);
+    return replace(
+        path: newPath, queryParameters: params.isEmpty ? null : params);
   }
 }
 
