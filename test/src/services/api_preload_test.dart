@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kontext_flutter_sdk/src/models/bid.dart' show AdDisplayPosition;
 import 'package:kontext_flutter_sdk/src/models/regulatory.dart';
 import 'package:kontext_flutter_sdk/src/services/api.dart';
+import 'package:kontext_flutter_sdk/src/services/advertising_id_service.dart';
 import 'package:kontext_flutter_sdk/src/services/http_client.dart';
 import 'package:kontext_flutter_sdk/src/utils/types.dart' show Json;
 import 'package:mocktail/mocktail.dart';
@@ -21,6 +22,7 @@ void main() {
 
     HttpClient.resetInstance();
     Api.resetInstance();
+    AdvertisingIdService.resetForTesting();
 
     HttpClient(baseUrl: 'https://api.test', client: mock);
     api = Api();
@@ -273,6 +275,129 @@ void main() {
                 'network',
               };
               return requiredKeys.every(device.containsKey);
+            }),
+          ),
+        )).called(1);
+  });
+
+  test('service ids override fallback ids in preload body', () async {
+    when(() => mock.post(
+          any(),
+          headers: any(named: 'headers'),
+          body: any(named: 'body'),
+        )).thenAnswer((_) async {
+      return http.Response('{"sessionId": "123", "bids": []}', 200);
+    });
+
+    AdvertisingIdService.isIOSProvider = () => true;
+    AdvertisingIdService.idfvProvider = () async => 'service-idfv';
+    AdvertisingIdService.advertisingIdProvider = () async => 'service-idfa';
+
+    await api.preload(
+      publisherToken: 'test-token',
+      userId: 'user-123',
+      conversationId: 'conv-456',
+      messages: [],
+      enabledPlacementCodes: [],
+      vendorId: 'fallback-idfv',
+      advertisingId: 'fallback-idfa',
+      isDisabled: false,
+    );
+
+    verify(() => mock.post(
+          Uri.parse('https://api.test/preload'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Kontextso-Publisher-Token': 'test-token',
+            'Kontextso-Is-Disabled': '0',
+          },
+          body: any(
+            named: 'body',
+            that: predicate<String>((raw) {
+              final body = jsonDecode(raw) as Json;
+              return body['vendorId'] == 'service-idfv' && body['advertisingId'] == 'service-idfa';
+            }),
+          ),
+        )).called(1);
+  });
+
+  test('fallback ids are used when service ids are unavailable', () async {
+    when(() => mock.post(
+          any(),
+          headers: any(named: 'headers'),
+          body: any(named: 'body'),
+        )).thenAnswer((_) async {
+      return http.Response('{"sessionId": "123", "bids": []}', 200);
+    });
+
+    AdvertisingIdService.isIOSProvider = () => true;
+    AdvertisingIdService.idfvProvider = () async => '';
+    AdvertisingIdService.advertisingIdProvider = () async => null;
+
+    await api.preload(
+      publisherToken: 'test-token',
+      userId: 'user-123',
+      conversationId: 'conv-456',
+      messages: [],
+      enabledPlacementCodes: [],
+      vendorId: 'fallback-idfv',
+      advertisingId: 'fallback-idfa',
+      isDisabled: false,
+    );
+
+    verify(() => mock.post(
+          Uri.parse('https://api.test/preload'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Kontextso-Publisher-Token': 'test-token',
+            'Kontextso-Is-Disabled': '0',
+          },
+          body: any(
+            named: 'body',
+            that: predicate<String>((raw) {
+              final body = jsonDecode(raw) as Json;
+              return body['vendorId'] == 'fallback-idfv' && body['advertisingId'] == 'fallback-idfa';
+            }),
+          ),
+        )).called(1);
+  });
+
+  test('ids are omitted when both service and fallback ids are empty', () async {
+    when(() => mock.post(
+          any(),
+          headers: any(named: 'headers'),
+          body: any(named: 'body'),
+        )).thenAnswer((_) async {
+      return http.Response('{"sessionId": "123", "bids": []}', 200);
+    });
+
+    AdvertisingIdService.isIOSProvider = () => true;
+    AdvertisingIdService.idfvProvider = () async => '00000000-0000-0000-0000-000000000000';
+    AdvertisingIdService.advertisingIdProvider = () async => '';
+
+    await api.preload(
+      publisherToken: 'test-token',
+      userId: 'user-123',
+      conversationId: 'conv-456',
+      messages: [],
+      enabledPlacementCodes: [],
+      vendorId: '   ',
+      advertisingId: '',
+      isDisabled: false,
+    );
+
+    verify(() => mock.post(
+          Uri.parse('https://api.test/preload'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Kontextso-Publisher-Token': 'test-token',
+            'Kontextso-Is-Disabled': '0',
+          },
+          body: any(
+            named: 'body',
+            that: predicate<String>((raw) {
+              final body = jsonDecode(raw) as Json;
+              return !body.containsKey('vendorId') && !body.containsKey('advertisingId');
             }),
           ),
         )).called(1);
