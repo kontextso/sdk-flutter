@@ -718,7 +718,7 @@ void main() {
         required Uri uri,
         required Duration initTimeout,
         required void Function(Json? data) onClickIframe,
-        required void OnEventIframe onEventIframe,
+        required OnEventIframe onEventIframe,
         required void Function(OpenIframeComponent component, Json? data) onOpenComponentIframe,
         required void Function(OpenIframeComponent component) onCloseComponentIframe,
       }) {
@@ -782,7 +782,7 @@ void main() {
         required Uri uri,
         required Duration initTimeout,
         required void Function(Json? data) onClickIframe,
-        required void OnEventIframe onEventIframe,
+        required OnEventIframe onEventIframe,
         required void Function(OpenIframeComponent component, Json? data) onOpenComponentIframe,
         required void Function(OpenIframeComponent component) onCloseComponentIframe,
       }) {
@@ -822,7 +822,7 @@ void main() {
         Key? key,
         required Uri uri,
         required List<String> allowedOrigins,
-        required void Function(Json? data) onEventIframe,
+        required OnEventIframe onEventIframe,
         required OnMessageReceived onMessageReceived,
       }) {
         onMessage = onMessageReceived;
@@ -865,7 +865,7 @@ void main() {
         Key? key,
         required Uri uri,
         required List<String> allowedOrigins,
-        required void Function(Json? data) onEventIframe,
+        required OnEventIframe onEventIframe,
         required OnMessageReceived onMessageReceived,
       }) {
         onMessage = onMessageReceived;
@@ -908,7 +908,7 @@ void main() {
         Key? key,
         required Uri uri,
         required List<String> allowedOrigins,
-        required void Function(Json? data) onEventIframe,
+        required OnEventIframe onEventIframe,
         required OnMessageReceived onMessageReceived,
       }) {
         onMessage = onMessageReceived;
@@ -969,7 +969,7 @@ void main() {
         required Uri uri,
         required Duration initTimeout,
         required void Function(Json? data) onClickIframe,
-        required void OnEventIframe onEventIframe,
+        required OnEventIframe onEventIframe,
         required void Function(OpenIframeComponent component, Json? data) onOpenComponentIframe,
         required void Function(OpenIframeComponent component) onCloseComponentIframe,
       }) {
@@ -1025,7 +1025,7 @@ void main() {
         required Uri uri,
         required Duration initTimeout,
         required void Function(Json? data) onClickIframe,
-        required void OnEventIframe onEventIframe,
+        required OnEventIframe onEventIframe,
         required void Function(OpenIframeComponent component, Json? data) onOpenComponentIframe,
         required void Function(OpenIframeComponent component) onCloseComponentIframe,
       }) {

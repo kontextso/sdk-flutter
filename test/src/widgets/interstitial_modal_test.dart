@@ -440,14 +440,14 @@ void main() {
             opener.open(Uri.parse('https://example.com$url'));
           }
         },
-        onEventIframe: (_) {},
+        onEventIframe: (_, __) {},
         onOpenComponentIframe: (_, __) {},
-        closeSKOverlay: () {},
+        onCloseComponentIframe: (_) {},
         webviewBuilder: ({
           Key? key,
           required Uri uri,
           required List<String> allowedOrigins,
-          required void Function(Json? data) onEventIframe,
+          required OnEventIframe onEventIframe,
           required OnMessageReceived onMessageReceived,
         }) {
           onMsgModal = onMessageReceived;
@@ -490,14 +490,14 @@ void main() {
             opener.open(Uri.parse('https://example.com$url'));
           }
         },
-        onEventIframe: (_) {},
+        onEventIframe: (_, __) {},
         onOpenComponentIframe: (_, __) {},
-        closeSKOverlay: () {},
+        onCloseComponentIframe: (_) {},
         webviewBuilder: ({
           Key? key,
           required Uri uri,
           required List<String> allowedOrigins,
-          required void Function(Json? data) onEventIframe,
+          required OnEventIframe onEventIframe,
           required OnMessageReceived onMessageReceived,
         }) {
           onMsgModal = onMessageReceived;
@@ -539,14 +539,14 @@ void main() {
             opener.open(Uri.parse('https://example.com$url'));
           }
         },
-        onEventIframe: (_) {},
+        onEventIframe: (_, __) {},
         onOpenComponentIframe: (_, __) {},
-        closeSKOverlay: () {},
+        onCloseComponentIframe: (_) {},
         webviewBuilder: ({
           Key? key,
           required Uri uri,
           required List<String> allowedOrigins,
-          required void Function(Json? data) onEventIframe,
+          required OnEventIframe onEventIframe,
           required OnMessageReceived onMessageReceived,
         }) {
           onMsgModal = onMessageReceived;

@@ -175,7 +175,7 @@ class AdFormat extends HookWidget {
         }
         break;
       case 'click-iframe':
-        _handleClickIframe(adServerUrl: adServerUrl, data: data);
+        _handleClickIframe(adServerUrl: adServerUrl, controller: controller, data: data);
         break;
       case 'ad-done-iframe':
         final content = data?['cachedContent'] as String?;
@@ -219,12 +219,31 @@ class AdFormat extends HookWidget {
     }
   }
 
-  void _handleClickIframe({required String adServerUrl, Json? data}) {
+  Future<void> _handleClickIframe({
+    required String adServerUrl,
+    required InAppWebViewController controller,
+    Json? data,
+  }) async {
     try {
-      final path = data?['url'] as String?;
+      final path = data?['url'];
+      final appStoreId = data?['appStoreId'];
+
       final uri = (path is String) ? KontextUrlBuilder(baseUrl: adServerUrl, path: path).buildUri() : null;
-      if (uri != null) {
-        browserOpener.open(uri);
+      if (appStoreId == null) {
+        if (uri != null) {
+          browserOpener.open(uri);
+        }
+        return;
+      }
+
+      final storeProductOpened = await _presentSkStoreProduct(
+        adServerUrl,
+        controller,
+        appStoreId,
+      );
+
+      if (!storeProductOpened && uri != null) {
+        uri.openInAppBrowser();
       }
     } catch (e, stack) {
       Logger.exception(e, stack);
@@ -256,29 +275,6 @@ class AdFormat extends HookWidget {
     } catch (e, stack) {
       Logger.exception(e, stack);
       return;
-    }
-  }
-
-  Future<void> _handleAdClickedEvent(
-      Uri uri, {
-        required String adServerUrl,
-        required InAppWebViewController controller,
-        Json? payload,
-      }) async {
-    final appStoreId = payload?['appStoreId'];
-    if (appStoreId == null) {
-      uri.openInAppBrowser();
-      return;
-    }
-
-    final storeProductOpened = await _presentSkStoreProduct(
-      adServerUrl,
-      controller,
-      appStoreId,
-    );
-
-    if (!storeProductOpened) {
-      uri.openInAppBrowser();
     }
   }
 
@@ -324,10 +320,10 @@ class AdFormat extends HookWidget {
   }
 
   Future<bool> _presentSkStoreProduct(
-      String adServerUrl,
-      InAppWebViewController controller,
-      dynamic appStoreId,
-      ) async {
+    String adServerUrl,
+    InAppWebViewController controller,
+    dynamic appStoreId,
+  ) async {
     if (appStoreId is! String || appStoreId.isEmpty) {
       Logger.error('App Store ID is required to open SKStoreProduct. Data: $appStoreId');
       return false;
@@ -383,11 +379,11 @@ class AdFormat extends HookWidget {
           initTimeout: timeout,
           onClickIframe: (data) => _handleClickIframe(
             adServerUrl: adServerUrl,
+            controller: controller,
             data: data,
           ),
           onEventIframe: (controller, data) => _handleEventIframe(
             adServerUrl: adServerUrl,
-            controller: controller,
             onEvent: onEvent,
             data: data,
           ),
@@ -608,7 +604,6 @@ class AdFormat extends HookWidget {
           allowedOrigins: [adServerUrl],
           onEventIframe: (controller, data) => _handleEventIframe(
             adServerUrl: adServerUrl,
-            controller: controller,
             onEvent: adsProviderData.onEvent,
             data: data,
           ),
