@@ -56,6 +56,60 @@ extension UriExtension on Uri {
     return scheme == 'http' || scheme == 'https';
   }
 
+  bool get isImageAsset {
+    final normalizedPath = path.toLowerCase();
+    return normalizedPath.endsWith('.gif') ||
+        normalizedPath.endsWith('.png') ||
+        normalizedPath.endsWith('.jpg') ||
+        normalizedPath.endsWith('.jpeg') ||
+        normalizedPath.endsWith('.webp') ||
+        normalizedPath.endsWith('.avif') ||
+        normalizedPath.endsWith('.svg');
+  }
+
+  bool get isAtomexTrackerClick {
+    final host = this.host.toLowerCase();
+    if (host != 'trk.atomex.net') {
+      return false;
+    }
+    final path = this.path.toLowerCase();
+    return path.contains('tracker.fcgi/clk');
+  }
+
+  /// Extract and decode nested destination from common click tracker pattern:
+  /// `...?url=https%3A%2F%2Fapp.appsflyer.com%2F...`
+  Uri? get urlQueryParamAsUri {
+    final raw = queryParameters['url']?.trim();
+    if (raw == null || raw.isEmpty) {
+      return null;
+    }
+
+    final direct = Uri.tryParse(raw);
+    if (direct?.hasScheme == true) {
+      return direct;
+    }
+
+    var decoded = raw;
+    for (var i = 0; i < 3; i++) {
+      try {
+        final next = Uri.decodeComponent(decoded);
+        if (next == decoded) {
+          break;
+        }
+        decoded = next;
+      } catch (_) {
+        break;
+      }
+
+      final parsed = Uri.tryParse(decoded);
+      if (parsed?.hasScheme == true) {
+        return parsed;
+      }
+    }
+
+    return null;
+  }
+
   bool get isStore => isGooglePlay || isAppStore;
 
   bool get isGooglePlay {
@@ -68,6 +122,20 @@ extension UriExtension on Uri {
     final host = this.host.toLowerCase();
     final scheme = this.scheme.toLowerCase();
     return host == 'apps.apple.com' || scheme == 'itms-apps';
+  }
+
+  bool matchesAllowedOrigins(List<String> allowedOrigins) {
+    final url = toString();
+    return allowedOrigins.any(
+      (origin) {
+        if (url.startsWith(origin)) return true;
+        try {
+          return this.origin == origin || host == origin;
+        } catch (_) {
+          return host == origin;
+        }
+      },
+    );
   }
 
   Future<bool> openInAppBrowser() async {

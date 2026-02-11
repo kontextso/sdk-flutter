@@ -1,4 +1,5 @@
 import 'dart:collection' show UnmodifiableListView;
+import 'dart:async' show Timer;
 import 'dart:io' show Platform;
 import 'dart:typed_data' show Uint8List;
 
@@ -15,6 +16,9 @@ import 'package:kontext_flutter_sdk/src/utils/types.dart' show Json;
 //  - `anchor`: click-through via an HTML link, e.g. `<a href="https://play.google.com/...">`
 //  - `location`: JS navigation, e.g. `window.location`
 final _storeOpenGate = _RecentStringGate(window: const Duration(milliseconds: 1200));
+final _redirectOpenGate = _RecentStringGate(window: const Duration(milliseconds: 1200));
+Timer? _pendingAndroidTrackerOpenTimer;
+Uri? _pendingAndroidTrackerUri;
 
 class _RecentStringGate {
   _RecentStringGate({required this.window});
@@ -41,6 +45,15 @@ class _RecentStringGate {
 // Keep a short (2s) latch so the final request can still be treated as
 // user-initiated.
 DateTime? _lastUserGestureAt;
+DateTime? _lastAndroidImagePopupAt;
+
+void _resetWebViewClickContext() {
+  _lastUserGestureAt = null;
+  _lastAndroidImagePopupAt = null;
+  _pendingAndroidTrackerOpenTimer?.cancel();
+  _pendingAndroidTrackerOpenTimer = null;
+  _pendingAndroidTrackerUri = null;
+}
 
 bool _hasRecentUserGesture() {
   final last = _lastUserGestureAt;
@@ -48,6 +61,33 @@ bool _hasRecentUserGesture() {
     return false;
   }
   return DateTime.now().difference(last) < const Duration(seconds: 2);
+}
+
+bool _hasRecentAndroidImagePopup() {
+  final last = _lastAndroidImagePopupAt;
+  if (last == null) {
+    return false;
+  }
+  return DateTime.now().difference(last) < const Duration(seconds: 2);
+}
+
+void _scheduleAndroidTrackerOpen(Uri target) {
+  _pendingAndroidTrackerUri = target;
+  _pendingAndroidTrackerOpenTimer?.cancel();
+  _pendingAndroidTrackerOpenTimer = Timer(const Duration(milliseconds: 250), () async {
+    final pending = _pendingAndroidTrackerUri;
+    _pendingAndroidTrackerUri = null;
+    _pendingAndroidTrackerOpenTimer = null;
+    if (pending == null) {
+      return;
+    }
+
+    final targetUrl = pending.toString();
+    if (_redirectOpenGate.allow(targetUrl)) {
+      await pending.openInAppBrowser();
+    }
+    _resetWebViewClickContext();
+  });
 }
 
 final _earlyBridge = UserScript(
@@ -207,12 +247,20 @@ class KontextWebview extends StatelessWidget {
           return false;
         }
 
-        if (Platform.isIOS) {
-          if (uri.isHttp && !uri.isStore) {
-            // On iOS, keep HTTP(S) redirect chains inside WebView until they
-            // resolve to a definitive store URL.
-            return false;
+        if (uri.isHttp && !uri.isStore && Platform.isIOS) {
+          // On iOS, keep HTTP(S) redirect chains inside WebView until they
+          // resolve to a definitive store URL.
+          return false;
+        }
+
+        if (uri.isHttp && uri.isImageAsset && Platform.isAndroid) {
+          // Some banners on Android call window.open(image-url) before firing
+          // the actual click tracker. Ignore the asset popup and wait for the
+          // tracker/store navigation in request interception.
+          if (request.hasGesture == true) {
+            _lastAndroidImagePopupAt = DateTime.now();
           }
+          return false;
         }
 
         return uri.openInAppBrowser();
@@ -226,7 +274,7 @@ class KontextWebview extends StatelessWidget {
         final url = uri.toString();
 
         if (uri.isStore) {
-          if (!Platform.isIOS || _storeOpenGate.allow(url)) {
+          if (_storeOpenGate.allow(url)) {
             await uri.openInAppBrowser();
           }
           return NavigationActionPolicy.CANCEL;
@@ -236,27 +284,24 @@ class KontextWebview extends StatelessWidget {
           return NavigationActionPolicy.ALLOW;
         }
 
-        final isAllowed = allowedOrigins.any(
-          (origin) {
-            if (url.startsWith(origin)) return true;
-            try {
-              return uri.origin == origin || uri.host == origin;
-            } catch (_) {
-              return uri.host == origin;
-            }
-          },
-        );
+        final isAllowed = uri.matchesAllowedOrigins(allowedOrigins);
         if (isAllowed) {
           return NavigationActionPolicy.ALLOW;
         }
 
-        final isUserGesture = navigationAction.hasGesture == true;
-        if (Platform.isIOS) {
-          if (uri.isHttp) {
-            return NavigationActionPolicy.ALLOW;
+        if (Platform.isIOS && uri.isHttp) {
+          final isTopLevel = navigationAction.isForMainFrame == true || navigationAction.targetFrame == null;
+          if (isTopLevel) {
+            // Keep top-level external HTTP(S) hops out of the ad WebView
+            // (trackers/redirectors) to avoid reload loops and "Double render".
+            await uri.openInAppBrowser();
+            return NavigationActionPolicy.CANCEL;
           }
+          return NavigationActionPolicy.ALLOW;
         }
-        if (isUserGesture) {
+
+        final isUserGesture = navigationAction.hasGesture == true;
+        if (uri.isHttp && isUserGesture) {
           await uri.openInAppBrowser();
           return NavigationActionPolicy.CANCEL;
         }
@@ -269,8 +314,9 @@ class KontextWebview extends StatelessWidget {
         }
 
         final uri = request.url.uriValue;
+        final hasGesture = request.hasGesture == true;
 
-        if (request.hasGesture == true) {
+        if (hasGesture) {
           _lastUserGestureAt = DateTime.now();
         }
 
@@ -282,22 +328,41 @@ class KontextWebview extends StatelessWidget {
           reasonPhrase: 'No Content',
         );
 
-        if (uri.isAppStore) {
-          // Returning a empty response to prevent the WebView from
-          // showing an error page on Android when trying to load the Apple itms-apps URL.
-          return emptyResponse;
-        }
-
-        if (uri.isGooglePlay) {
-          final isUserGesture = request.hasGesture == true || _hasRecentUserGesture();
+        if (uri.isStore) {
+          final isUserGesture = hasGesture || _hasRecentUserGesture();
           if (isUserGesture) {
             await uri.openInAppBrowser();
             // Reset the last user gesture timestamp to prevent subsequent non-gesture requests from being treated as gestures.
-            _lastUserGestureAt = null;
+            _resetWebViewClickContext();
           }
 
           // Return an empty response so the iframe doesn't render a WebView error page.
           return emptyResponse;
+        }
+
+        final hasRecentClickContext = hasGesture || _hasRecentUserGesture() || _hasRecentAndroidImagePopup();
+        if (hasRecentClickContext && uri.isAtomexTrackerClick) {
+          final destination = uri.urlQueryParamAsUri;
+          if (destination != null && (destination.isHttp || destination.isStore)) {
+            final destinationUrl = destination.toString();
+            if (_redirectOpenGate.allow(destinationUrl)) {
+              await destination.openInAppBrowser();
+            }
+            _resetWebViewClickContext();
+          }
+          return null;
+        }
+
+        final isExternalGestureClick = hasRecentClickContext &&
+            uri.isHttp &&
+            !uri.isStore &&
+            !uri.isImageAsset &&
+            !uri.matchesAllowedOrigins(allowedOrigins);
+        if (isExternalGestureClick) {
+          // Multiple tracker URLs may arrive within a single click burst.
+          // Debounce and open only the latest candidate.
+          _scheduleAndroidTrackerOpen(uri);
+          return null;
         }
 
         return null;
