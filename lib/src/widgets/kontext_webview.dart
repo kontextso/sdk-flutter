@@ -1,9 +1,11 @@
 import 'dart:collection' show UnmodifiableListView;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:kontext_flutter_sdk/src/services/logger.dart' show Logger;
 import 'package:kontext_flutter_sdk/src/utils/types.dart' show Json;
+import 'package:kontext_flutter_sdk/src/widgets/webview_console_error_limiter.dart' show WebViewConsoleErrorLimiter;
 
 final _earlyBridge = UserScript(
   source: '''
@@ -65,7 +67,7 @@ typedef KontextWebviewBuilder = Widget Function({
   required OnMessageReceived onMessageReceived,
 });
 
-class KontextWebview extends StatelessWidget {
+class KontextWebview extends HookWidget {
   const KontextWebview({
     super.key,
     required this.uri,
@@ -78,6 +80,14 @@ class KontextWebview extends StatelessWidget {
   final List<String> allowedOrigins;
   final void Function(Json? data) onEventIframe;
   final OnMessageReceived onMessageReceived;
+
+  void _logError(WebViewConsoleErrorLimiter limiter, {required String message}) {
+    if (limiter.shouldSendRemote(message)) {
+      Logger.error(message);
+    } else {
+      Logger.errorLocalOnly(message);
+    }
+  }
 
   bool _isAllowedUrl(String url) {
     final uri = Uri.tryParse(url);
@@ -97,6 +107,17 @@ class KontextWebview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final webViewConsoleErrorLimiter = useMemoized(() => WebViewConsoleErrorLimiter());
+    final previousUri = useRef<Uri?>(null);
+
+    useEffect(() {
+      if (previousUri.value != null && previousUri.value != uri) {
+        webViewConsoleErrorLimiter.clear();
+      }
+      previousUri.value = uri;
+      return null;
+    }, [uri, webViewConsoleErrorLimiter]);
+
     return InAppWebView(
       initialUrlRequest: URLRequest(url: WebUri.uri(uri)),
       initialUserScripts: UnmodifiableListView([_earlyBridge]),
@@ -150,19 +171,29 @@ class KontextWebview extends StatelessWidget {
         controller.evaluateJavascript(source: _flushMsgQueue);
       },
       onConsoleMessage: (controller, consoleMessage) {
-        final message = consoleMessage.message;
         final level = consoleMessage.messageLevel;
+        final webViewMessage = 'WebView Console $level: ${consoleMessage.message}';
 
-        if (level == ConsoleMessageLevel.ERROR) {
-          Logger.error('WebView Console $level: $message');
-        } else if (level == ConsoleMessageLevel.WARNING) {
-          Logger.warn('WebView Console $level: $message');
-        } else {
-          Logger.info('WebView Console: $message');
+        switch (level) {
+          case ConsoleMessageLevel.ERROR:
+            _logError(
+              webViewConsoleErrorLimiter,
+              message: webViewMessage,
+            );
+            break;
+          case ConsoleMessageLevel.WARNING:
+            Logger.warn(webViewMessage);
+            break;
+          default:
+            Logger.info(webViewMessage);
         }
       },
       onReceivedError: (controller, request, error) {
-        Logger.error('Error received in InAppWebView: $error, request: $request');
+        final webViewMessage = 'Error received in InAppWebView: $error, request: $request';
+        _logError(
+          webViewConsoleErrorLimiter,
+          message: webViewMessage,
+        );
       },
       onReceivedHttpError: (controller, request, error) {
         // Ignore favicon 404 errors as they're not critical
@@ -170,7 +201,11 @@ class KontextWebview extends StatelessWidget {
           return;
         }
 
-        Logger.error('HTTP error received in InAppWebView: $error, request: $request');
+        final webViewMessage = 'HTTP error received in InAppWebView: $error, request: $request';
+        _logError(
+          webViewConsoleErrorLimiter,
+          message: webViewMessage,
+        );
       },
     );
   }
