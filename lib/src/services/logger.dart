@@ -69,6 +69,16 @@ class Logger {
     instance._logRemote(LogLevel.error, message);
   }
 
+  static void errorLocalOnly(String message, [StackTrace? stack]) {
+    final instance = Logger();
+    instance._logLocal(LogLevel.error, message, stackTrace: stack);
+  }
+
+  static void errorRemoteOnly(String message) {
+    final instance = Logger();
+    instance._logRemote(LogLevel.error, message);
+  }
+
   static void exception(Object exception, [StackTrace? stack]) {
     final instance = Logger();
     instance._logLocal(LogLevel.error, 'Exception: ${exception.toString()}', error: exception, stackTrace: stack);

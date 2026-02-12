@@ -67,4 +67,65 @@ void main() {
 
     verifyNever(() => mock.post(any(), headers: any(named: 'headers'), body: any(named: 'body')));
   });
+
+  test('errorLocalOnly does not post to /log', () async {
+    when(() => mock.post(
+          any(),
+          headers: any(named: 'headers'),
+          body: any(named: 'body'),
+        )).thenAnswer((_) async => http.Response('{"ok": true}', 200));
+
+    Logger.setRemoteConfig({'sdk': 'sdk-flutter', 'sdkVersion': '1.2.3'});
+    Logger.setRemoteLogLevel(LogLevel.debug);
+    Logger.errorLocalOnly('Local only error');
+
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+
+    verifyNever(() => mock.post(any(), headers: any(named: 'headers'), body: any(named: 'body')));
+  });
+
+  test('errorRemoteOnly posts when remote gate allows', () async {
+    when(() => mock.post(
+          any(),
+          headers: any(named: 'headers'),
+          body: any(named: 'body'),
+        )).thenAnswer((_) async => http.Response('{"ok": true}', 200));
+
+    Logger.setRemoteConfig({'sdk': 'sdk-flutter', 'sdkVersion': '1.2.3'});
+    Logger.setRemoteLogLevel(LogLevel.error);
+    Logger.errorRemoteOnly('Remote only error');
+
+    await untilCalled(() => mock.post(
+          Uri.parse('https://api.test/log'),
+          headers: any(named: 'headers'),
+          body: any(named: 'body'),
+        ));
+
+    verify(() => mock.post(
+          any(that: predicate<Uri>((u) => u.path == '/log')),
+          headers: any(named: 'headers'),
+          body: any(
+              named: 'body',
+              that: predicate<String>((b) {
+                final body = jsonDecode(b) as Json;
+                return body['level'] == 'error' && body['message'] == 'Remote only error';
+              })),
+        )).called(1);
+  });
+
+  test('errorRemoteOnly respects remoteLevel gate', () async {
+    when(() => mock.post(
+          any(),
+          headers: any(named: 'headers'),
+          body: any(named: 'body'),
+        )).thenAnswer((_) async => http.Response('{"ok": true}', 200));
+
+    Logger.setRemoteConfig({'sdk': 'sdk-flutter', 'sdkVersion': '1.2.3'});
+    Logger.setRemoteLogLevel(LogLevel.silent);
+    Logger.errorRemoteOnly('Should be gated');
+
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+
+    verifyNever(() => mock.post(any(), headers: any(named: 'headers'), body: any(named: 'body')));
+  });
 }
