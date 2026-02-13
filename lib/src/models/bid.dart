@@ -4,13 +4,13 @@ class Bid {
   Bid({
     required this.id,
     required this.code,
-    this.value,
+    this.revenue,
     required this.position,
   });
 
   final String id;
   final String code;
-  final int? value;
+  final double? revenue;
   final AdDisplayPosition position;
 
   bool get isAfterAssistantMessage => position == AdDisplayPosition.afterAssistantMessage;
@@ -21,7 +21,7 @@ class Bid {
     return Bid(
       id: json['bidId'] as String,
       code: json['code'] as String,
-      value: _parseBidValue(json['value']),
+      revenue: _parseRevenue(json['revenue']),
       position: AdDisplayPosition.values.firstWhere(
         (position) => position.name == '${json['adDisplayPosition']}',
         orElse: () => AdDisplayPosition.afterAssistantMessage,
@@ -29,36 +29,34 @@ class Bid {
     );
   }
 
-  static int? _parseBidValue(Object? value) {
+  static double? _parseRevenue(Object? value) {
     if (value == null) return null;
 
-    if (value is int) return value;
-
-    if (value is double) {
+    if (value is num) {
       if (!value.isFinite) return null;
-
-      final intValue = value.toInt();
-      return value == intValue ? intValue : null;
+      return value.toDouble();
     }
 
     if (value is String) {
-      final parsed = int.tryParse(value.trim());
+      final parsed = double.tryParse(value.trim());
+      if (parsed == null || !parsed.isFinite) return null;
       return parsed;
     }
+
     return null;
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
-        other is Bid && id == other.id && code == other.code && value == other.value && position == other.position;
+        other is Bid && id == other.id && code == other.code && revenue == other.revenue && position == other.position;
   }
 
   @override
-  int get hashCode => Object.hash(id, code, value, position);
+  int get hashCode => Object.hash(id, code, revenue, position);
 
   @override
   String toString() {
-    return 'Bid(id: $id, code: $code, value: $value, position: $position)';
+    return 'Bid(id: $id, code: $code, revenue: $revenue, position: $position)';
   }
 }
