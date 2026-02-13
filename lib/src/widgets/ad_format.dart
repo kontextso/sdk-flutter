@@ -305,7 +305,7 @@ class AdFormat extends HookWidget {
   }
 
   Future<void> _handleAdAttributionJws(Json? data) async {
-    final jws = data?['payload']['adAttributionKit']['jws'];
+    final jws = data?['payload']?['adAttributionKit']?['jws'];
     if (jws == null) return;
 
     if (jws is! String || jws.isEmpty) {
