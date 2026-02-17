@@ -40,8 +40,9 @@ public class SKOverlayPlugin: NSObject, FlutterPlugin {
             }
         case "dismiss":
             DispatchQueue.main.async {
-                let r = SKOverlayManager.shared.dismiss()
-                result(r)
+                SKOverlayManager.shared.dismiss { success in
+                    result(success)
+                }
             }
         default:
             result(FlutterMethodNotImplemented)

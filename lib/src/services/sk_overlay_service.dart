@@ -1,12 +1,11 @@
 import 'dart:io';
 
-import 'package:flutter/services.dart' show MethodChannel;
+import 'package:flutter/services.dart' show MethodChannel, PlatformException;
 import 'package:kontext_flutter_sdk/src/services/logger.dart' show Logger;
 
 enum SKOverlayPosition { bottom, bottomRaised }
 
 abstract final class SKOverlayService {
-
   static const MethodChannel _channel = MethodChannel('kontext_flutter_sdk/sk_overlay');
 
   static bool Function() isIOS = () => Platform.isIOS;
@@ -26,6 +25,13 @@ abstract final class SKOverlayService {
       });
       Logger.debug('SKOverlay presented: $result');
       return result == true;
+    } on PlatformException catch (e, stack) {
+      if (e.code == 'UNSUPPORTED_IOS') {
+        Logger.info('SKOverlay unsupported on current iOS version: ${e.message ?? e.code}');
+        return false;
+      }
+      Logger.exception('Error presenting SKOverlay: $e', stack);
+      return false;
     } catch (e, stack) {
       Logger.exception('Error presenting SKOverlay: $e', stack);
       return false;
@@ -39,6 +45,13 @@ abstract final class SKOverlayService {
       final result = await _channel.invokeMethod('dismiss');
       Logger.debug('SKOverlay dismissed: $result');
       return result == true;
+    } on PlatformException catch (e, stack) {
+      if (e.code == 'UNSUPPORTED_IOS') {
+        Logger.info('SKOverlay unsupported on current iOS version: ${e.message ?? e.code}');
+        return false;
+      }
+      Logger.exception('Error dismissing SKOverlay: $e', stack);
+      return false;
     } catch (e, stack) {
       Logger.exception('Error dismissing SKOverlay: $e', stack);
       return false;
