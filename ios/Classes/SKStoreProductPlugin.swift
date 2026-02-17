@@ -26,8 +26,9 @@ public class SKStoreProductPlugin: NSObject, FlutterPlugin {
             }
         case "dismiss":
             DispatchQueue.main.async {
-                let success = SKStoreProductManager.shared.dismiss()
-                result(success)
+                SKStoreProductManager.shared.dismiss { success in
+                    result(success)
+                }
             }
         default:
             result(FlutterMethodNotImplemented)

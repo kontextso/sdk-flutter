@@ -20,36 +20,41 @@ final class SKStoreProductManager: NSObject, SKStoreProductViewControllerDelegat
         let viewController = SKStoreProductViewController()
         viewController.delegate = self
         viewController.loadProduct(withParameters: params) { [weak self] loaded, _ in
-            guard let self = self else { return }
             DispatchQueue.main.async {
+                guard let self = self else { return }
                 guard loaded else {
                     completion(FlutterError(code: "LOAD_FAILED", message: "Failed to load product", details: nil))
                     return
                 }
-                guard let top = self.topViewController() else {
-                    completion(FlutterError(code: "NO_TOP_VIEW_CONTROLLER", message: "No top view controller found", details: nil))
-                    return
+                
+                self.dismiss { [weak self] _ in
+                    guard let self = self else { return }
+                    guard let top = self.topViewController() else {
+                        completion(FlutterError(code: "NO_TOP_VIEW_CONTROLLER", message: "No top view controller found", details: nil))
+                        return
+                    }
+                    
+                    top.present(viewController, animated: true) { [weak self] in
+                        self?.presentedViewController = viewController
+                        completion(true)
+                    }
                 }
-                _ = self.dismiss()
-                top.present(viewController, animated: true)
-                self.presentedViewController = viewController
-                completion(true)
             }
         }
     }
-
-    @discardableResult
-    func dismiss() -> Bool {
-        var dismissed = false
-        
+    
+    func dismiss(completion: @escaping (Bool) -> Void) {
         let run: () -> Void = { [weak self] in
-            guard let self = self else { return }
+            guard let self = self else {
+                completion(false)
+                return
+            }
             
             if let viewController = self.presentedViewController {
                 viewController.dismiss(animated: true) { [weak self] in
                     self?.presentedViewController = nil
+                    completion(true)
                 }
-                dismissed = true
                 return
             }
             
@@ -57,20 +62,19 @@ final class SKStoreProductManager: NSObject, SKStoreProductViewControllerDelegat
                let storeViewController = top.presentedViewController as? SKStoreProductViewController {
                 storeViewController.dismiss(animated: true) { [weak self] in
                     self?.presentedViewController = nil
+                    completion(true)
                 }
-                dismissed = true
+                return
             }
+            
+            completion(false)
         }
-
+        
         if Thread.isMainThread {
             run()
         } else {
-            DispatchQueue.main.sync {
-                run()
-            }
+            DispatchQueue.main.async(execute: run)
         }
-
-        return dismissed
     }
     
     private func topViewController(base: UIViewController? = nil) -> UIViewController? {
