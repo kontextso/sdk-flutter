@@ -1234,9 +1234,9 @@ void main() {
       final methodCalls = <MethodCall>[];
       final jsCalls = <String>[];
 
-      final originalIsIOS = SkStoreProductService.isIOS;
-      SkStoreProductService.isIOS = () => true;
-      addTearDown(() => SkStoreProductService.isIOS = originalIsIOS);
+      final originalIsIOS = SKStoreProductService.isIOS;
+      SKStoreProductService.isIOS = () => true;
+      addTearDown(() => SKStoreProductService.isIOS = originalIsIOS);
 
       when(() => fakeController.evaluateJavascript(source: any(named: 'source'))).thenAnswer((invocation) async {
         final source = invocation.namedArguments[const Symbol('source')] as String;
@@ -1316,9 +1316,9 @@ void main() {
       final methodCalls = <MethodCall>[];
       final jsCalls = <String>[];
 
-      final originalIsIOS = SkStoreProductService.isIOS;
-      SkStoreProductService.isIOS = () => true;
-      addTearDown(() => SkStoreProductService.isIOS = originalIsIOS);
+      final originalIsIOS = SKStoreProductService.isIOS;
+      SKStoreProductService.isIOS = () => true;
+      addTearDown(() => SKStoreProductService.isIOS = originalIsIOS);
 
       when(() => fakeController.evaluateJavascript(source: any(named: 'source'))).thenAnswer((invocation) async {
         final source = invocation.namedArguments[const Symbol('source')] as String;
