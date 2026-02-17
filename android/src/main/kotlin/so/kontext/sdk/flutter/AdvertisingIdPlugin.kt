@@ -25,7 +25,8 @@ class AdvertisingIdPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
         when (call.method) {
             "getAdvertisingId" -> executor.execute {
                 val id = try {
-                    AdvertisingIdClient.getAdvertisingIdInfo(context).id
+                    val info = AdvertisingIdClient.getAdvertisingIdInfo(context)
+                    if (info.isLimitAdTrackingEnabled) null else info.id
                 } catch (_: Exception) {
                     null
                 }
