@@ -4,6 +4,7 @@ import Flutter
 import UIKit
 
 final class SKStoreProductManager: NSObject, SKStoreProductViewControllerDelegate {
+    private override init() {}
     static let shared = SKStoreProductManager()
     
     private weak var presentedViewController: SKStoreProductViewController?
@@ -19,11 +20,15 @@ final class SKStoreProductManager: NSObject, SKStoreProductViewControllerDelegat
         
         let viewController = SKStoreProductViewController()
         viewController.delegate = self
-        viewController.loadProduct(withParameters: params) { [weak self] loaded, _ in
+        viewController.loadProduct(withParameters: params) { [weak self] loaded, error in
             DispatchQueue.main.async {
-                guard let self = self else { return }
+                guard let self = self else {
+                    completion(FlutterError(code: "MANAGER_DEALLOCATED", message: "Manager was deallocated", details: nil))
+                    return
+                }
                 guard loaded else {
-                    completion(FlutterError(code: "LOAD_FAILED", message: "Failed to load product", details: nil))
+                    let errorMessage = error?.localizedDescription ?? "Failed to load product"
+                    completion(FlutterError(code: "LOAD_FAILED", message: errorMessage, details: nil))
                     return
                 }
                 
@@ -101,5 +106,11 @@ final class SKStoreProductManager: NSObject, SKStoreProductViewControllerDelegat
             return topViewController(base: presented)
         }
         return seed
+    }
+
+    func productViewControllerDidFinish(_ viewController: SKStoreProductViewController) {
+        viewController.dismiss(animated: true) { [weak self] in
+            self?.presentedViewController = nil
+        }
     }
 }

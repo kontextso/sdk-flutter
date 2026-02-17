@@ -4,6 +4,7 @@ import Flutter
 import UIKit
 
 final class SKOverlayManager: NSObject {
+    private override init() {}
     static let shared = SKOverlayManager()
     
     private weak var channel: FlutterMethodChannel?
