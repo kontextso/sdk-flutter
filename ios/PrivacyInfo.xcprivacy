@@ -3,17 +3,21 @@
 <plist version="1.0">
 <dict>
 
-  <key>NSPrivacyTracking</key><false/>
+  <key>NSPrivacyTracking</key><true/>
+
   <key>NSPrivacyTrackingDomains</key>
-  <array/>
+  <array>
+    <string>megabrain.co</string>
+  </array>
 
   <key>NSPrivacyCollectedDataTypes</key>
   <array>
+
     <dict>
       <key>NSPrivacyCollectedDataType</key>
       <string>NSPrivacyCollectedDataTypeDeviceID</string>
-      <key>NSPrivacyCollectedDataTypeLinked</key><false/>
-      <key>NSPrivacyCollectedDataTypeTracking</key><false/>
+      <key>NSPrivacyCollectedDataTypeLinked</key><true/>
+      <key>NSPrivacyCollectedDataTypeTracking</key><true/>
       <key>NSPrivacyCollectedDataTypePurposes</key>
       <array>
         <string>NSPrivacyCollectedDataTypePurposeThirdPartyAdvertising</string>
@@ -41,6 +45,7 @@
         <string>NSPrivacyCollectedDataTypePurposeAnalytics</string>
       </array>
     </dict>
+
   </array>
 
   <key>NSPrivacyAccessedAPITypes</key>
@@ -53,7 +58,6 @@
         <string>C617.1</string>
       </array>
     </dict>
-
     <dict>
       <key>NSPrivacyAccessedAPIType</key>
       <string>NSPrivacyAccessedAPICategorySystemBootTime</string>
