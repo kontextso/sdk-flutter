@@ -5,14 +5,7 @@ import 'package:kontext_flutter_sdk/src/services/logger.dart' show Logger;
 
 enum SKOverlayPosition { bottom, bottomRaised }
 
-class SKOverlayService {
-  SKOverlayService._();
-
-  static SKOverlayService? _instance;
-
-  factory SKOverlayService() {
-    return _instance ??= SKOverlayService._();
-  }
+abstract final class SKOverlayService {
 
   static const MethodChannel _channel = MethodChannel('kontext_flutter_sdk/sk_overlay');
 

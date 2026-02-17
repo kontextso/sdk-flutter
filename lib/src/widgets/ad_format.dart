@@ -329,7 +329,7 @@ class AdFormat extends HookWidget {
       return false;
     }
 
-    final success = await SkStoreProductService.present(appStoreId: appStoreId);
+    final success = await SKStoreProductService.present(appStoreId: appStoreId);
     if (success) {
       _postMessageToWebView(adServerUrl, controller, {
         'type': 'update-skstoreproduct-iframe',
@@ -340,7 +340,7 @@ class AdFormat extends HookWidget {
   }
 
   Future<bool> _dismissSkStoreProduct(String adServerUrl, InAppWebViewController? controller) async {
-    final success = await SkStoreProductService.dismiss();
+    final success = await SKStoreProductService.dismiss();
     if (success && controller != null) {
       _postMessageToWebView(adServerUrl, controller, {
         'type': 'update-skstoreproduct-iframe',

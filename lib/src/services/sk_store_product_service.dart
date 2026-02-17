@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter/services.dart' show MethodChannel;
 import 'package:kontext_flutter_sdk/src/services/logger.dart' show Logger;
 
-abstract final class SkStoreProductService {
+abstract final class SKStoreProductService {
   static const MethodChannel _channel = MethodChannel('kontext_flutter_sdk/sk_store_product');
 
   static bool Function() isIOS = () => Platform.isIOS;
