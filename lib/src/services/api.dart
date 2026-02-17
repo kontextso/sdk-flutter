@@ -8,6 +8,7 @@ import 'package:kontext_flutter_sdk/src/services/logger.dart';
 import 'package:kontext_flutter_sdk/src/services/http_client.dart';
 import 'package:kontext_flutter_sdk/src/models/message.dart';
 import 'package:kontext_flutter_sdk/src/models/regulatory.dart';
+import 'package:kontext_flutter_sdk/src/services/advertising_id_service.dart';
 import 'package:kontext_flutter_sdk/src/services/transparency_consent_framework_service.dart';
 import 'package:kontext_flutter_sdk/src/utils/constants.dart';
 import 'package:kontext_flutter_sdk/src/utils/extensions.dart';
@@ -82,8 +83,13 @@ class Api {
     try {
       final deviceJson = await device.toJsonFresh();
 
-      final vendor = vendorId?.nullIfEmpty;
-      final advertising = advertisingId?.nullIfEmpty;
+      final ids = await AdvertisingIdService.resolveIds(
+        vendorIdFallback: vendorId,
+        advertisingIdFallback: advertisingId,
+      );
+
+      final vendor = ids.vendorId?.nullIfEmpty;
+      final advertising = ids.advertisingId?.nullIfEmpty;
       final variant = variantId?.nullIfEmpty;
 
       final regulatoryObj = (regulatory ?? const Regulatory()).copyWith(
