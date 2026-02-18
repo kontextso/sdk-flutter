@@ -12,6 +12,7 @@ public class KontextSdkPlugin: NSObject, FlutterPlugin {
         OperationSystemPlugin.register(with: registrar)
         TrackingAuthorizationPlugin.register(with: registrar)
         TransparencyConsentFrameworkPlugin.register(with: registrar)
+        SKAdNetworkPlugin.register(with: registrar)
         SKOverlayPlugin.register(with: registrar)
         SKStoreProductPlugin.register(with: registrar)
     }

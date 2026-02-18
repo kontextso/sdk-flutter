@@ -8,8 +8,9 @@ import 'package:kontext_flutter_sdk/src/models/ad_event.dart';
 import 'package:kontext_flutter_sdk/src/models/message.dart';
 import 'package:kontext_flutter_sdk/src/services/logger.dart';
 import 'package:kontext_flutter_sdk/src/utils/browser_opener.dart';
+import 'package:kontext_flutter_sdk/src/services/ad_attribution_kit_service.dart';
+import 'package:kontext_flutter_sdk/src/services/sk_ad_network_service.dart';
 import 'package:kontext_flutter_sdk/src/services/sk_overlay_service.dart';
-import 'package:kontext_flutter_sdk/src/services/ad_attribution_kit.dart';
 import 'package:kontext_flutter_sdk/src/services/sk_store_product_service.dart';
 import 'package:kontext_flutter_sdk/src/utils/constants.dart';
 import 'package:kontext_flutter_sdk/src/utils/extensions.dart';
@@ -164,7 +165,7 @@ class AdFormat extends HookWidget {
     switch (messageType) {
       case 'init-iframe':
         iframeLoaded.value = true;
-        _handleAdAttributionKitInitialization(data);
+        _handleAttributionInitialization(data);
         break;
       case 'show-iframe':
         showIframe.value = true;
@@ -186,7 +187,8 @@ class AdFormat extends HookWidget {
         if (content != null) {
           adsProviderData.setCachedContent(bidId, content);
         }
-        _handleAdAttributionKitBeginView(key);
+        unawaited(_handleAdAttributionKitBeginView(key));
+        unawaited(SKAdNetwork.startImpression());
         break;
       case 'open-component-iframe':
       case 'open-skoverlay-iframe':
@@ -348,7 +350,7 @@ class AdFormat extends HookWidget {
   }
 
   // Ad Attribution Kit
-  Future<void> _handleAdAttributionKitInitialization(Json? data) async {
+  Future<void> _handleAttributionInitialization(Json? data) async {
     final attribution = data?['attribution'];
     if (attribution == null) return;
     if (attribution is! Json) {
@@ -357,17 +359,33 @@ class AdFormat extends HookWidget {
     }
 
     final framework = attribution['framework'];
-    if (framework is! String || framework != 'adattributionkit') {
-      Logger.error('Ad attribution framework is missing or not adattributionkit. Data: $data');
+    if (framework is! String) {
+      Logger.error('Ad attribution framework is missing. Data: $data');
       return;
     }
 
-    final jws = attribution['jws'];
-    if (jws is! String || jws.isEmpty) {
-      Logger.error('Ad attribution JWS is missing or invalid. Data: $data');
-      return;
+    switch (framework) {
+      case 'adattributionkit':
+        final jws = attribution['jws'];
+        if (jws is! String || jws.isEmpty) {
+          Logger.error('Ad attribution JWS is missing or invalid. Data: $data');
+          return;
+        }
+        await AdAttributionKit.initImpression(jws);
+        break;
+
+      case 'skadnetwork':
+        final params = Map<String, dynamic>.from(attribution)..remove('framework');
+        if (params.isEmpty) {
+          Logger.error('SKAdNetwork params are missing or invalid. Data: $data');
+          return;
+        }
+        await SKAdNetwork.initImpression(params);
+        break;
+
+      default:
+        Logger.error('Unknown ad attribution framework: $framework. Data: $data');
     }
-    await AdAttributionKit.initImpression(jws);
   }
 
   Future<void> _handleAdAttributionKitBeginView(GlobalKey key) async {
@@ -385,9 +403,11 @@ class AdFormat extends HookWidget {
     return AdAttributionKit.setAttributionFrame(adContainer);
   }
 
-  Future<void> _cleanupAdAttributionKitResources() async {
+  Future<void> _cleanupAttributionResources() async {
     await AdAttributionKit.endView();
     await AdAttributionKit.dispose();
+    await SKAdNetwork.endImpression();
+    await SKAdNetwork.dispose(); 
   }
 
   Future<bool> _dismissSkStoreProduct(String adServerUrl, InAppWebViewController? controller) async {
@@ -539,7 +559,7 @@ class AdFormat extends HookWidget {
     }, const []);
 
     useEffect(() {
-      return () => _cleanupAdAttributionKitResources();
+      return () => _cleanupAttributionResources();
     }, const []);
 
     useEffect(() {
@@ -619,7 +639,7 @@ class AdFormat extends HookWidget {
     }, [iframeLoaded.value, webviewController.value, otherParamsHash]);
 
     void resetIframe() {
-      unawaited(_cleanupAdAttributionKitResources());
+      unawaited(_cleanupAttributionResources());
       _dismissSkOverlay(adServerUrl, webviewController.value);
       _dismissSkStoreProduct(adServerUrl, webviewController.value);
 
