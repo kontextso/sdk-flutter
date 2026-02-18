@@ -9,6 +9,7 @@ import 'package:kontext_flutter_sdk/src/models/message.dart';
 import 'package:kontext_flutter_sdk/src/services/logger.dart';
 import 'package:kontext_flutter_sdk/src/utils/browser_opener.dart';
 import 'package:kontext_flutter_sdk/src/services/sk_overlay_service.dart';
+import 'package:kontext_flutter_sdk/src/services/ad_attribution_kit.dart';
 import 'package:kontext_flutter_sdk/src/services/sk_store_product_service.dart';
 import 'package:kontext_flutter_sdk/src/utils/constants.dart';
 import 'package:kontext_flutter_sdk/src/utils/extensions.dart';
@@ -18,6 +19,7 @@ import 'package:kontext_flutter_sdk/src/widgets/ads_provider_data.dart';
 import 'package:kontext_flutter_sdk/src/widgets/utils/select_bid.dart';
 import 'package:kontext_flutter_sdk/src/widgets/interstitial_modal.dart';
 import 'package:kontext_flutter_sdk/src/widgets/kontext_webview.dart';
+
 
 class AdFormat extends HookWidget {
   const AdFormat({
@@ -148,6 +150,7 @@ class AdFormat extends HookWidget {
     required String adServerUrl,
     required InAppWebViewController controller,
     required String messageType,
+    required GlobalKey key,
     Json? data,
     required bool Function() isDisposed,
     required Uri inlineUri,
@@ -161,6 +164,7 @@ class AdFormat extends HookWidget {
     switch (messageType) {
       case 'init-iframe':
         iframeLoaded.value = true;
+        _handleAdAttributionKitInitialization(data);
         break;
       case 'show-iframe':
         showIframe.value = true;
@@ -182,6 +186,7 @@ class AdFormat extends HookWidget {
         if (content != null) {
           adsProviderData.setCachedContent(bidId, content);
         }
+        _handleAdAttributionKitBeginView(key);
         break;
       case 'open-component-iframe':
       case 'open-skoverlay-iframe':
@@ -339,6 +344,43 @@ class AdFormat extends HookWidget {
     return success;
   }
 
+  // Ad Attribution Kit
+  Future<void> _handleAdAttributionKitInitialization(Json? data) async {
+    final attribution = data?['attribution'];
+    if (attribution == null) return;
+
+    final framework = attribution['framework'];
+    if (framework is! String || framework != 'adattributionkit') {
+      Logger.error('Ad attribution framework is missing or not adattributionkit. Data: $data');
+      return;
+    }
+
+    final jws = attribution['jws'];
+    if (jws is! String || jws.isEmpty) {
+      Logger.error('Ad attribution JWS is missing or invalid. Data: $data');
+      return;
+    }
+    await AdAttributionKit.initImpression(jws);
+  }
+
+  Future<void> _handleAdAttributionKitBeginView(GlobalKey key) async {
+    final frameSet = await _setAdAttributionKitFrame(key);
+    if (frameSet) {
+      await AdAttributionKit.beginView();
+    }
+  }
+
+  Future<bool> _setAdAttributionKitFrame(GlobalKey key) async {
+    final adContainer = _slotRectInWindow(key);
+    if (adContainer == null) return false;
+    return AdAttributionKit.setAttributionFrame(adContainer);
+  }
+
+  Future<void> _cleanupAdAttributionKitResources() async {
+    await AdAttributionKit.endView();
+    await AdAttributionKit.dispose();
+  }
+
   Future<bool> _dismissSkStoreProduct(String adServerUrl, InAppWebViewController? controller) async {
     final success = await SKStoreProductService.dismiss();
     if (success && controller != null) {
@@ -488,6 +530,10 @@ class AdFormat extends HookWidget {
     }, const []);
 
     useEffect(() {
+      return () => _cleanupAdAttributionKitResources();
+    }, const []);
+
+    useEffect(() {
       return () => setActive(false);
     }, const []);
 
@@ -564,6 +610,7 @@ class AdFormat extends HookWidget {
     }, [iframeLoaded.value, webviewController.value, otherParamsHash]);
 
     void resetIframe() {
+      _cleanupAdAttributionKitResources();
       _dismissSkOverlay(adServerUrl, webviewController.value);
       _dismissSkStoreProduct(adServerUrl, webviewController.value);
 
@@ -611,6 +658,7 @@ class AdFormat extends HookWidget {
             webviewController.value = controller;
             _handleWebViewCreated(
               context,
+              key: slotKey,
               adServerUrl: adServerUrl,
               controller: controller,
               messageType: messageType,
