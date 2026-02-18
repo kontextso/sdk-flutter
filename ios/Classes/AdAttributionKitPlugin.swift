@@ -15,8 +15,9 @@ public class AdAttributionKitPlugin: NSObject, FlutterPlugin {
         switch call.method {
         case "initImpression":
             guard let args = call.arguments as? [String: Any],
-                  let jws = args["jws"] as? String else {
-                result(FlutterError(code: "INVALID_ARGUMENTS", message: "jws is required", details: nil))
+                let jws = args["jws"] as? String,
+                !jws.isEmpty else {
+                result(FlutterError(code: "INVALID_ARGUMENTS", message: "jws is required and must not be empty", details: nil))
                 return
             }
             AdAttributionKitManager.shared.initImpression(jws: jws) { success in
@@ -24,22 +25,20 @@ public class AdAttributionKitPlugin: NSObject, FlutterPlugin {
             }
         case "setAttributionFrame":
             guard let args = call.arguments as? [String: Any],
-                  let x = (args["x"] as? NSNumber)?.doubleValue,
-                  let y = (args["y"] as? NSNumber)?.doubleValue,
-                  let width = (args["width"] as? NSNumber)?.doubleValue,
-                  let height = (args["height"] as? NSNumber)?.doubleValue else {
-                result(FlutterError(code: "INVALID_ARGUMENTS", message: "x, y, width, height are required", details: nil))
+                let width = (args["width"] as? NSNumber)?.doubleValue,
+                let height = (args["height"] as? NSNumber)?.doubleValue else {
+                result(FlutterError(code: "INVALID_ARGUMENTS", message: "width and height are required", details: nil))
                 return
             }
-            DispatchQueue.main.async {
-                AdAttributionKitManager.shared.setAttributionFrame(
-                    x: CGFloat(x),
-                    y: CGFloat(y),
-                    width: CGFloat(width),
-                    height: CGFloat(height)
-                ) { success in
-                    result(success)
-                }
+            let x = (args["x"] as? NSNumber)?.doubleValue ?? 0
+            let y = (args["y"] as? NSNumber)?.doubleValue ?? 0
+            AdAttributionKitManager.shared.setAttributionFrame(
+                x: CGFloat(x),
+                y: CGFloat(y),
+                width: CGFloat(width),
+                height: CGFloat(height)
+            ) { success in
+                result(success)
             }
         case "handleTap":
             let url = (call.arguments as? [String: Any])?["url"] as? String

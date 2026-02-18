@@ -40,11 +40,17 @@ final class AdAttributionKitManager {
             do {
                 let imp = try await AppImpression(compactJWS: jws)
                 self.appImpression = imp
-                completeOnMain(completion, true)
+                self.completeOnMain(completion, true)
             } catch is CancellationError {
-                // Task was cancelled by a subsequent initImpression call — do nothing
+                // Task was cancelled by a subsequent initImpression call
+                // Still must complete to avoid hanging the Dart future
+                self.completeOnMain(completion, FlutterError(
+                    code: "CANCELLED",
+                    message: "initImpression was superseded by a newer call",
+                    details: nil
+                ))
             } catch {
-                completeOnMain(completion, FlutterError(
+                self.completeOnMain(completion, FlutterError(
                     code: "INIT_IMPRESSION_FAILED",
                     message: "Failed to initialize AppImpression: \(error)",
                     details: nil
@@ -128,9 +134,9 @@ final class AdAttributionKitManager {
             Task { @MainActor in
                 do {
                     try await impression.handleTap(reengagementURL: reengagementURL)
-                    completeOnMain(completion, true)
+                    self.completeOnMain(completion, true)
                 } catch {
-                    completeOnMain(completion, FlutterError(code: "HANDLE_TAP_FAILED", message: "Failed to handle tap with URL: \(error)", details: nil))
+                    self.completeOnMain(completion, FlutterError(code: "HANDLE_TAP_FAILED", message: "Failed to handle tap with URL: \(error)", details: nil))
                 }
             }
             return
@@ -153,9 +159,9 @@ final class AdAttributionKitManager {
         Task { @MainActor in
             do {
                 try await impression.handleTap()
-                completeOnMain(completion, true)
+                self.completeOnMain(completion, true)
             } catch {
-                completeOnMain(completion, FlutterError(code: "HANDLE_TAP_FAILED", message: "Failed to handle tap: \(error)", details: nil))
+                self.completeOnMain(completion, FlutterError(code: "HANDLE_TAP_FAILED", message: "Failed to handle tap: \(error)", details: nil))
             }
         }
     }
@@ -181,10 +187,10 @@ final class AdAttributionKitManager {
         Task { @MainActor in
             do {
                 try await impression.beginView()
-                completeOnMain(completion, true)
+                self.completeOnMain(completion, true)
             } catch {
                 self.isViewing = false
-                completeOnMain(completion, FlutterError(code: "BEGIN_VIEW_FAILED", message: "Failed to begin view: \(error)", details: nil))
+                self.completeOnMain(completion, FlutterError(code: "BEGIN_VIEW_FAILED", message: "Failed to begin view: \(error)", details: nil))
             }
         }
     }
@@ -209,10 +215,10 @@ final class AdAttributionKitManager {
         Task { @MainActor in
             do {
                 try await impression.endView()
-                completeOnMain(completion, true)
+                self.completeOnMain(completion, true)
             } catch {
                 self.isViewing = true
-                completeOnMain(completion, FlutterError(code: "END_VIEW_FAILED", message: "Failed to end view: \(error)", details: nil))
+                self.completeOnMain(completion, FlutterError(code: "END_VIEW_FAILED", message: "Failed to end view: \(error)", details: nil))
             }
         }
     }
