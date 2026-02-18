@@ -99,7 +99,7 @@ final class AdAttributionKitManager {
         
         if attributionView == nil {
             let view = UIEventAttributionView()
-            view.isUserInteractionEnabled = false
+            // view.isUserInteractionEnabled = false
             window.addSubview(view)
             attributionView = view
         } else if attributionView?.window == nil {
