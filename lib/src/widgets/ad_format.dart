@@ -251,7 +251,7 @@ class AdFormat extends HookWidget {
       );
 
       if (!storeProductOpened && uri != null && !navigationHandled) {
-        uri.openInAppBrowser();
+        browserOpener.open(uri);
       }
     } catch (e, stack) {
       Logger.exception(e, stack);
@@ -351,6 +351,10 @@ class AdFormat extends HookWidget {
   Future<void> _handleAdAttributionKitInitialization(Json? data) async {
     final attribution = data?['attribution'];
     if (attribution == null) return;
+    if (attribution is! Json) {
+      Logger.error('Ad attribution payload is invalid. Data: $data');
+      return;
+    }
 
     final framework = attribution['framework'];
     if (framework is! String || framework != 'adattributionkit') {

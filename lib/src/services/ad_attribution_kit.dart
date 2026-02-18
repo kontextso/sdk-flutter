@@ -70,7 +70,7 @@ class AdAttributionKit {
       final result = await _channel.invokeMethod('handleTap', {'url': uri?.toString()});
       final success = result == true;
       Logger.debug('AdAttributionKit handle tap: $result');
-      return success && uri != null;
+      return success;
     } on PlatformException catch (e) {
       Logger.exception('Native error handling AdAttributionKit tap: ${e.code} - ${e.message}', StackTrace.current);
       return false;
