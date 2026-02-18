@@ -1,3 +1,5 @@
+import 'dart:async' show unawaited;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart' show HookWidget, useState, useEffect, useRef;
 import 'package:flutter_inappwebview/flutter_inappwebview.dart'
@@ -5,6 +7,7 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart'
 import 'package:kontext_flutter_sdk/src/models/bid.dart';
 import 'package:kontext_flutter_sdk/src/models/regulatory.dart';
 import 'package:kontext_flutter_sdk/src/services/api.dart';
+import 'package:kontext_flutter_sdk/src/services/advertising_id_service.dart';
 import 'package:kontext_flutter_sdk/src/services/http_client.dart';
 import 'package:kontext_flutter_sdk/src/services/logger.dart';
 import 'package:kontext_flutter_sdk/src/utils/types.dart' show OnEventCallback;
@@ -69,7 +72,7 @@ class AdsProvider extends HookWidget {
   /// The character object used in this conversation.
   final Character? character;
 
-  /// Vendor-specific ID.
+  /// Vendor identifier (IDFV on iOS).
   final String? vendorId;
 
   /// A variant ID that helps determine which type of ad to render.
@@ -78,7 +81,7 @@ class AdsProvider extends HookWidget {
   /// based on an agreement between the publisher and Kontext.so.
   final String? variantId;
 
-  /// Device-specific identifier provided by the operating systems (IDFA/GAID)
+  /// Device-specific identifier (IDFA on iOS, GAID on Android).
   final String? advertisingId;
 
   /// The log level for the SDK:
@@ -162,6 +165,11 @@ class AdsProvider extends HookWidget {
       }
       return null;
     }, [logLevel]);
+
+    useEffect(() {
+      unawaited(AdvertisingIdService.requestTrackingAuthorization());
+      return null;
+    }, const []);
 
     usePreloadAds(
       context,

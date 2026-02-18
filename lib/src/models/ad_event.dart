@@ -36,7 +36,7 @@ class AdEvent {
     this.code,
     this.skipCode,
     this.id,
-    this.bidValue,
+    this.revenue,
     this.content,
     this.messageId,
     this.url,
@@ -67,8 +67,8 @@ class AdEvent {
   /// Bid ID (used in multiple events).
   final String? id;
 
-  /// Bid value (used in [AdEventType.adFilled]).
-  final int? bidValue;
+  /// Ad revenue (used in [AdEventType.adFilled]).
+  final double? revenue;
 
   /// Ad content (used in [AdEventType.adClicked] and [AdEventType.adViewed]).
   final String? content;
@@ -114,5 +114,5 @@ class AdEvent {
   }
 
   @override
-  String toString() => 'AdEvent(type: $type, code: $code, skipCode: $skipCode, id: $id, bidValue: $bidValue, content: $content, messageId: $messageId, url: $url, format: $format, area: $area, message: $message, errCode: $errCode)';
+  String toString() => 'AdEvent(type: $type, code: $code, skipCode: $skipCode, id: $id, revenue: $revenue, content: $content, messageId: $messageId, url: $url, format: $format, area: $area, message: $message, errCode: $errCode)';
 }
