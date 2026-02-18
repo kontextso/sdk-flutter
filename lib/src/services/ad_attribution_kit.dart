@@ -77,7 +77,7 @@ class AdAttributionKit {
   }
 
   static Future<void> beginView() async {
-    if (!Platform.isIOS || !_impressionReady || !_attributionFrameSet) return;
+    if (!Platform.isIOS || !_impressionReady) return;
 
     try {
       final result = await _channel.invokeMethod('beginView');
@@ -90,7 +90,7 @@ class AdAttributionKit {
   }
 
   static Future<void> endView() async {
-    if (!Platform.isIOS || !_impressionReady || !_attributionFrameSet) return;
+    if (!Platform.isIOS || !_impressionReady) return;
 
     try {
       final result = await _channel.invokeMethod('endView');

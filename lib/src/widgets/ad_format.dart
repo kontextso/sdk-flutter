@@ -1,4 +1,4 @@
-import 'dart:async' show Timer;
+import 'dart:async' show Timer, unawaited;
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -234,6 +234,9 @@ class AdFormat extends HookWidget {
       final appStoreId = data?['appStoreId'];
 
       final uri = (path is String) ? KontextUrlBuilder(baseUrl: adServerUrl, path: path).buildUri() : null;
+
+      await AdAttributionKit.handleTap(uri);
+
       if (appStoreId == null) {
         if (uri != null) {
           browserOpener.open(uri);
@@ -364,10 +367,12 @@ class AdFormat extends HookWidget {
   }
 
   Future<void> _handleAdAttributionKitBeginView(GlobalKey key) async {
-    final frameSet = await _setAdAttributionKitFrame(key);
-    if (frameSet) {
-      await AdAttributionKit.beginView();
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final frameSet = await _setAdAttributionKitFrame(key);
+      if (frameSet) {
+        await AdAttributionKit.beginView();
+      }
+    });
   }
 
   Future<bool> _setAdAttributionKitFrame(GlobalKey key) async {
@@ -610,7 +615,7 @@ class AdFormat extends HookWidget {
     }, [iframeLoaded.value, webviewController.value, otherParamsHash]);
 
     void resetIframe() {
-      _cleanupAdAttributionKitResources();
+      unawaited(_cleanupAdAttributionKitResources());
       _dismissSkOverlay(adServerUrl, webviewController.value);
       _dismissSkStoreProduct(adServerUrl, webviewController.value);
 

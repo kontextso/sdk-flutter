@@ -35,6 +35,13 @@ final class AdAttributionKitManager {
             print("[AdAttributionKit] Warning: replacing existing impression")
         }
 
+        // If a view session was in progress on the old impression, end it best-effort
+        // and reset the flag so beginView() works correctly on the new impression.
+        if isViewing, let oldImpression = appImpression {
+            isViewing = false
+            Task { @MainActor in try? await oldImpression.endView() }
+        }
+
         initTask?.cancel()
         initTask = Task { @MainActor in
             do {
@@ -244,7 +251,7 @@ final class AdAttributionKitManager {
             }
             self.appImpressionBox = nil
             self.hostWindow = nil
-            self.completeOnMain(completion, true)  // add self. here
+            self.completeOnMain(completion, true)
         }
 
         if Thread.isMainThread {
