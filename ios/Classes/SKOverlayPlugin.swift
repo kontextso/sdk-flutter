@@ -9,7 +9,6 @@ public class SKOverlayPlugin: NSObject, FlutterPlugin {
         )
         let instance = SKOverlayPlugin()
         registrar.addMethodCallDelegate(instance, channel: channel)
-        SKOverlayManager.shared.attach(channel: channel)
     }
     
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {

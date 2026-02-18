@@ -16,6 +16,10 @@ abstract final class SKOverlayService {
     bool dismissible = true,
   }) async {
     if (!isIOS()) return false;
+    if (appStoreId.isEmpty) {
+      Logger.error('SKOverlay: appStoreId cannot be empty');
+      return false;
+    }
 
     try {
       final result = await _channel.invokeMethod('present', {

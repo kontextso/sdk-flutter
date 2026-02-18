@@ -6,15 +6,16 @@ import UIKit
 final class SKOverlayManager: NSObject {
     private override init() {}
     static let shared = SKOverlayManager()
-    
-    private weak var channel: FlutterMethodChannel?
-    private var overlay: AnyObject?
+
+    @available(iOS 14.0, *)
+    private var overlay: SKOverlay? {
+        get { _overlay as? SKOverlay }
+        set { _overlay = newValue }
+    }
+    private var _overlay: AnyObject?
+
     private var pendingPresentCompletion: ((Any) -> Void)?
     private var pendingDismissCompletion: ((Bool) -> Void)?
-    
-    func attach(channel: FlutterMethodChannel) {
-        self.channel = channel
-    }
     
     func present(appStoreId: String, position: String, dismissible: Bool, completion: @escaping (Any) -> Void) {
         runOnMain { [weak self] in
