@@ -2,6 +2,7 @@ import Flutter
 
 public class KontextSdkPlugin: NSObject, FlutterPlugin {
     public static func register(with registrar: FlutterPluginRegistrar) {
+        AdAttributionPlugin.register(with: registrar)
         AdvertisingIdPlugin.register(with: registrar)
         AppInfoPlugin.register(with: registrar)
         DeviceAudioPlugin.register(with: registrar)
