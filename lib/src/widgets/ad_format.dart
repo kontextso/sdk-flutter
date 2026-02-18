@@ -235,10 +235,10 @@ class AdFormat extends HookWidget {
 
       final uri = (path is String) ? KontextUrlBuilder(baseUrl: adServerUrl, path: path).buildUri() : null;
 
-      await AdAttributionKit.handleTap(uri);
+      final navigationHandled = await AdAttributionKit.handleTap(uri);
 
       if (appStoreId == null) {
-        if (uri != null) {
+        if (uri != null && !navigationHandled) {
           browserOpener.open(uri);
         }
         return;
@@ -250,7 +250,7 @@ class AdFormat extends HookWidget {
         appStoreId,
       );
 
-      if (!storeProductOpened && uri != null) {
+      if (!storeProductOpened && uri != null && !navigationHandled) {
         uri.openInAppBrowser();
       }
     } catch (e, stack) {

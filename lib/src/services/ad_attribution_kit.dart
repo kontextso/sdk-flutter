@@ -60,19 +60,23 @@ class AdAttributionKit {
     }
   }
 
-  static Future<void> handleTap(Uri? uri) async {
-    if (!Platform.isIOS || !_impressionReady) return;
+  static Future<bool> handleTap(Uri? uri) async {
+    if (!Platform.isIOS || !_impressionReady) return false;
 
     // Only require attribution frame for regular tap (no URI)
-    if (uri == null && !_attributionFrameSet) return;
+    if (uri == null && !_attributionFrameSet) return false;
 
     try {
       final result = await _channel.invokeMethod('handleTap', {'url': uri?.toString()});
+      final success = result == true;
       Logger.debug('AdAttributionKit handle tap: $result');
+      return success && uri != null;
     } on PlatformException catch (e) {
       Logger.exception('Native error handling AdAttributionKit tap: ${e.code} - ${e.message}', StackTrace.current);
+      return false;
     } catch (e, stack) {
       Logger.exception('Error handling AdAttributionKit tap: $e', stack);
+      return false;
     }
   }
 
