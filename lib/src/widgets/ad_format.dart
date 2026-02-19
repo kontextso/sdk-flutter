@@ -22,6 +22,7 @@ import 'package:kontext_flutter_sdk/src/widgets/utils/select_bid.dart';
 import 'package:kontext_flutter_sdk/src/widgets/interstitial_modal.dart';
 import 'package:kontext_flutter_sdk/src/widgets/kontext_webview.dart';
 
+enum _AttributionType { none, skan, aak }
 
 class AdFormat extends HookWidget {
   const AdFormat({
@@ -158,6 +159,7 @@ class AdFormat extends HookWidget {
     required bool Function() isDisposed,
     required Uri inlineUri,
     required String bidId,
+    required ObjectRef<_AttributionType> attributionType,
     required ValueNotifier<bool> iframeLoaded,
     required ValueNotifier<bool> showIframe,
     required ValueNotifier<double> height,
@@ -167,7 +169,7 @@ class AdFormat extends HookWidget {
     switch (messageType) {
       case 'init-iframe':
         iframeLoaded.value = true;
-        _handleAttributionInitialization(bid?.akk, bid?.skan);
+        unawaited(_handleAttributionInitialization(bid?.akk, bid?.skan, attributionType));
         break;
       case 'show-iframe':
         showIframe.value = true;
@@ -189,8 +191,7 @@ class AdFormat extends HookWidget {
         if (content != null) {
           adsProviderData.setCachedContent(bidId, content);
         }
-        unawaited(_handleAdAttributionKitBeginView(key));
-        unawaited(SKAdNetwork.startImpression());
+        unawaited(_handleAttributionBeginView(key, attributionType));
         break;
       case 'open-component-iframe':
       case 'open-skoverlay-iframe':
@@ -352,34 +353,53 @@ class AdFormat extends HookWidget {
   }
 
   // Ad Attribution Kit / SKAN
-  Future<void> _handleAttributionInitialization(Akk? akk, Skan? skan) async {
+  Future<void> _handleAttributionInitialization(
+    Akk? akk,
+    Skan? skan,
+    ObjectRef<_AttributionType> attributionType,
+  ) async {
     if (akk != null) {
-      await AdAttributionKit.initImpression(akk.jws);
+      final success = await AdAttributionKit.initImpression(akk.jws);
+      if (success) attributionType.value = _AttributionType.aak;
     } else if (skan != null) {
-      await SKAdNetwork.initImpression(skan);
+      final success = await SKAdNetwork.initImpression(skan);
+      if (success) attributionType.value = _AttributionType.skan;
     }
   }
 
-  Future<void> _handleAdAttributionKitBeginView(GlobalKey key) async {
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final frameSet = await _setAdAttributionKitFrame(key);
-      if (frameSet) {
-        await AdAttributionKit.beginView();
-      }
-    });
+  Future<void> _handleAttributionBeginView(
+    GlobalKey key,
+    ObjectRef<_AttributionType> attributionType,
+  ) async {
+    switch (attributionType.value) {
+      case _AttributionType.aak:
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
+          final adContainer = _slotRectInWindow(key);
+          if (adContainer == null) return;
+          final frameSet = await AdAttributionKit.setAttributionFrame(adContainer);
+          if (frameSet) await AdAttributionKit.beginView();
+        });
+      case _AttributionType.skan:
+        await SKAdNetwork.startImpression();
+      case _AttributionType.none:
+        break;
+    }
   }
 
-  Future<bool> _setAdAttributionKitFrame(GlobalKey key) async {
-    final adContainer = _slotRectInWindow(key);
-    if (adContainer == null) return false;
-    return AdAttributionKit.setAttributionFrame(adContainer);
-  }
-
-  Future<void> _cleanupAttributionResources() async {
-    await AdAttributionKit.endView();
-    await AdAttributionKit.dispose();
-    await SKAdNetwork.endImpression();
-    await SKAdNetwork.dispose(); 
+  Future<void> _cleanupAttributionResources(
+    ObjectRef<_AttributionType> attributionType,
+  ) async {
+    switch (attributionType.value) {
+      case _AttributionType.aak:
+        await AdAttributionKit.endView();
+        await AdAttributionKit.dispose();
+      case _AttributionType.skan:
+        await SKAdNetwork.endImpression();
+        await SKAdNetwork.dispose();
+      case _AttributionType.none:
+        break;
+    }
+    attributionType.value = _AttributionType.none;
   }
 
   Future<bool> _dismissSkStoreProduct(String adServerUrl, InAppWebViewController? controller) async {
@@ -523,6 +543,7 @@ class AdFormat extends HookWidget {
     final otherParams = adsProviderData.otherParams;
 
     final webviewController = useRef<InAppWebViewController?>(null);
+    final attributionType = useRef(_AttributionType.none); 
 
     useEffect(() {
       return () {
@@ -532,7 +553,7 @@ class AdFormat extends HookWidget {
     }, const []);
 
     useEffect(() {
-      return () => _cleanupAttributionResources();
+      return () => _cleanupAttributionResources(attributionType);
     }, const []);
 
     useEffect(() {
@@ -612,7 +633,7 @@ class AdFormat extends HookWidget {
     }, [iframeLoaded.value, webviewController.value, otherParamsHash]);
 
     void resetIframe() {
-      unawaited(_cleanupAttributionResources());
+      unawaited(_cleanupAttributionResources(attributionType));
       _dismissSkOverlay(adServerUrl, webviewController.value);
       _dismissSkStoreProduct(adServerUrl, webviewController.value);
 
@@ -665,6 +686,7 @@ class AdFormat extends HookWidget {
               adServerUrl: adServerUrl,
               controller: controller,
               messageType: messageType,
+              attributionType: attributionType,
               isDisposed: () => disposed.value,
               data: data,
               inlineUri: inlineUri!,
