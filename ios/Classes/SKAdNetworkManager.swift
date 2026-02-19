@@ -56,7 +56,12 @@ final class SKAdNetworkManager {
         let fidelities       = params["fidelities"] as? [[String: Any]]
 
         // nonce/timestamp/signature are required only when no fidelities provided
-        let hasFidelities = !(fidelities?.isEmpty ?? true)
+        let hasFidelities: Bool = {
+            if #available(iOS 16.1, *) {
+                return !(fidelities?.isEmpty ?? true)
+            }
+            return false
+        }()
 
         var missing: [String] = []
         if version?.isEmpty != false   { missing.append("version") }
