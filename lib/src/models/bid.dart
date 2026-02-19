@@ -149,7 +149,7 @@ class Skan {
   String toString() {
     return 'Skan(version: $version, network: $network, itunesItem: $itunesItem, '
         'sourceApp: $sourceApp, sourceIdentifier: $sourceIdentifier, campaign: $campaign, '
-        'nonce: $nonce, timestamp: $timestamp, signature: $signature)';
+        'fidelities: $fidelities, nonce: $nonce, timestamp: $timestamp, signature: $signature)';
   }
 }
 
