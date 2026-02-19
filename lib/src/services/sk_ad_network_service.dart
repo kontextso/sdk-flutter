@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/services.dart' show MethodChannel, PlatformException;
+import 'package:kontext_flutter_sdk/src/models/bid.dart' show Skan;
 import 'package:kontext_flutter_sdk/src/services/logger.dart' show Logger;
 
 class SKAdNetwork {
@@ -10,8 +11,31 @@ class SKAdNetwork {
 
   static bool _impressionReady = false;
 
-  static Future<bool> initImpression(Map<String, dynamic> params) async {
+  static Future<bool> initImpression(Skan skan) async {
     if (!Platform.isIOS) return false;
+
+    final params = {
+      'version': skan.version,
+      'network': skan.network,
+      'itunesItem': skan.itunesItem,
+      'sourceApp': skan.sourceApp,
+      if (skan.sourceIdentifier != null) 'sourceIdentifier': skan.sourceIdentifier,
+      if (skan.campaign != null) 'campaign': skan.campaign,
+      if (skan.fidelities != null)
+        'fidelities': skan.fidelities!
+            .map(
+              (f) => {
+                'fidelity': f.fidelity,
+                'signature': f.signature,
+                'nonce': f.nonce,
+                'timestamp': f.timestamp,
+              },
+            )
+            .toList(),
+      if (skan.nonce != null) 'nonce': skan.nonce,
+      if (skan.timestamp != null) 'timestamp': skan.timestamp,
+      if (skan.signature != null) 'signature': skan.signature,
+    };
 
     try {
       final result = await _channel.invokeMethod('initImpression', params);
@@ -21,7 +45,8 @@ class SKAdNetwork {
       return success;
     } on PlatformException catch (e) {
       _impressionReady = false;
-      Logger.exception('Native error initializing SKAdNetwork impression: ${e.code} - ${e.message}', StackTrace.current);
+      Logger.exception(
+          'Native error initializing SKAdNetwork impression: ${e.code} - ${e.message}', StackTrace.current);
       return false;
     } catch (e, stack) {
       _impressionReady = false;

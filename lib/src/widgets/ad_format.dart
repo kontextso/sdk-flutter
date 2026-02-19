@@ -356,19 +356,7 @@ class AdFormat extends HookWidget {
     if (akk != null) {
       await AdAttributionKit.initImpression(akk.jws);
     } else if (skan != null) {
-      final params = <String, dynamic>{
-        'version': skan.version,
-        'network': skan.network,
-        'itunesItem': skan.itunesItem,
-        'sourceApp': skan.sourceApp,
-        if (skan.sourceIdentifier != null) 'sourceIdentifier': skan.sourceIdentifier,
-        if (skan.campaign != null) 'campaign': skan.campaign,
-        if (skan.fidelities != null) 'fidelities': skan.fidelities,
-        if (skan.nonce != null) 'nonce': skan.nonce,
-        if (skan.timestamp != null) 'timestamp': skan.timestamp,
-        if (skan.signature != null) 'signature': skan.signature,
-      };
-      await SKAdNetwork.initImpression(params);
+      await SKAdNetwork.initImpression(skan);
     }
   }
 
