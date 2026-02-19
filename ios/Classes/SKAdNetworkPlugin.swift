@@ -1,4 +1,5 @@
 import Flutter
+import StoreKit
 import UIKit
 
 public class SKAdNetworkPlugin: NSObject, FlutterPlugin {
@@ -14,24 +15,24 @@ public class SKAdNetworkPlugin: NSObject, FlutterPlugin {
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         switch call.method {
         case "initImpression":
-            guard let params = call.arguments as? [String: Any], !params.isEmpty else {
-                result(FlutterError(code: "INVALID_ARGUMENTS", message: "params must be a non-empty map", details: nil))
+            guard let params = call.arguments as? [String: Any] else {
+                result(FlutterError(code: "INVALID_ARGUMENTS", message: "arguments must be a map", details: nil))
                 return
             }
-            SKAdNetworkManager.shared.initImpression(params: params) { res in
-                result(res)
+            SKAdNetworkManager.shared.initImpression(params: params) { success in
+                result(success)
             }
         case "startImpression":
-            SKAdNetworkManager.shared.startImpression { res in
-                result(res)
+            SKAdNetworkManager.shared.startImpression { success in
+                result(success)
             }
         case "endImpression":
-            SKAdNetworkManager.shared.endImpression { res in
-                result(res)
+            SKAdNetworkManager.shared.endImpression { success in
+                result(success)
             }
         case "dispose":
-            SKAdNetworkManager.shared.dispose { res in
-                result(res)
+            SKAdNetworkManager.shared.dispose { success in
+                result(success)
             }
         default:
             result(FlutterMethodNotImplemented)
