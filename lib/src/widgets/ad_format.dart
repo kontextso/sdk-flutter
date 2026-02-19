@@ -6,6 +6,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:kontext_flutter_sdk/src/models/ad_event.dart';
 import 'package:kontext_flutter_sdk/src/models/message.dart';
+import 'package:kontext_flutter_sdk/src/models/bid.dart';
 import 'package:kontext_flutter_sdk/src/services/logger.dart';
 import 'package:kontext_flutter_sdk/src/utils/browser_opener.dart';
 import 'package:kontext_flutter_sdk/src/services/ad_attribution_kit_service.dart';
@@ -148,6 +149,7 @@ class AdFormat extends HookWidget {
 
   void _handleWebViewCreated(
     BuildContext context, {
+    required Bid? bid,
     required String adServerUrl,
     required InAppWebViewController controller,
     required String messageType,
@@ -165,7 +167,7 @@ class AdFormat extends HookWidget {
     switch (messageType) {
       case 'init-iframe':
         iframeLoaded.value = true;
-        _handleAttributionInitialization(data);
+        _handleAttributionInitialization(bid?.akk, bid?.skan);
         break;
       case 'show-iframe':
         showIframe.value = true;
@@ -349,42 +351,24 @@ class AdFormat extends HookWidget {
     return success;
   }
 
-  // Ad Attribution Kit
-  Future<void> _handleAttributionInitialization(Json? data) async {
-    final attribution = data?['attribution'];
-    if (attribution == null) return;
-    if (attribution is! Json) {
-      Logger.error('Ad attribution payload is invalid. Data: $data');
-      return;
-    }
-
-    final framework = attribution['framework'];
-    if (framework is! String) {
-      Logger.error('Ad attribution framework is missing. Data: $data');
-      return;
-    }
-
-    switch (framework) {
-      case 'adattributionkit':
-        final jws = attribution['jws'];
-        if (jws is! String || jws.isEmpty) {
-          Logger.error('Ad attribution JWS is missing or invalid. Data: $data');
-          return;
-        }
-        await AdAttributionKit.initImpression(jws);
-        break;
-
-      case 'skadnetwork':
-        final params = Map<String, dynamic>.from(attribution)..remove('framework');
-        if (params.isEmpty) {
-          Logger.error('SKAdNetwork params are missing or invalid. Data: $data');
-          return;
-        }
-        await SKAdNetwork.initImpression(params);
-        break;
-
-      default:
-        Logger.error('Unknown ad attribution framework: $framework. Data: $data');
+  // Ad Attribution Kit / SKAN
+  Future<void> _handleAttributionInitialization(Akk? akk, Skan? skan) async {
+    if (akk != null) {
+      await AdAttributionKit.initImpression(akk.jws);
+    } else if (skan != null) {
+      final params = <String, dynamic>{
+        'version': skan.version,
+        'network': skan.network,
+        'itunesItem': skan.itunesItem,
+        'sourceApp': skan.sourceApp,
+        if (skan.sourceIdentifier != null) 'sourceIdentifier': skan.sourceIdentifier,
+        if (skan.campaign != null) 'campaign': skan.campaign,
+        if (skan.fidelities != null) 'fidelities': skan.fidelities,
+        if (skan.nonce != null) 'nonce': skan.nonce,
+        if (skan.timestamp != null) 'timestamp': skan.timestamp,
+        if (skan.signature != null) 'signature': skan.signature,
+      };
+      await SKAdNetwork.initImpression(params);
     }
   }
 
@@ -521,7 +505,8 @@ class AdFormat extends HookWidget {
     final adsProviderData = AdsProviderData.of(context);
     final disabled = adsProviderData == null || adsProviderData.isDisabled;
 
-    final bidId = !disabled ? selectBid(adsProviderData, code: code, messageId: messageId)?.id : null;
+    final bid = !disabled ? selectBid(adsProviderData, code: code, messageId: messageId) : null;
+    final bidId = bid?.id;
 
     Uri? inlineUri;
     if (!disabled && bidId != null) {
@@ -687,6 +672,7 @@ class AdFormat extends HookWidget {
             webviewController.value = controller;
             _handleWebViewCreated(
               context,
+              bid: bid,
               key: slotKey,
               adServerUrl: adServerUrl,
               controller: controller,
