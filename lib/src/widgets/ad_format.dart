@@ -352,7 +352,6 @@ class AdFormat extends HookWidget {
     return success;
   }
 
-  // Ad Attribution Kit / SKAN
   Future<void> _handleAttributionInitialization(
     Akk? akk,
     Skan? skan,
@@ -379,8 +378,10 @@ class AdFormat extends HookWidget {
           final frameSet = await AdAttributionKit.setAttributionFrame(adContainer);
           if (frameSet) await AdAttributionKit.beginView();
         });
+        break;
       case _AttributionType.skan:
         await SKAdNetwork.startImpression();
+        break;
       case _AttributionType.none:
         break;
     }
@@ -393,9 +394,11 @@ class AdFormat extends HookWidget {
       case _AttributionType.aak:
         await AdAttributionKit.endView();
         await AdAttributionKit.dispose();
+        break;
       case _AttributionType.skan:
         await SKAdNetwork.endImpression();
         await SKAdNetwork.dispose();
+        break;
       case _AttributionType.none:
         break;
     }
