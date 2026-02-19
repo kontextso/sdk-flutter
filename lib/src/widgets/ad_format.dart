@@ -1,4 +1,4 @@
-import 'dart:async' show Timer;
+import 'dart:async' show Timer, unawaited;
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -6,8 +6,11 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:kontext_flutter_sdk/src/models/ad_event.dart';
 import 'package:kontext_flutter_sdk/src/models/message.dart';
+import 'package:kontext_flutter_sdk/src/models/bid.dart';
 import 'package:kontext_flutter_sdk/src/services/logger.dart';
 import 'package:kontext_flutter_sdk/src/utils/browser_opener.dart';
+import 'package:kontext_flutter_sdk/src/services/ad_attribution_kit_service.dart';
+import 'package:kontext_flutter_sdk/src/services/sk_ad_network_service.dart';
 import 'package:kontext_flutter_sdk/src/services/sk_overlay_service.dart';
 import 'package:kontext_flutter_sdk/src/services/sk_store_product_service.dart';
 import 'package:kontext_flutter_sdk/src/utils/constants.dart';
@@ -18,6 +21,8 @@ import 'package:kontext_flutter_sdk/src/widgets/ads_provider_data.dart';
 import 'package:kontext_flutter_sdk/src/widgets/utils/select_bid.dart';
 import 'package:kontext_flutter_sdk/src/widgets/interstitial_modal.dart';
 import 'package:kontext_flutter_sdk/src/widgets/kontext_webview.dart';
+
+enum _AttributionType { none, skan, aak }
 
 class AdFormat extends HookWidget {
   const AdFormat({
@@ -145,13 +150,16 @@ class AdFormat extends HookWidget {
 
   void _handleWebViewCreated(
     BuildContext context, {
+    required Bid? bid,
     required String adServerUrl,
     required InAppWebViewController controller,
     required String messageType,
+    required GlobalKey key,
     Json? data,
     required bool Function() isDisposed,
     required Uri inlineUri,
     required String bidId,
+    required ObjectRef<_AttributionType> attributionType,
     required ValueNotifier<bool> iframeLoaded,
     required ValueNotifier<bool> showIframe,
     required ValueNotifier<double> height,
@@ -161,6 +169,7 @@ class AdFormat extends HookWidget {
     switch (messageType) {
       case 'init-iframe':
         iframeLoaded.value = true;
+        unawaited(_handleAttributionInitialization(bid?.akk, bid?.skan, attributionType));
         break;
       case 'show-iframe':
         showIframe.value = true;
@@ -182,6 +191,7 @@ class AdFormat extends HookWidget {
         if (content != null) {
           adsProviderData.setCachedContent(bidId, content);
         }
+        unawaited(_handleAttributionBeginView(key, attributionType));
         break;
       case 'open-component-iframe':
       case 'open-skoverlay-iframe':
@@ -229,8 +239,11 @@ class AdFormat extends HookWidget {
       final appStoreId = data?['appStoreId'];
 
       final uri = (path is String) ? KontextUrlBuilder(baseUrl: adServerUrl, path: path).buildUri() : null;
+
+      final navigationHandled = await AdAttributionKit.handleTap(uri);
+
       if (appStoreId == null) {
-        if (uri != null) {
+        if (uri != null && !navigationHandled) {
           browserOpener.open(uri);
         }
         return;
@@ -242,8 +255,8 @@ class AdFormat extends HookWidget {
         appStoreId,
       );
 
-      if (!storeProductOpened && uri != null) {
-        uri.openInAppBrowser();
+      if (!storeProductOpened && uri != null && !navigationHandled) {
+        browserOpener.open(uri);
       }
     } catch (e, stack) {
       Logger.exception(e, stack);
@@ -337,6 +350,59 @@ class AdFormat extends HookWidget {
       });
     }
     return success;
+  }
+
+  Future<void> _handleAttributionInitialization(
+    Akk? akk,
+    Skan? skan,
+    ObjectRef<_AttributionType> attributionType,
+  ) async {
+    if (akk != null) {
+      final success = await AdAttributionKit.initImpression(akk.jws);
+      if (success) attributionType.value = _AttributionType.aak;
+    } else if (skan != null) {
+      final success = await SKAdNetwork.initImpression(skan);
+      if (success) attributionType.value = _AttributionType.skan;
+    }
+  }
+
+  Future<void> _handleAttributionBeginView(
+    GlobalKey key,
+    ObjectRef<_AttributionType> attributionType,
+  ) async {
+    switch (attributionType.value) {
+      case _AttributionType.aak:
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
+          final adContainer = _slotRectInWindow(key);
+          if (adContainer == null) return;
+          final frameSet = await AdAttributionKit.setAttributionFrame(adContainer);
+          if (frameSet) await AdAttributionKit.beginView();
+        });
+        break;
+      case _AttributionType.skan:
+        await SKAdNetwork.startImpression();
+        break;
+      case _AttributionType.none:
+        break;
+    }
+  }
+
+  Future<void> _cleanupAttributionResources(
+    ObjectRef<_AttributionType> attributionType,
+  ) async {
+    switch (attributionType.value) {
+      case _AttributionType.aak:
+        await AdAttributionKit.endView();
+        await AdAttributionKit.dispose();
+        break;
+      case _AttributionType.skan:
+        await SKAdNetwork.endImpression();
+        await SKAdNetwork.dispose();
+        break;
+      case _AttributionType.none:
+        break;
+    }
+    attributionType.value = _AttributionType.none;
   }
 
   Future<bool> _dismissSkStoreProduct(String adServerUrl, InAppWebViewController? controller) async {
@@ -450,7 +516,8 @@ class AdFormat extends HookWidget {
     final adsProviderData = AdsProviderData.of(context);
     final disabled = adsProviderData == null || adsProviderData.isDisabled;
 
-    final bidId = !disabled ? selectBid(adsProviderData, code: code, messageId: messageId)?.id : null;
+    final bid = !disabled ? selectBid(adsProviderData, code: code, messageId: messageId) : null;
+    final bidId = bid?.id;
 
     Uri? inlineUri;
     if (!disabled && bidId != null) {
@@ -479,12 +546,17 @@ class AdFormat extends HookWidget {
     final otherParams = adsProviderData.otherParams;
 
     final webviewController = useRef<InAppWebViewController?>(null);
+    final attributionType = useRef(_AttributionType.none); 
 
     useEffect(() {
       return () {
         _dismissSkOverlay(adServerUrl, webviewController.value);
         _dismissSkStoreProduct(adServerUrl, webviewController.value);
       };
+    }, const []);
+
+    useEffect(() {
+      return () => _cleanupAttributionResources(attributionType);
     }, const []);
 
     useEffect(() {
@@ -564,6 +636,7 @@ class AdFormat extends HookWidget {
     }, [iframeLoaded.value, webviewController.value, otherParamsHash]);
 
     void resetIframe() {
+      unawaited(_cleanupAttributionResources(attributionType));
       _dismissSkOverlay(adServerUrl, webviewController.value);
       _dismissSkStoreProduct(adServerUrl, webviewController.value);
 
@@ -611,9 +684,12 @@ class AdFormat extends HookWidget {
             webviewController.value = controller;
             _handleWebViewCreated(
               context,
+              bid: bid,
+              key: slotKey,
               adServerUrl: adServerUrl,
               controller: controller,
               messageType: messageType,
+              attributionType: attributionType,
               isDisposed: () => disposed.value,
               data: data,
               inlineUri: inlineUri!,
