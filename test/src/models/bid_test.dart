@@ -76,7 +76,7 @@ void main() {
 
     group('position', () {
       test('parses afterAssistantMessage', () {
-        final bid = Bid.fromJson(baseJson(position: 'afterAssistantMessage'));
+        final bid = Bid.fromJson(baseJson());
         expect(bid.position, AdDisplayPosition.afterAssistantMessage);
         expect(bid.isAfterAssistantMessage, isTrue);
         expect(bid.isAfterUserMessage, isFalse);
