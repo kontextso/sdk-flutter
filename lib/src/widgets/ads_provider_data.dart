@@ -19,6 +19,8 @@ class AdsProviderData extends InheritedWidget {
     required this.lastUserMessageId,
     required this.relevantAssistantMessageId,
     required this.setRelevantAssistantMessageId,
+    required this.getCachedContent,
+    required this.setCachedContent,
     required this.resetAll,
     required this.onEvent,
     required super.child,
@@ -36,6 +38,8 @@ class AdsProviderData extends InheritedWidget {
   final String? lastUserMessageId;
   final String? relevantAssistantMessageId;
   final void Function(String?) setRelevantAssistantMessageId;
+  final String? Function(String bidId) getCachedContent;
+  final void Function(String bidId, String content) setCachedContent;
   final VoidCallback resetAll;
   final OnEventCallback? onEvent;
 

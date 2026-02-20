@@ -97,9 +97,9 @@ void usePreloadAds(
     setReadyForStreamingAssistant(false);
     setReadyForStreamingUser(false);
 
-    notifyAdFilled() {
+    notifyAdFilled(double? revenue) {
       if (isDisabledRef.value) return;
-      onEvent?.call(AdEvent(type: AdEventType.adFilled));
+      onEvent?.call(AdEvent(type: AdEventType.adFilled, revenue: revenue));
     }
 
     notifyAdNoFill(String skipCode) {
@@ -185,7 +185,7 @@ void usePreloadAds(
         setBids([...bids]);
         setReadyForStreamingUser(true);
         Logger.log('Preload ads finished');
-        notifyAdFilled();
+        notifyAdFilled(bids.firstOrNull?.revenue);
       } catch (e) {
         Logger.error('Preload ads error: $e');
         notifyAdError(e.toString(), AdEvent.skipCodeRequestFailed);

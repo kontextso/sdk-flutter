@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = 'kontext_flutter_sdk'
-  s.version          = '2.1.3'
+  s.version          = '2.2.0'
   s.summary          = 'Kontext Flutter SDK plugin.'
   s.description      = <<-DESC
 Kontext Flutter SDK: sound status, app info, hardware, power, network, etc.
@@ -16,7 +16,7 @@ Kontext Flutter SDK: sound status, app info, hardware, power, network, etc.
   s.platform            = :ios, '12.0'
   s.swift_version       = '5.0'
 
-  s.frameworks = 'AVFoundation', 'SystemConfiguration', 'CoreTelephony', 'WebKit'
+  s.frameworks = 'AVFoundation', 'SystemConfiguration', 'CoreTelephony', 'WebKit', 'AdSupport', 'AppTrackingTransparency'
 
   s.resources = ['PrivacyInfo.xcprivacy']
 

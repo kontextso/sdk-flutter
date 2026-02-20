@@ -2,7 +2,7 @@ import 'dart:async' show Timer;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show DeviceOrientation, SystemChrome;
-import 'package:kontext_flutter_sdk/src/utils/types.dart' show Json;
+import 'package:kontext_flutter_sdk/src/utils/types.dart' show Json, OpenIframeComponent;
 import 'package:kontext_flutter_sdk/src/widgets/kontext_webview.dart';
 
 typedef InterstitialModalShowFunc = void Function(
@@ -11,7 +11,9 @@ typedef InterstitialModalShowFunc = void Function(
   required Uri uri,
   required Duration initTimeout,
   required void Function(Json? data) onClickIframe,
-  required void Function(Json? data) onEventIframe,
+  required OnEventIframe onEventIframe,
+  required void Function(OpenIframeComponent component, Json? data) onOpenComponentIframe,
+  required void Function(OpenIframeComponent component) onCloseComponentIframe,
 });
 
 class InterstitialModal {
@@ -27,11 +29,21 @@ class InterstitialModal {
     required Uri uri,
     required Duration initTimeout,
     required void Function(Json? data) onClickIframe,
-    required void Function(Json? data) onEventIframe,
+    required OnEventIframe onEventIframe,
+    required void Function(OpenIframeComponent component, Json? data) onOpenComponentIframe,
+    required void Function(OpenIframeComponent component) onCloseComponentIframe,
     @visibleForTesting Key? animatedOpacityKey,
     @visibleForTesting KontextWebviewBuilder? webviewBuilder,
   }) {
-    close();
+    closeSKOverlay() => onCloseComponentIframe(OpenIframeComponent.skoverlay);
+    closeSkStoreProduct() => onCloseComponentIframe(OpenIframeComponent.skstoreproduct);
+    closeAll() {
+      closeSKOverlay();
+      closeSkStoreProduct();
+      closeModal();
+    }
+
+    closeModal();
 
     final visible = ValueNotifier<bool>(false);
 
@@ -40,7 +52,7 @@ class InterstitialModal {
           Key? key,
           required Uri uri,
           required List<String> allowedOrigins,
-          required void Function(Json? data) onEventIframe,
+          required OnEventIframe onEventIframe,
           required OnMessageReceived onMessageReceived,
         }) =>
             KontextWebview(
@@ -82,9 +94,26 @@ class InterstitialModal {
                           _initTimer?.cancel();
                           visible.value = true;
                           break;
+                        case 'open-component-iframe':
+                        case 'open-skoverlay-iframe':
+                        case 'open-skstoreproduct-iframe':
+                          final component = OpenIframeComponent.fromMessageType(messageType);
+                          if (component == null) {
+                            return;
+                          }
+                          onOpenComponentIframe(component, data);
+                          break;
                         case 'close-component-iframe':
+                          closeModal();
+                          break;
+                        case 'close-skoverlay-iframe':
+                          closeSKOverlay();
+                          break;
+                        case 'close-skstoreproduct-iframe':
+                          closeSkStoreProduct();
+                          break;
                         case 'error-component-iframe':
-                          close();
+                          closeAll();
                           break;
                         case 'click-iframe':
                           onClickIframe(data);
@@ -102,10 +131,10 @@ class InterstitialModal {
     );
 
     Overlay.of(context, rootOverlay: true).insert(_entry!);
-    _initTimer = Timer(initTimeout, () => close());
+    _initTimer = Timer(initTimeout, () => closeAll());
   }
 
-  static void close() {
+  static void closeModal() {
     _initTimer?.cancel();
     _initTimer = null;
     _entry?.remove();

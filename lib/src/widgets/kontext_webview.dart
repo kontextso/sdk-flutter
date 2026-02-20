@@ -1,9 +1,11 @@
 import 'dart:collection' show UnmodifiableListView;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:kontext_flutter_sdk/src/services/logger.dart' show Logger;
 import 'package:kontext_flutter_sdk/src/utils/types.dart' show Json;
+import 'package:kontext_flutter_sdk/src/widgets/webview_console_error_limiter.dart' show WebViewConsoleErrorLimiter;
 
 final _earlyBridge = UserScript(
   source: '''
@@ -56,16 +58,17 @@ final _flushMsgQueue = '''
   })();
 ''';
 
+typedef OnEventIframe = void Function(InAppWebViewController controller, Json? data);
 typedef OnMessageReceived = void Function(InAppWebViewController controller, String messageType, Json? data);
 typedef KontextWebviewBuilder = Widget Function({
   Key? key,
   required Uri uri,
   required List<String> allowedOrigins,
-  required void Function(Json? data) onEventIframe,
+  required OnEventIframe onEventIframe,
   required OnMessageReceived onMessageReceived,
 });
 
-class KontextWebview extends StatelessWidget {
+class KontextWebview extends HookWidget {
   const KontextWebview({
     super.key,
     required this.uri,
@@ -76,11 +79,46 @@ class KontextWebview extends StatelessWidget {
 
   final Uri uri;
   final List<String> allowedOrigins;
-  final void Function(Json? data) onEventIframe;
+  final OnEventIframe onEventIframe;
   final OnMessageReceived onMessageReceived;
+
+  void _logError(WebViewConsoleErrorLimiter limiter, {required String message}) {
+    if (limiter.shouldSendRemote(message)) {
+      Logger.error(message);
+    } else {
+      Logger.errorLocalOnly(message);
+    }
+  }
+
+  bool _isAllowedUrl(String url) {
+    final uri = Uri.tryParse(url);
+    if (uri == null) {
+      return false;
+    }
+
+    return allowedOrigins.any((origin) {
+      final originUri = Uri.tryParse(origin);
+      if (originUri == null) {
+        return false;
+      }
+
+      return uri.scheme == originUri.scheme && uri.host == originUri.host;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    final webViewConsoleErrorLimiter = useMemoized(() => WebViewConsoleErrorLimiter());
+    final previousUri = useRef<Uri?>(null);
+
+    useEffect(() {
+      if (previousUri.value != null && previousUri.value != uri) {
+        webViewConsoleErrorLimiter.clear();
+      }
+      previousUri.value = uri;
+      return null;
+    }, [uri, webViewConsoleErrorLimiter]);
+
     return InAppWebView(
       initialUrlRequest: URLRequest(url: WebUri.uri(uri)),
       initialUserScripts: UnmodifiableListView([_earlyBridge]),
@@ -104,7 +142,7 @@ class KontextWebview extends StatelessWidget {
           return NavigationActionPolicy.ALLOW;
         }
 
-        if (allowedOrigins.any((origin) => url.contains(origin))) {
+        if (_isAllowedUrl(url)) {
           return NavigationActionPolicy.ALLOW;
         }
 
@@ -122,11 +160,11 @@ class KontextWebview extends StatelessWidget {
             final messageType = postMessage['type'];
             final data = postMessage['data'];
 
-            if (messageType is String && (data == null || data is Json)) {
+            if (messageType is String && data is Json?) {
               if (messageType == 'event-iframe') {
-                onEventIframe(data);
+                onEventIframe(controller, data);
               }
-              onMessageReceived(controller, messageType, data as Json?);
+              onMessageReceived(controller, messageType, data);
             }
           },
         );
@@ -134,19 +172,29 @@ class KontextWebview extends StatelessWidget {
         controller.evaluateJavascript(source: _flushMsgQueue);
       },
       onConsoleMessage: (controller, consoleMessage) {
-        final message = consoleMessage.message;
         final level = consoleMessage.messageLevel;
+        final webViewMessage = 'WebView Console $level: ${consoleMessage.message}';
 
-        if (level == ConsoleMessageLevel.ERROR) {
-          Logger.error('WebView Console $level: $message');
-        } else if (level == ConsoleMessageLevel.WARNING) {
-          Logger.warn('WebView Console $level: $message');
-        } else {
-          Logger.info('WebView Console: $message');
+        switch (level) {
+          case ConsoleMessageLevel.ERROR:
+            _logError(
+              webViewConsoleErrorLimiter,
+              message: webViewMessage,
+            );
+            break;
+          case ConsoleMessageLevel.WARNING:
+            Logger.warn(webViewMessage);
+            break;
+          default:
+            Logger.info(webViewMessage);
         }
       },
       onReceivedError: (controller, request, error) {
-        Logger.error('Error received in InAppWebView: $error, request: $request');
+        final webViewMessage = 'Error received in InAppWebView: $error, request: $request';
+        _logError(
+          webViewConsoleErrorLimiter,
+          message: webViewMessage,
+        );
       },
       onReceivedHttpError: (controller, request, error) {
         // Ignore favicon 404 errors as they're not critical
@@ -154,7 +202,11 @@ class KontextWebview extends StatelessWidget {
           return;
         }
 
-        Logger.error('HTTP error received in InAppWebView: $error, request: $request');
+        final webViewMessage = 'HTTP error received in InAppWebView: $error, request: $request';
+        _logError(
+          webViewConsoleErrorLimiter,
+          message: webViewMessage,
+        );
       },
     );
   }

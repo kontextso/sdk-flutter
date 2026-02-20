@@ -1,4 +1,4 @@
-import 'dart:async' show Timer;
+import 'dart:async' show Timer, unawaited;
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -6,8 +6,14 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:kontext_flutter_sdk/src/models/ad_event.dart';
 import 'package:kontext_flutter_sdk/src/models/message.dart';
+import 'package:kontext_flutter_sdk/src/models/bid.dart';
 import 'package:kontext_flutter_sdk/src/services/logger.dart';
 import 'package:kontext_flutter_sdk/src/utils/browser_opener.dart';
+// AAK is temporarily disabled
+// import 'package:kontext_flutter_sdk/src/services/ad_attribution_kit_service.dart';
+import 'package:kontext_flutter_sdk/src/services/sk_ad_network_service.dart';
+import 'package:kontext_flutter_sdk/src/services/sk_overlay_service.dart';
+import 'package:kontext_flutter_sdk/src/services/sk_store_product_service.dart';
 import 'package:kontext_flutter_sdk/src/utils/constants.dart';
 import 'package:kontext_flutter_sdk/src/utils/extensions.dart';
 import 'package:kontext_flutter_sdk/src/utils/kontext_url_builder.dart';
@@ -16,6 +22,8 @@ import 'package:kontext_flutter_sdk/src/widgets/ads_provider_data.dart';
 import 'package:kontext_flutter_sdk/src/widgets/utils/select_bid.dart';
 import 'package:kontext_flutter_sdk/src/widgets/interstitial_modal.dart';
 import 'package:kontext_flutter_sdk/src/widgets/kontext_webview.dart';
+
+enum _AttributionType { none, skan, aak }
 
 class AdFormat extends HookWidget {
   const AdFormat({
@@ -108,9 +116,7 @@ class AdFormat extends HookWidget {
       },
     };
 
-    controller.evaluateJavascript(source: '''
-      window.postMessage(${jsonEncode(payload)}, '$adServerUrl');
-    ''');
+    _postMessageToWebView(adServerUrl, controller, payload);
   }
 
   void _postUpdateIframe(
@@ -130,16 +136,143 @@ class AdFormat extends HookWidget {
       },
     };
 
+    _postMessageToWebView(adServerUrl, controller, payload);
+  }
+
+  void _postMessageToWebView(
+    String adServerUrl,
+    InAppWebViewController controller,
+    Json payload,
+  ) {
     controller.evaluateJavascript(source: '''
       window.postMessage(${jsonEncode(payload)}, '$adServerUrl');
     ''');
   }
 
-  void _handleClickIframe({required String adServerUrl, Json? data}) {
+  void _handleWebViewCreated(
+    BuildContext context, {
+    required Bid? bid,
+    required String adServerUrl,
+    required InAppWebViewController controller,
+    required String messageType,
+    required GlobalKey key,
+    Json? data,
+    required bool Function() isDisposed,
+    required Uri inlineUri,
+    required String bidId,
+    required ObjectRef<_AttributionType> attributionType,
+    required ValueNotifier<bool> iframeLoaded,
+    required ValueNotifier<bool> showIframe,
+    required ValueNotifier<double> height,
+    required VoidCallback resetIframe,
+    required AdsProviderData adsProviderData,
+  }) {
+    switch (messageType) {
+      case 'init-iframe':
+        iframeLoaded.value = true;
+        unawaited(_handleAttributionInitialization(bid?.akk, bid?.skan, attributionType));
+        break;
+      case 'show-iframe':
+        showIframe.value = true;
+        break;
+      case 'hide-iframe':
+        showIframe.value = false;
+        break;
+      case 'resize-iframe':
+        final dataHeight = data?['height'];
+        if (dataHeight is num) {
+          height.value = dataHeight.toDouble();
+        }
+        break;
+      case 'click-iframe':
+        _handleClickIframe(adServerUrl: adServerUrl, controller: controller, data: data);
+        break;
+      case 'ad-done-iframe':
+        final content = data?['cachedContent'] as String?;
+        if (content != null) {
+          adsProviderData.setCachedContent(bidId, content);
+        }
+        unawaited(_handleAttributionBeginView(key, attributionType));
+        break;
+      case 'open-component-iframe':
+      case 'open-skoverlay-iframe':
+      case 'open-skstoreproduct-iframe':
+        final component = OpenIframeComponent.fromMessageType(messageType);
+        if (component == null) {
+          return;
+        }
+
+        _handleOpenComponentIframe(
+          context,
+          adServerUrl: adServerUrl,
+          controller: controller,
+          inlineUri: inlineUri,
+          bidId: bidId,
+          component: component,
+          data: data,
+          onEvent: adsProviderData.onEvent,
+        );
+        break;
+      case 'close-component-iframe':
+      case 'close-skoverlay-iframe':
+      case 'close-skstoreproduct-iframe':
+        final component = OpenIframeComponent.fromMessageType(messageType);
+        if (component == null) {
+          return;
+        }
+
+        _handleCloseComponentIframe(component, adServerUrl: adServerUrl, controller: controller);
+        break;
+      case 'error-iframe':
+        resetIframe();
+        break;
+      default:
+    }
+  }
+
+  Future<void> _handleClickIframe({
+    required String adServerUrl,
+    required InAppWebViewController controller,
+    Json? data,
+  }) async {
     try {
-      final path = data?['url'] as String?;
+      final path = data?['url'];
+      final appStoreId = data?['appStoreId'];
+
       final uri = (path is String) ? KontextUrlBuilder(baseUrl: adServerUrl, path: path).buildUri() : null;
-      if (uri != null) {
+
+      /*
+      // AAK is temporarily disabled
+      final navigationHandled = await AdAttributionKit.handleTap(uri);
+      if (appStoreId == null) {
+        // if (uri != null && !navigationHandled) {
+          browserOpener.open(uri);
+        }
+        return;
+      }
+      */
+
+      if (appStoreId == null) {
+        if (uri != null) {
+          browserOpener.open(uri);
+        }
+        return;
+      }
+
+      final storeProductOpened = await _presentSkStoreProduct(
+        adServerUrl,
+        controller,
+        appStoreId,
+      );
+
+      /*
+      // AAK is temporarily disabled
+      if (!storeProductOpened && uri != null && !navigationHandled) {
+        browserOpener.open(uri);
+      }
+      */
+
+      if (!storeProductOpened && uri != null) {
         browserOpener.open(uri);
       }
     } catch (e, stack) {
@@ -175,71 +308,150 @@ class AdFormat extends HookWidget {
     }
   }
 
-  void _handleWebViewCreated(
-    BuildContext context, {
-    required String messageType,
-    Json? data,
-    required bool Function() isDisposed,
-    required String adServerUrl,
-    required Uri inlineUri,
-    required String bidId,
-    required ValueNotifier<bool> iframeLoaded,
-    required ValueNotifier<bool> showIframe,
-    required ValueNotifier<double> height,
-    required VoidCallback resetIframe,
-    required AdsProviderData adsProviderData,
-  }) {
-    switch (messageType) {
-      case 'init-iframe':
-        iframeLoaded.value = true;
-        break;
-      case 'show-iframe':
-        showIframe.value = true;
-        break;
-      case 'hide-iframe':
-        showIframe.value = false;
-        break;
-      case 'resize-iframe':
-        final dataHeight = data?['height'];
-        if (dataHeight is num) {
-          height.value = dataHeight.toDouble();
-        }
-        break;
-      case 'click-iframe':
-        _handleClickIframe(adServerUrl: adServerUrl, data: data);
-        break;
-      case 'open-component-iframe':
-        final component = OpenIframeComponent.fromValue(data?['component']);
-        if (component == null) {
-          return;
-        }
+  Future<bool> _presentSkOverlay(String adServerUrl, InAppWebViewController controller, Json data) async {
+    final appStoreId = data['appStoreId'];
+    if (appStoreId is! String || appStoreId.isEmpty) {
+      Logger.error('App Store ID is required to open SKOverlay. Data: $data');
+      return false;
+    }
 
-        _handleOpenComponentIframe(
-          context,
-          adServerUrl: adServerUrl,
-          inlineUri: inlineUri,
-          bidId: bidId,
-          component: component,
-          data: data,
-          onEvent: adsProviderData.onEvent,
-        );
-        break;
-      case 'error-iframe':
-        resetIframe();
-        break;
-      default:
+    final position = SKOverlayPosition.values.firstWhere(
+      (e) => e.name == (data['position'] is String ? (data['position'] as String).toLowerCase() : null),
+      orElse: () => SKOverlayPosition.bottom,
+    );
+
+    final dismissible = data['dismissible'];
+
+    final success = await SKOverlayService.present(
+      appStoreId: appStoreId,
+      position: position,
+      dismissible: dismissible is bool ? dismissible : true,
+    );
+
+    if (success) {
+      _postMessageToWebView(adServerUrl, controller, {
+        'type': 'update-skoverlay-iframe',
+        'data': {'code': code, 'open': true},
+      });
+    }
+
+    return success;
+  }
+
+  Future<bool> _dismissSkOverlay(String adServerUrl, InAppWebViewController? controller) async {
+    final success = await SKOverlayService.dismiss();
+    if (success && controller != null) {
+      _postMessageToWebView(adServerUrl, controller, {
+        'type': 'update-skoverlay-iframe',
+        'data': {'code': code, 'open': false},
+      });
+    }
+    return success;
+  }
+
+  Future<bool> _presentSkStoreProduct(
+    String adServerUrl,
+    InAppWebViewController controller,
+    dynamic appStoreId,
+  ) async {
+    if (appStoreId is! String || appStoreId.isEmpty) {
+      Logger.error('App Store ID is required to open SKStoreProduct. Data: $appStoreId');
+      return false;
+    }
+
+    final success = await SKStoreProductService.present(appStoreId: appStoreId);
+    if (success) {
+      _postMessageToWebView(adServerUrl, controller, {
+        'type': 'update-skstoreproduct-iframe',
+        'data': {'code': code, 'open': true},
+      });
+    }
+    return success;
+  }
+
+  Future<void> _handleAttributionInitialization(
+    Akk? akk,
+    Skan? skan,
+    ObjectRef<_AttributionType> attributionType,
+  ) async {
+    if (akk != null) {
+      /*
+      // AAK is temporarily disabled
+      final success = await AdAttributionKit.initImpression(akk.jws);
+      if (success) attributionType.value = _AttributionType.aak;
+      */
+    } else if (skan != null) {
+      final success = await SKAdNetwork.initImpression(skan);
+      if (success) attributionType.value = _AttributionType.skan;
     }
   }
 
-  void _handleOpenComponentIframe(
+  Future<void> _handleAttributionBeginView(
+    GlobalKey key,
+    ObjectRef<_AttributionType> attributionType,
+  ) async {
+    switch (attributionType.value) {
+      case _AttributionType.aak:
+        /*
+        // AAK is temporarily disabled
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
+          final adContainer = _slotRectInWindow(key);
+          if (adContainer == null) return;
+          final frameSet = await AdAttributionKit.setAttributionFrame(adContainer);
+          if (frameSet) await AdAttributionKit.beginView();
+        });
+        */
+        break;
+      case _AttributionType.skan:
+        await SKAdNetwork.startImpression();
+        break;
+      case _AttributionType.none:
+        break;
+    }
+  }
+
+  Future<void> _cleanupAttributionResources(
+    ObjectRef<_AttributionType> attributionType,
+  ) async {
+    switch (attributionType.value) {
+      case _AttributionType.aak:
+        /*
+        // AAK is temporarily disabled
+        await AdAttributionKit.endView();
+        await AdAttributionKit.dispose();
+        */
+        break;
+      case _AttributionType.skan:
+        await SKAdNetwork.endImpression();
+        await SKAdNetwork.dispose();
+        break;
+      case _AttributionType.none:
+        break;
+    }
+    attributionType.value = _AttributionType.none;
+  }
+
+  Future<bool> _dismissSkStoreProduct(String adServerUrl, InAppWebViewController? controller) async {
+    final success = await SKStoreProductService.dismiss();
+    if (success && controller != null) {
+      _postMessageToWebView(adServerUrl, controller, {
+        'type': 'update-skstoreproduct-iframe',
+        'data': {'code': code, 'open': false},
+      });
+    }
+    return success;
+  }
+
+  Future<void> _handleOpenComponentIframe(
     BuildContext context, {
     required String adServerUrl,
+    required InAppWebViewController controller,
     required Uri inlineUri,
     required String bidId,
     required OpenIframeComponent component,
     Json? data,
     OnEventCallback? onEvent,
-  }) {
+  }) async {
     if (data == null) {
       Logger.error('Ad component data is missing. Component: $component');
       return;
@@ -259,14 +471,53 @@ class AdFormat extends HookWidget {
           initTimeout: timeout,
           onClickIframe: (data) => _handleClickIframe(
             adServerUrl: adServerUrl,
+            controller: controller,
             data: data,
           ),
-          onEventIframe: (data) => _handleEventIframe(
+          onEventIframe: (controller, data) => _handleEventIframe(
             adServerUrl: adServerUrl,
             onEvent: onEvent,
             data: data,
           ),
+          onOpenComponentIframe: (component, data) => _handleOpenComponentIframe(
+            context,
+            adServerUrl: adServerUrl,
+            controller: controller,
+            inlineUri: inlineUri,
+            bidId: bidId,
+            component: component,
+            data: data,
+            onEvent: onEvent,
+          ),
+          onCloseComponentIframe: (component) => _handleCloseComponentIframe(
+            component,
+            adServerUrl: adServerUrl,
+            controller: controller,
+          ),
         );
+        break;
+      case OpenIframeComponent.skoverlay:
+        await _presentSkOverlay(adServerUrl, controller, data);
+        break;
+      case OpenIframeComponent.skstoreproduct:
+        await _presentSkStoreProduct(adServerUrl, controller, data['appStoreId']);
+        break;
+    }
+  }
+
+  Future<void> _handleCloseComponentIframe(
+    OpenIframeComponent component, {
+    required String adServerUrl,
+    required InAppWebViewController controller,
+  }) async {
+    switch (component) {
+      case OpenIframeComponent.modal:
+        break; // Do nothing, already handled by InterstitialModal
+      case OpenIframeComponent.skoverlay:
+        await _dismissSkOverlay(adServerUrl, controller);
+        break;
+      case OpenIframeComponent.skstoreproduct:
+        await _dismissSkStoreProduct(adServerUrl, controller);
         break;
     }
   }
@@ -276,7 +527,10 @@ class AdFormat extends HookWidget {
     final slotKey = useMemoized(() => GlobalKey(), const []);
 
     final ticker = useRef<Timer?>(null);
-    void cancelTimer() {
+    final delayedTicker = useRef<Timer?>(null);
+    void cancelTimers() {
+      delayedTicker.value?.cancel();
+      delayedTicker.value = null;
       ticker.value?.cancel();
       ticker.value = null;
     }
@@ -288,7 +542,8 @@ class AdFormat extends HookWidget {
     final adsProviderData = AdsProviderData.of(context);
     final disabled = adsProviderData == null || adsProviderData.isDisabled;
 
-    final bidId = !disabled ? selectBid(adsProviderData, code: code, messageId: messageId)?.id : null;
+    final bid = !disabled ? selectBid(adsProviderData, code: code, messageId: messageId) : null;
+    final bidId = bid?.id;
 
     Uri? inlineUri;
     if (!disabled && bidId != null) {
@@ -300,6 +555,7 @@ class AdFormat extends HookWidget {
           .addParam('messageId', messageId)
           .addParam('sdk', kSdkLabel)
           .addParam('theme', adsProviderData.otherParams?['theme'])
+          .addParam('cachedContent', adsProviderData.getCachedContent(bidId))
           .buildUri();
     }
 
@@ -314,6 +570,20 @@ class AdFormat extends HookWidget {
 
     final adServerUrl = adsProviderData.adServerUrl;
     final otherParams = adsProviderData.otherParams;
+
+    final webviewController = useRef<InAppWebViewController?>(null);
+    final attributionType = useRef(_AttributionType.none); 
+
+    useEffect(() {
+      return () {
+        _dismissSkOverlay(adServerUrl, webviewController.value);
+        _dismissSkStoreProduct(adServerUrl, webviewController.value);
+      };
+    }, const []);
+
+    useEffect(() {
+      return () => _cleanupAttributionResources(attributionType);
+    }, const []);
 
     useEffect(() {
       return () => setActive(false);
@@ -339,13 +609,11 @@ class AdFormat extends HookWidget {
       return null;
     }, [showIframe.value]);
 
-    final webViewController = useRef<InAppWebViewController?>(null);
-
     final isNullDimensions = useRef(false);
     useEffect(() {
       void postDimensions() => _postDimensions(
             context: context,
-            controller: webViewController.value,
+            controller: webviewController.value,
             key: slotKey,
             adServerUrl: adServerUrl,
             disposed: () => disposed.value,
@@ -353,9 +621,13 @@ class AdFormat extends HookWidget {
             setIsNullDimensions: (isNull) => isNullDimensions.value = isNull,
           );
       final shouldRun = iframeLoaded.value && showIframe.value;
-      if (shouldRun && ticker.value == null) {
+      if (shouldRun && ticker.value == null && delayedTicker.value == null) {
         // Start after a short delay to allow initial layout to settle
-        Future.delayed(const Duration(milliseconds: 500), () {
+        delayedTicker.value = Timer(const Duration(milliseconds: 500), () {
+          delayedTicker.value = null;
+          if (!iframeLoaded.value || !showIframe.value || disposed.value) {
+            return;
+          }
           // First call immediately without waiting for the first tick
           postDimensions();
           ticker.value = Timer.periodic(
@@ -364,36 +636,40 @@ class AdFormat extends HookWidget {
           );
         });
       } else if (!shouldRun) {
-        cancelTimer();
+        cancelTimers();
       }
       return null;
     }, [iframeLoaded.value, showIframe.value]);
 
     useEffect(() {
-      return () => cancelTimer();
+      return () => cancelTimers();
     }, const []);
 
     final otherParamsHash = otherParams?.deepHash;
     useEffect(() {
-      if (!iframeLoaded.value || webViewController.value == null) {
+      if (!iframeLoaded.value || webviewController.value == null) {
         return null;
       }
 
       _postUpdateIframe(
-        webViewController.value!,
+        webviewController.value!,
         adServerUrl: adsProviderData.adServerUrl,
         messages: adsProviderData.messages.getLastMessages(),
         otherParams: otherParams,
       );
 
       return null;
-    }, [iframeLoaded.value, webViewController.value, otherParamsHash]);
+    }, [iframeLoaded.value, webviewController.value, otherParamsHash]);
 
     void resetIframe() {
+      unawaited(_cleanupAttributionResources(attributionType));
+      _dismissSkOverlay(adServerUrl, webviewController.value);
+      _dismissSkStoreProduct(adServerUrl, webviewController.value);
+
       iframeLoaded.value = false;
       showIframe.value = false;
       height.value = 0.0;
-      webViewController.value = null;
+      webviewController.value = null;
       adsProviderData.resetAll();
       setActive(false);
     }
@@ -403,7 +679,7 @@ class AdFormat extends HookWidget {
           Key? key,
           required Uri uri,
           required List<String> allowedOrigins,
-          required void Function(Json? data) onEventIframe,
+          required OnEventIframe onEventIframe,
           required OnMessageReceived onMessageReceived,
         }) =>
             KontextWebview(
@@ -425,19 +701,23 @@ class AdFormat extends HookWidget {
           key: ValueKey('ad-$messageId-$bidId'),
           uri: inlineUri,
           allowedOrigins: [adServerUrl],
-          onEventIframe: (data) => _handleEventIframe(
+          onEventIframe: (controller, data) => _handleEventIframe(
             adServerUrl: adServerUrl,
             onEvent: adsProviderData.onEvent,
             data: data,
           ),
           onMessageReceived: (controller, messageType, data) {
-            webViewController.value = controller;
+            webviewController.value = controller;
             _handleWebViewCreated(
               context,
+              bid: bid,
+              key: slotKey,
+              adServerUrl: adServerUrl,
+              controller: controller,
               messageType: messageType,
+              attributionType: attributionType,
               isDisposed: () => disposed.value,
               data: data,
-              adServerUrl: adServerUrl,
               inlineUri: inlineUri!,
               bidId: bidId,
               iframeLoaded: iframeLoaded,

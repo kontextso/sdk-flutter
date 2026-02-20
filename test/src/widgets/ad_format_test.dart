@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kontext_flutter_sdk/src/models/bid.dart';
 import 'package:kontext_flutter_sdk/src/models/ad_event.dart';
-import 'package:kontext_flutter_sdk/src/utils/types.dart' show Json;
+import 'package:kontext_flutter_sdk/src/services/sk_overlay_service.dart';
+import 'package:kontext_flutter_sdk/src/services/sk_store_product_service.dart';
+import 'package:kontext_flutter_sdk/src/utils/types.dart' show Json, OpenIframeComponent;
 import 'package:kontext_flutter_sdk/src/widgets/ad_format.dart';
 import 'package:kontext_flutter_sdk/src/widgets/interstitial_modal.dart' show InterstitialModal;
-import 'package:kontext_flutter_sdk/src/widgets/kontext_webview.dart' show OnMessageReceived;
+import 'package:kontext_flutter_sdk/src/widgets/kontext_webview.dart' show OnEventIframe, OnMessageReceived;
 import 'package:mocktail/mocktail.dart';
 
 import 'test_helpers.dart';
@@ -25,7 +28,7 @@ void main() {
     when(() => opener.open(any())).thenAnswer((_) async => true);
   });
 
-  tearDown(() => InterstitialModal.close());
+  tearDown(() => InterstitialModal.closeModal());
 
   group('AdFormat disabled', () {
     testWidgets(
@@ -226,7 +229,7 @@ void main() {
         Key? key,
         required Uri uri,
         required List<String> allowedOrigins,
-        required void Function(Json? data) onEventIframe,
+        required OnEventIframe onEventIframe,
         required OnMessageReceived onMessageReceived,
       }) {
         onMessage = onMessageReceived;
@@ -285,7 +288,7 @@ void main() {
         Key? key,
         required Uri uri,
         required List<String> allowedOrigins,
-        required void Function(Json? data) onEventIframe,
+        required OnEventIframe onEventIframe,
         required OnMessageReceived onMessageReceived,
       }) {
         onMessage = onMessageReceived;
@@ -335,7 +338,7 @@ void main() {
         Key? key,
         required Uri uri,
         required List<String> allowedOrigins,
-        required void Function(Json? data) onEventIframe,
+        required OnEventIframe onEventIframe,
         required OnMessageReceived onMessageReceived,
       }) {
         onMessage = onMessageReceived;
@@ -406,7 +409,7 @@ void main() {
         Key? key,
         required Uri uri,
         required List<String> allowedOrigins,
-        required void Function(Json? data) onEventIframe,
+        required OnEventIframe onEventIframe,
         required OnMessageReceived onMessageReceived,
       }) {
         onMessage = onMessageReceived;
@@ -467,7 +470,7 @@ void main() {
         Key? key,
         required Uri uri,
         required List<String> allowedOrigins,
-        required void Function(Json? data) onEventIframe,
+        required OnEventIframe onEventIframe,
         required OnMessageReceived onMessageReceived,
       }) {
         onMessage = onMessageReceived;
@@ -539,7 +542,7 @@ void main() {
         Key? key,
         required Uri uri,
         required List<String> allowedOrigins,
-        required void Function(Json? data) onEventIframe,
+        required OnEventIframe onEventIframe,
         required OnMessageReceived onMessageReceived,
       }) {
         onMessage = onMessageReceived;
@@ -572,14 +575,14 @@ void main() {
     'AdEvent.adClicked is emitted with correct data',
     (WidgetTester tester) async {
       late OnMessageReceived onMessage;
-      late void Function(Json? data) onEvent;
+      late OnEventIframe onEvent;
       final capturedEvents = <AdEvent>[];
 
       FakeWebview webviewBuilder({
         Key? key,
         required Uri uri,
         required List<String> allowedOrigins,
-        required void Function(Json? data) onEventIframe,
+        required OnEventIframe onEventIframe,
         required OnMessageReceived onMessageReceived,
       }) {
         onMessage = onMessageReceived;
@@ -617,7 +620,7 @@ void main() {
         },
       };
 
-      onEvent(eventData);
+      onEvent(fakeController, eventData);
       await tester.pump();
 
       expect(capturedEvents.length, equals(1));
@@ -635,14 +638,14 @@ void main() {
     'OnEventIframe with invalid payload is ignored',
     (WidgetTester tester) async {
       late OnMessageReceived onMessage;
-      late void Function(Json? data) onEvent;
+      late OnEventIframe onEvent;
       final capturedEvents = <AdEvent>[];
 
       FakeWebview webviewBuilder({
         Key? key,
         required Uri uri,
         required List<String> allowedOrigins,
-        required void Function(Json? data) onEventIframe,
+        required OnEventIframe onEventIframe,
         required OnMessageReceived onMessageReceived,
       }) {
         onMessage = onMessageReceived;
@@ -679,7 +682,7 @@ void main() {
         },
       };
 
-      onEvent(eventData);
+      onEvent(fakeController, eventData);
       await tester.pump();
 
       expect(capturedEvents.length, equals(0));
@@ -698,7 +701,7 @@ void main() {
         Key? key,
         required Uri uri,
         required List<String> allowedOrigins,
-        required void Function(Json? data) onEventIframe,
+        required OnEventIframe onEventIframe,
         required OnMessageReceived onMessageReceived,
       }) {
         onMessage = onMessageReceived;
@@ -715,7 +718,9 @@ void main() {
         required Uri uri,
         required Duration initTimeout,
         required void Function(Json? data) onClickIframe,
-        required void Function(Json? data) onEventIframe,
+        required OnEventIframe onEventIframe,
+        required void Function(OpenIframeComponent component, Json? data) onOpenComponentIframe,
+        required void Function(OpenIframeComponent component) onCloseComponentIframe,
       }) {
         capturedModalUri = uri;
         capturedAdServerUrl = adServerUrl;
@@ -760,7 +765,7 @@ void main() {
         Key? key,
         required Uri uri,
         required List<String> allowedOrigins,
-        required void Function(Json? data) onEventIframe,
+        required OnEventIframe onEventIframe,
         required OnMessageReceived onMessageReceived,
       }) {
         onMessage = onMessageReceived;
@@ -777,7 +782,9 @@ void main() {
         required Uri uri,
         required Duration initTimeout,
         required void Function(Json? data) onClickIframe,
-        required void Function(Json? data) onEventIframe,
+        required OnEventIframe onEventIframe,
+        required void Function(OpenIframeComponent component, Json? data) onOpenComponentIframe,
+        required void Function(OpenIframeComponent component) onCloseComponentIframe,
       }) {
         capturedTimeout = initTimeout;
       }
@@ -815,7 +822,7 @@ void main() {
         Key? key,
         required Uri uri,
         required List<String> allowedOrigins,
-        required void Function(Json? data) onEventIframe,
+        required OnEventIframe onEventIframe,
         required OnMessageReceived onMessageReceived,
       }) {
         onMessage = onMessageReceived;
@@ -858,7 +865,7 @@ void main() {
         Key? key,
         required Uri uri,
         required List<String> allowedOrigins,
-        required void Function(Json? data) onEventIframe,
+        required OnEventIframe onEventIframe,
         required OnMessageReceived onMessageReceived,
       }) {
         onMessage = onMessageReceived;
@@ -901,7 +908,7 @@ void main() {
         Key? key,
         required Uri uri,
         required List<String> allowedOrigins,
-        required void Function(Json? data) onEventIframe,
+        required OnEventIframe onEventIframe,
         required OnMessageReceived onMessageReceived,
       }) {
         onMessage = onMessageReceived;
@@ -936,7 +943,7 @@ void main() {
   );
 
   testWidgets(
-    'open-component-iframe with invalid component is ignored',
+    'open-*-iframe with invalid component is ignored',
     (WidgetTester tester) async {
       late OnMessageReceived onMessage;
       bool showInterstitialCalled = false;
@@ -945,7 +952,7 @@ void main() {
         Key? key,
         required Uri uri,
         required List<String> allowedOrigins,
-        required void Function(Json? data) onEventIframe,
+        required OnEventIframe onEventIframe,
         required OnMessageReceived onMessageReceived,
       }) {
         onMessage = onMessageReceived;
@@ -962,7 +969,9 @@ void main() {
         required Uri uri,
         required Duration initTimeout,
         required void Function(Json? data) onClickIframe,
-        required void Function(Json? data) onEventIframe,
+        required OnEventIframe onEventIframe,
+        required void Function(OpenIframeComponent component, Json? data) onOpenComponentIframe,
+        required void Function(OpenIframeComponent component) onCloseComponentIframe,
       }) {
         showInterstitialCalled = true;
       }
@@ -982,10 +991,7 @@ void main() {
       onMessage(fakeController, 'init-iframe', null);
       await tester.pump();
 
-      onMessage(fakeController, 'open-component-iframe', {
-        'component': 'invalid_component',
-        'timeout': 3000,
-      });
+      onMessage(fakeController, 'open-invalid-iframe', {'timeout': 3000});
       await tester.pump();
 
       expect(showInterstitialCalled, equals(false));
@@ -1002,7 +1008,7 @@ void main() {
         Key? key,
         required Uri uri,
         required List<String> allowedOrigins,
-        required void Function(Json? data) onEventIframe,
+        required OnEventIframe onEventIframe,
         required OnMessageReceived onMessageReceived,
       }) {
         onMessage = onMessageReceived;
@@ -1019,7 +1025,9 @@ void main() {
         required Uri uri,
         required Duration initTimeout,
         required void Function(Json? data) onClickIframe,
-        required void Function(Json? data) onEventIframe,
+        required OnEventIframe onEventIframe,
+        required void Function(OpenIframeComponent component, Json? data) onOpenComponentIframe,
+        required void Function(OpenIframeComponent component) onCloseComponentIframe,
       }) {
         showInterstitialCalled = true;
       }
@@ -1043,6 +1051,321 @@ void main() {
       await tester.pump();
 
       expect(showInterstitialCalled, equals(false));
+    },
+  );
+
+  testWidgets(
+    'open-skoverlay-iframe presents SKOverlay and posts open=true update',
+    (WidgetTester tester) async {
+      late OnMessageReceived onMessage;
+
+      FakeWebview webviewBuilder({
+        Key? key,
+        required Uri uri,
+        required List<String> allowedOrigins,
+        required OnEventIframe onEventIframe,
+        required OnMessageReceived onMessageReceived,
+      }) {
+        onMessage = onMessageReceived;
+        return FakeWebview(
+          key: key,
+          onEventIframe: onEventIframe,
+          onMessageReceived: onMessageReceived,
+        );
+      }
+
+      final methodCalls = <MethodCall>[];
+      final jsCalls = <String>[];
+      final originalIsIOS = SKOverlayService.isIOS;
+      SKOverlayService.isIOS = () => true;
+      addTearDown(() => SKOverlayService.isIOS = originalIsIOS);
+
+      when(() => fakeController.evaluateJavascript(source: any(named: 'source'))).thenAnswer((invocation) async {
+        final source = invocation.namedArguments[const Symbol('source')] as String;
+        jsCalls.add(source);
+        return null;
+      });
+
+      const channel = MethodChannel('kontext_flutter_sdk/sk_overlay');
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, (call) async {
+        methodCalls.add(call);
+        return true;
+      });
+
+      await tester.pumpWidget(
+        createDefaultProvider(
+          child: AdFormat(
+            code: 'test_code',
+            messageId: 'msg_1',
+            onActiveChanged: onActiveChanged,
+            webviewBuilder: webviewBuilder,
+          ),
+        ),
+      );
+
+      onMessage(fakeController, 'init-iframe', null);
+      await tester.pump();
+
+      methodCalls.clear();
+      jsCalls.clear();
+
+      onMessage(fakeController, 'open-skoverlay-iframe', {
+        'appStoreId': '123',
+        'position': 'bottom',
+        'dismissible': true,
+      });
+
+      await tester.pump();
+      await tester.pump();
+
+      expect(methodCalls.any((c) => c.method == 'present'), isTrue);
+
+      final presentCall = methodCalls.firstWhere((c) => c.method == 'present');
+      final args = presentCall.arguments as Map<dynamic, dynamic>;
+      expect(args['appStoreId'], equals('123'));
+      expect(args['position'], equals('bottom'));
+      expect(args['dismissible'], isTrue);
+
+      expect(
+        jsCalls.any(
+          (s) => s.contains('update-skoverlay-iframe') && s.contains('"open":true') && s.contains('"code":"test_code"'),
+        ),
+        isTrue,
+      );
+
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, null);
+    },
+  );
+
+  testWidgets(
+    'close-skoverlay-iframe dismisses SKOverlay and posts open=false update',
+    (WidgetTester tester) async {
+      late OnMessageReceived onMessage;
+
+      FakeWebview webviewBuilder({
+        Key? key,
+        required Uri uri,
+        required List<String> allowedOrigins,
+        required OnEventIframe onEventIframe,
+        required OnMessageReceived onMessageReceived,
+      }) {
+        onMessage = onMessageReceived;
+        return FakeWebview(
+          key: key,
+          onEventIframe: onEventIframe,
+          onMessageReceived: onMessageReceived,
+        );
+      }
+
+      final methodCalls = <MethodCall>[];
+      final jsCalls = <String>[];
+      final originalIsIOS = SKOverlayService.isIOS;
+      SKOverlayService.isIOS = () => true;
+      addTearDown(() => SKOverlayService.isIOS = originalIsIOS);
+
+      when(() => fakeController.evaluateJavascript(source: any(named: 'source'))).thenAnswer((invocation) async {
+        final source = invocation.namedArguments[const Symbol('source')] as String;
+        jsCalls.add(source);
+        return null;
+      });
+
+      const channel = MethodChannel('kontext_flutter_sdk/sk_overlay');
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, (call) async {
+        methodCalls.add(call);
+        return true;
+      });
+
+      await tester.pumpWidget(
+        createDefaultProvider(
+          child: AdFormat(
+            code: 'test_code',
+            messageId: 'msg_1',
+            onActiveChanged: onActiveChanged,
+            webviewBuilder: webviewBuilder,
+          ),
+        ),
+      );
+
+      onMessage(fakeController, 'init-iframe', null);
+      await tester.pump();
+
+      methodCalls.clear();
+      jsCalls.clear();
+
+      onMessage(fakeController, 'close-skoverlay-iframe', null);
+
+      await tester.pump();
+      await tester.pump();
+
+      expect(methodCalls.any((c) => c.method == 'dismiss'), isTrue);
+
+      expect(
+        jsCalls.any(
+          (s) =>
+              s.contains('update-skoverlay-iframe') && s.contains('"open":false') && s.contains('"code":"test_code"'),
+        ),
+        isTrue,
+      );
+
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, null);
+    },
+  );
+
+  testWidgets(
+    'open-skstoreproduct-iframe presents SKStoreProduct and posts open=true update',
+    (WidgetTester tester) async {
+      late OnMessageReceived onMessage;
+
+      FakeWebview webviewBuilder({
+        Key? key,
+        required Uri uri,
+        required List<String> allowedOrigins,
+        required OnEventIframe onEventIframe,
+        required OnMessageReceived onMessageReceived,
+      }) {
+        onMessage = onMessageReceived;
+        return FakeWebview(
+          key: key,
+          onEventIframe: onEventIframe,
+          onMessageReceived: onMessageReceived,
+        );
+      }
+
+      final methodCalls = <MethodCall>[];
+      final jsCalls = <String>[];
+
+      final originalIsIOS = SKStoreProductService.isIOS;
+      SKStoreProductService.isIOS = () => true;
+      addTearDown(() => SKStoreProductService.isIOS = originalIsIOS);
+
+      when(() => fakeController.evaluateJavascript(source: any(named: 'source'))).thenAnswer((invocation) async {
+        final source = invocation.namedArguments[const Symbol('source')] as String;
+        jsCalls.add(source);
+        return null;
+      });
+
+      const channel = MethodChannel('kontext_flutter_sdk/sk_store_product');
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, (call) async {
+        methodCalls.add(call);
+        return true;
+      });
+
+      await tester.pumpWidget(
+        createDefaultProvider(
+          child: AdFormat(
+            code: 'test_code',
+            messageId: 'msg_1',
+            onActiveChanged: onActiveChanged,
+            webviewBuilder: webviewBuilder,
+          ),
+        ),
+      );
+
+      onMessage(fakeController, 'init-iframe', null);
+      await tester.pump();
+
+      methodCalls.clear();
+      jsCalls.clear();
+
+      onMessage(fakeController, 'open-skstoreproduct-iframe', {
+        'appStoreId': '123',
+      });
+
+      await tester.pumpAndSettle();
+
+      expect(methodCalls.any((c) => c.method == 'present'), isTrue);
+
+      final presentCall = methodCalls.firstWhere((c) => c.method == 'present');
+      final args = presentCall.arguments as Map<dynamic, dynamic>;
+      expect(args['appStoreId'], equals('123'));
+
+      expect(
+        jsCalls.any(
+          (s) =>
+              s.contains('update-skstoreproduct-iframe') &&
+              s.contains('"open":true') &&
+              s.contains('"code":"test_code"'),
+        ),
+        isTrue,
+      );
+
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, null);
+    },
+  );
+
+  testWidgets(
+    'close-skstoreproduct-iframe dismisses SKStoreProduct and posts open=false update',
+    (WidgetTester tester) async {
+      late OnMessageReceived onMessage;
+
+      FakeWebview webviewBuilder({
+        Key? key,
+        required Uri uri,
+        required List<String> allowedOrigins,
+        required OnEventIframe onEventIframe,
+        required OnMessageReceived onMessageReceived,
+      }) {
+        onMessage = onMessageReceived;
+        return FakeWebview(
+          key: key,
+          onEventIframe: onEventIframe,
+          onMessageReceived: onMessageReceived,
+        );
+      }
+
+      final methodCalls = <MethodCall>[];
+      final jsCalls = <String>[];
+
+      final originalIsIOS = SKStoreProductService.isIOS;
+      SKStoreProductService.isIOS = () => true;
+      addTearDown(() => SKStoreProductService.isIOS = originalIsIOS);
+
+      when(() => fakeController.evaluateJavascript(source: any(named: 'source'))).thenAnswer((invocation) async {
+        final source = invocation.namedArguments[const Symbol('source')] as String;
+        jsCalls.add(source);
+        return null;
+      });
+
+      const channel = MethodChannel('kontext_flutter_sdk/sk_store_product');
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, (call) async {
+        methodCalls.add(call);
+        return true;
+      });
+
+      await tester.pumpWidget(
+        createDefaultProvider(
+          child: AdFormat(
+            code: 'test_code',
+            messageId: 'msg_1',
+            onActiveChanged: onActiveChanged,
+            webviewBuilder: webviewBuilder,
+          ),
+        ),
+      );
+
+      onMessage(fakeController, 'init-iframe', null);
+      await tester.pump();
+
+      methodCalls.clear();
+      jsCalls.clear();
+
+      onMessage(fakeController, 'close-skstoreproduct-iframe', null);
+
+      await tester.pumpAndSettle();
+
+      expect(methodCalls.any((c) => c.method == 'dismiss'), isTrue);
+
+      expect(
+        jsCalls.any(
+          (s) =>
+              s.contains('update-skstoreproduct-iframe') &&
+              s.contains('"open":false') &&
+              s.contains('"code":"test_code"'),
+        ),
+        isTrue,
+      );
+
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, null);
     },
   );
 }
