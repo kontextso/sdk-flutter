@@ -9,7 +9,8 @@ import 'package:kontext_flutter_sdk/src/models/message.dart';
 import 'package:kontext_flutter_sdk/src/models/bid.dart';
 import 'package:kontext_flutter_sdk/src/services/logger.dart';
 import 'package:kontext_flutter_sdk/src/utils/browser_opener.dart';
-import 'package:kontext_flutter_sdk/src/services/ad_attribution_kit_service.dart';
+// AAK is temporarily disabled
+// import 'package:kontext_flutter_sdk/src/services/ad_attribution_kit_service.dart';
 import 'package:kontext_flutter_sdk/src/services/sk_ad_network_service.dart';
 import 'package:kontext_flutter_sdk/src/services/sk_overlay_service.dart';
 import 'package:kontext_flutter_sdk/src/services/sk_store_product_service.dart';
@@ -240,10 +241,19 @@ class AdFormat extends HookWidget {
 
       final uri = (path is String) ? KontextUrlBuilder(baseUrl: adServerUrl, path: path).buildUri() : null;
 
+      /*
+      // AAK is temporarily disabled
       final navigationHandled = await AdAttributionKit.handleTap(uri);
+      if (appStoreId == null) {
+        // if (uri != null && !navigationHandled) {
+          browserOpener.open(uri);
+        }
+        return;
+      }
+      */
 
       if (appStoreId == null) {
-        if (uri != null && !navigationHandled) {
+        if (uri != null) {
           browserOpener.open(uri);
         }
         return;
@@ -255,7 +265,14 @@ class AdFormat extends HookWidget {
         appStoreId,
       );
 
+      /*
+      // AAK is temporarily disabled
       if (!storeProductOpened && uri != null && !navigationHandled) {
+        browserOpener.open(uri);
+      }
+      */
+
+      if (!storeProductOpened && uri != null) {
         browserOpener.open(uri);
       }
     } catch (e, stack) {
@@ -358,8 +375,11 @@ class AdFormat extends HookWidget {
     ObjectRef<_AttributionType> attributionType,
   ) async {
     if (akk != null) {
+      /*
+      // AAK is temporarily disabled
       final success = await AdAttributionKit.initImpression(akk.jws);
       if (success) attributionType.value = _AttributionType.aak;
+      */
     } else if (skan != null) {
       final success = await SKAdNetwork.initImpression(skan);
       if (success) attributionType.value = _AttributionType.skan;
@@ -372,12 +392,15 @@ class AdFormat extends HookWidget {
   ) async {
     switch (attributionType.value) {
       case _AttributionType.aak:
+        /*
+        // AAK is temporarily disabled
         WidgetsBinding.instance.addPostFrameCallback((_) async {
           final adContainer = _slotRectInWindow(key);
           if (adContainer == null) return;
           final frameSet = await AdAttributionKit.setAttributionFrame(adContainer);
           if (frameSet) await AdAttributionKit.beginView();
         });
+        */
         break;
       case _AttributionType.skan:
         await SKAdNetwork.startImpression();
@@ -392,8 +415,11 @@ class AdFormat extends HookWidget {
   ) async {
     switch (attributionType.value) {
       case _AttributionType.aak:
+        /*
+        // AAK is temporarily disabled
         await AdAttributionKit.endView();
         await AdAttributionKit.dispose();
+        */
         break;
       case _AttributionType.skan:
         await SKAdNetwork.endImpression();
