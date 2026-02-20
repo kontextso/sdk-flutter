@@ -376,6 +376,7 @@ class AdFormat extends HookWidget {
   ) async {
     if (akk != null) {
       /*
+      // AAK is temporarily disabled
       final success = await AdAttributionKit.initImpression(akk.jws);
       if (success) attributionType.value = _AttributionType.aak;
       */
