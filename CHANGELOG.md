@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.2.0
+* Automatically retrieve IFA (ATT flow on iOS, Advertising ID on Android).
+* Added SKOverlay support.
+* Added SKStoreProductViewController support.
+* Added SKAdNetwork (SKAN) support with full compatibility with DSP SKAN responses.
+* Improved logging and expanded test coverage.
+
 ## 2.1.3
 * Fix the issue on iOS that caused music interruption when the preload request is made.
 
