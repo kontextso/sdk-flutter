@@ -1,0 +1,103 @@
+name: Publish to pub.dev
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  verify_tag_on_main:
+    name: Verify tag is on main
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (full history for ancestry check)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Ensure tag commit is contained in origin/main
+        run: |
+          git fetch origin main --prune
+          echo "Tag commit: $GITHUB_SHA"
+          git merge-base --is-ancestor "$GITHUB_SHA" "origin/main"
+          echo "OK: tag commit is reachable from main"
+
+  prepublish_checks:
+    name: pana + pub dry-run
+    needs: verify_tag_on_main
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.24.0"
+          channel: stable
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Install pana
+        run: |
+          dart pub global activate pana
+          echo "$HOME/.pub-cache/bin" >> $GITHUB_PATH
+
+      - name: Run pana
+        id: pana
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          dart pub global run pana --flutter-sdk "$FLUTTER_ROOT" . 2>&1 | tee pana.txt
+
+      - name: Pub publish dry-run
+        id: pub_dry_run
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          dart pub publish --dry-run 2>&1 | tee pub-dry-run.txt
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-reports
+          path: |
+            pana.txt
+            pub-dry-run.txt
+          if-no-files-found: warn
+
+      - name: Fail if checks failed
+        if: always()
+        run: |
+          if [ "${{ steps.pana.outcome }}" != "success" ] || [ "${{ steps.pub_dry_run.outcome }}" != "success" ]; then
+            echo "One or more prepublish checks failed"
+            exit 1
+          fi
+
+  publish:
+    name: Publish (manual approval required)
+    needs: prepublish_checks
+    runs-on: ubuntu-latest
+
+    environment:
+      name: pubdev-release
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.24.0"
+          channel: stable
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Publish to pub.dev
+        run: dart pub publish --force
