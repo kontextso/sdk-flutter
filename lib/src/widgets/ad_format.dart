@@ -292,7 +292,7 @@ class AdFormat extends HookWidget {
 
       final updatedData = {
         ...data,
-        if (bid.revenue != null) 'revenue': bid.revenue,
+        if (bid.revenue != null && data['name'] == 'ad.viewed') 'revenue': bid.revenue,
         if (payload != null)
           'payload': {
             ...payload,
