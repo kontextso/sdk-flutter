@@ -100,10 +100,7 @@ class AdEvent {
         code: json['code'] as String?,
         id: payloadData['id'] as String?,
         content: payloadData['content'] as String?,
-        revenue: switch (json['revenue'] ?? payloadData['revenue']) {
-          final num v => v.toDouble(),
-          _ => null,
-        },
+        revenue: json['revenue'] as double?,
         messageId: payloadData['messageId'] as String?,
         url: payloadData['url'] as String?,
         format: payloadData['format'] as String?,
