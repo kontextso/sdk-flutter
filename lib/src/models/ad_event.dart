@@ -46,7 +46,6 @@ class AdEvent {
     this.errCode,
   });
 
-
   static const String skipCodeUnFilledBid = 'unfilled_bid';
   static const String skipCodeSessionDisabled = 'session_disabled';
   static const String skipCodeRequestFailed = 'request_failed';
@@ -114,6 +113,38 @@ class AdEvent {
     return AdEvent(type: AdEventType.unknown);
   }
 
+  /// Creates a copy of the event with optional new values.
+  AdEvent copyWith({
+    AdEventType? type,
+    String? code,
+    String? skipCode,
+    String? id,
+    double? revenue,
+    String? content,
+    String? messageId,
+    String? url,
+    String? format,
+    String? area,
+    String? message,
+    String? errCode,
+  }) {
+    return AdEvent(
+      type: type ?? this.type,
+      code: code ?? this.code,
+      skipCode: skipCode ?? this.skipCode,
+      id: id ?? this.id,
+      revenue: revenue ?? this.revenue,
+      content: content ?? this.content,
+      messageId: messageId ?? this.messageId,
+      url: url ?? this.url,
+      format: format ?? this.format,
+      area: area ?? this.area,
+      message: message ?? this.message,
+      errCode: errCode ?? this.errCode,
+    );
+  }
+
   @override
-  String toString() => 'AdEvent(type: $type, code: $code, skipCode: $skipCode, id: $id, revenue: $revenue, content: $content, messageId: $messageId, url: $url, format: $format, area: $area, message: $message, errCode: $errCode)';
+  String toString() =>
+      'AdEvent(type: $type, code: $code, skipCode: $skipCode, id: $id, revenue: $revenue, content: $content, messageId: $messageId, url: $url, format: $format, area: $area, message: $message, errCode: $errCode)';
 }

@@ -288,20 +288,15 @@ class AdFormat extends HookWidget {
     try {
       final payload = data['payload'] as Json?;
       final path = payload?['url'] as String?;
-      final uri = (path is String) ? KontextUrlBuilder(baseUrl: adServerUrl, path: path).buildUri() : null;
+      final uri = path != null ? KontextUrlBuilder(baseUrl: adServerUrl, path: path).buildUri() : null;
 
-      final updatedData = {
-        ...data,
-        if (bid.revenue != null && data['name'] == 'ad.viewed') 'revenue': bid.revenue,
-        if (payload != null)
-          'payload': {
-            ...payload,
-            if (uri != null) 'url': uri.toString(),
-          }
-      };
-
-      final adEvent = AdEvent.fromJson(updatedData);
-      onEvent?.call(adEvent);
+      final adEvent = AdEvent.fromJson(data);
+      onEvent?.call(
+        adEvent.copyWith(
+          revenue: adEvent.type == AdEventType.adViewed && bid.revenue != null ? bid.revenue : null,
+          url: uri?.toString(),
+        ),
+      );
     } catch (e, stack) {
       Logger.exception(e, stack);
       return;
@@ -560,7 +555,7 @@ class AdFormat extends HookWidget {
           .buildUri();
     }
 
-    final isActive = !disabled && bidId != null && inlineUri != null;
+    final isActive = !disabled && bid != null && inlineUri != null;
 
     useEffect(() {
       setActive(isActive);
@@ -573,7 +568,7 @@ class AdFormat extends HookWidget {
     final otherParams = adsProviderData.otherParams;
 
     final webviewController = useRef<InAppWebViewController?>(null);
-    final attributionType = useRef(_AttributionType.none); 
+    final attributionType = useRef(_AttributionType.none);
 
     useEffect(() {
       return () {
@@ -703,7 +698,7 @@ class AdFormat extends HookWidget {
           uri: inlineUri,
           allowedOrigins: [adServerUrl],
           onEventIframe: (controller, data) => _handleEventIframe(
-            bid: bid!, // bid is always non-null here, isActive check above ensures this
+            bid: bid,
             adServerUrl: adServerUrl,
             onEvent: adsProviderData.onEvent,
             data: data,
@@ -712,7 +707,7 @@ class AdFormat extends HookWidget {
             webviewController.value = controller;
             _handleWebViewCreated(
               context,
-              bid: bid!, // bid is always non-null here, isActive check above ensures this
+              bid: bid,
               key: slotKey,
               adServerUrl: adServerUrl,
               controller: controller,
