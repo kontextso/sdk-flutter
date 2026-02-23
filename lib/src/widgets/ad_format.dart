@@ -151,7 +151,7 @@ class AdFormat extends HookWidget {
 
   void _handleWebViewCreated(
     BuildContext context, {
-    required Bid? bid,
+    required Bid bid,
     required String adServerUrl,
     required InAppWebViewController controller,
     required String messageType,
@@ -159,7 +159,6 @@ class AdFormat extends HookWidget {
     Json? data,
     required bool Function() isDisposed,
     required Uri inlineUri,
-    required String bidId,
     required ObjectRef<_AttributionType> attributionType,
     required ValueNotifier<bool> iframeLoaded,
     required ValueNotifier<bool> showIframe,
@@ -170,7 +169,7 @@ class AdFormat extends HookWidget {
     switch (messageType) {
       case 'init-iframe':
         iframeLoaded.value = true;
-        unawaited(_handleAttributionInitialization(bid?.akk, bid?.skan, attributionType));
+        unawaited(_handleAttributionInitialization(bid.akk, bid.skan, attributionType));
         break;
       case 'show-iframe':
         showIframe.value = true;
@@ -190,7 +189,7 @@ class AdFormat extends HookWidget {
       case 'ad-done-iframe':
         final content = data?['cachedContent'] as String?;
         if (content != null) {
-          adsProviderData.setCachedContent(bidId, content);
+          adsProviderData.setCachedContent(bid.id, content);
         }
         unawaited(_handleAttributionBeginView(key, attributionType));
         break;
@@ -204,10 +203,10 @@ class AdFormat extends HookWidget {
 
         _handleOpenComponentIframe(
           context,
+          bid: bid,
           adServerUrl: adServerUrl,
           controller: controller,
           inlineUri: inlineUri,
-          bidId: bidId,
           component: component,
           data: data,
           onEvent: adsProviderData.onEvent,
@@ -281,7 +280,7 @@ class AdFormat extends HookWidget {
     }
   }
 
-  void _handleEventIframe({required String adServerUrl, OnEventCallback? onEvent, Json? data}) {
+  void _handleEventIframe({required Bid bid, required String adServerUrl, OnEventCallback? onEvent, Json? data}) {
     if (data == null) {
       return;
     }
@@ -289,19 +288,15 @@ class AdFormat extends HookWidget {
     try {
       final payload = data['payload'] as Json?;
       final path = payload?['url'] as String?;
-      final uri = (path is String) ? KontextUrlBuilder(baseUrl: adServerUrl, path: path).buildUri() : null;
+      final uri = path != null ? KontextUrlBuilder(baseUrl: adServerUrl, path: path).buildUri() : null;
 
-      final updatedData = {
-        ...data,
-        if (payload != null)
-          'payload': {
-            ...payload,
-            if (uri != null) 'url': uri.toString(),
-          }
-      };
-
-      final adEvent = AdEvent.fromJson(updatedData);
-      onEvent?.call(adEvent);
+      final adEvent = AdEvent.fromJson(data);
+      onEvent?.call(
+        adEvent.copyWith(
+          revenue: adEvent.type == AdEventType.adViewed && bid.revenue != null ? bid.revenue : null,
+          url: uri?.toString(),
+        ),
+      );
     } catch (e, stack) {
       Logger.exception(e, stack);
       return;
@@ -444,10 +439,10 @@ class AdFormat extends HookWidget {
 
   Future<void> _handleOpenComponentIframe(
     BuildContext context, {
+    required Bid bid,
     required String adServerUrl,
     required InAppWebViewController controller,
     required Uri inlineUri,
-    required String bidId,
     required OpenIframeComponent component,
     Json? data,
     OnEventCallback? onEvent,
@@ -463,7 +458,7 @@ class AdFormat extends HookWidget {
 
     switch (component) {
       case OpenIframeComponent.modal:
-        final modalUri = inlineUri.replacePath('/api/${component.name}/$bidId');
+        final modalUri = inlineUri.replacePath('/api/${component.name}/${bid.id}');
         (showInterstitial ?? InterstitialModal.show)(
           context,
           adServerUrl: adServerUrl,
@@ -475,16 +470,17 @@ class AdFormat extends HookWidget {
             data: data,
           ),
           onEventIframe: (controller, data) => _handleEventIframe(
+            bid: bid,
             adServerUrl: adServerUrl,
             onEvent: onEvent,
             data: data,
           ),
           onOpenComponentIframe: (component, data) => _handleOpenComponentIframe(
             context,
+            bid: bid,
             adServerUrl: adServerUrl,
             controller: controller,
             inlineUri: inlineUri,
-            bidId: bidId,
             component: component,
             data: data,
             onEvent: onEvent,
@@ -559,7 +555,7 @@ class AdFormat extends HookWidget {
           .buildUri();
     }
 
-    final isActive = !disabled && bidId != null && inlineUri != null;
+    final isActive = !disabled && bid != null && inlineUri != null;
 
     useEffect(() {
       setActive(isActive);
@@ -572,7 +568,7 @@ class AdFormat extends HookWidget {
     final otherParams = adsProviderData.otherParams;
 
     final webviewController = useRef<InAppWebViewController?>(null);
-    final attributionType = useRef(_AttributionType.none); 
+    final attributionType = useRef(_AttributionType.none);
 
     useEffect(() {
       return () {
@@ -702,6 +698,7 @@ class AdFormat extends HookWidget {
           uri: inlineUri,
           allowedOrigins: [adServerUrl],
           onEventIframe: (controller, data) => _handleEventIframe(
+            bid: bid,
             adServerUrl: adServerUrl,
             onEvent: adsProviderData.onEvent,
             data: data,
@@ -719,7 +716,6 @@ class AdFormat extends HookWidget {
               isDisposed: () => disposed.value,
               data: data,
               inlineUri: inlineUri!,
-              bidId: bidId,
               iframeLoaded: iframeLoaded,
               showIframe: showIframe,
               height: height,

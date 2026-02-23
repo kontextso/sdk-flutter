@@ -1,5 +1,8 @@
 # Changelog
 
+## 2.2.1
+* Add `revenue` to `AdEvent.adViewed` events.
+
 ## 2.2.0
 * Automatically retrieve IFA (ATT flow on iOS, Advertising ID on Android).
 * Added SKOverlay support.
