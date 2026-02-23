@@ -46,7 +46,6 @@ class AdEvent {
     this.errCode,
   });
 
-
   static const String skipCodeUnFilledBid = 'unfilled_bid';
   static const String skipCodeSessionDisabled = 'session_disabled';
   static const String skipCodeRequestFailed = 'request_failed';
@@ -67,7 +66,7 @@ class AdEvent {
   /// Bid ID (used in multiple events).
   final String? id;
 
-  /// Ad revenue (used in [AdEventType.adFilled]).
+  /// Ad revenue (used in [AdEventType.adFilled] and [AdEventType.adViewed]).
   final double? revenue;
 
   /// Ad content (used in [AdEventType.adClicked] and [AdEventType.adViewed]).
@@ -100,6 +99,7 @@ class AdEvent {
         code: json['code'] as String?,
         id: payloadData['id'] as String?,
         content: payloadData['content'] as String?,
+        revenue: json['revenue'] as double?,
         messageId: payloadData['messageId'] as String?,
         url: payloadData['url'] as String?,
         format: payloadData['format'] as String?,
@@ -113,6 +113,38 @@ class AdEvent {
     return AdEvent(type: AdEventType.unknown);
   }
 
+  /// Creates a copy of the event with optional new values.
+  AdEvent copyWith({
+    AdEventType? type,
+    String? code,
+    String? skipCode,
+    String? id,
+    double? revenue,
+    String? content,
+    String? messageId,
+    String? url,
+    String? format,
+    String? area,
+    String? message,
+    String? errCode,
+  }) {
+    return AdEvent(
+      type: type ?? this.type,
+      code: code ?? this.code,
+      skipCode: skipCode ?? this.skipCode,
+      id: id ?? this.id,
+      revenue: revenue ?? this.revenue,
+      content: content ?? this.content,
+      messageId: messageId ?? this.messageId,
+      url: url ?? this.url,
+      format: format ?? this.format,
+      area: area ?? this.area,
+      message: message ?? this.message,
+      errCode: errCode ?? this.errCode,
+    );
+  }
+
   @override
-  String toString() => 'AdEvent(type: $type, code: $code, skipCode: $skipCode, id: $id, revenue: $revenue, content: $content, messageId: $messageId, url: $url, format: $format, area: $area, message: $message, errCode: $errCode)';
+  String toString() =>
+      'AdEvent(type: $type, code: $code, skipCode: $skipCode, id: $id, revenue: $revenue, content: $content, messageId: $messageId, url: $url, format: $format, area: $area, message: $message, errCode: $errCode)';
 }
