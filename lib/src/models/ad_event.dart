@@ -67,7 +67,7 @@ class AdEvent {
   /// Bid ID (used in multiple events).
   final String? id;
 
-  /// Ad revenue (used in [AdEventType.adFilled]).
+  /// Ad revenue (used in [AdEventType.adFilled] and [AdEventType.adViewed]).
   final double? revenue;
 
   /// Ad content (used in [AdEventType.adClicked] and [AdEventType.adViewed]).
@@ -100,6 +100,7 @@ class AdEvent {
         code: json['code'] as String?,
         id: payloadData['id'] as String?,
         content: payloadData['content'] as String?,
+        revenue: (json['revenue'] ?? payloadData['revenue']) as double?,
         messageId: payloadData['messageId'] as String?,
         url: payloadData['url'] as String?,
         format: payloadData['format'] as String?,
