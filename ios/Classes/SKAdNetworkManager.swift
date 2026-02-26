@@ -23,7 +23,7 @@ final class SKAdNetworkManager {
     /// Optional keys:
     ///  - sourceIdentifier: String/Int (SKAdNetwork 4.0, iOS 16.1+)
     ///  - campaign: String/Int         (adCampaignIdentifier)
-    ///  - fidelities: Array  (iOS 16.1+; each entry may contain nonce, timestamp, signature)
+    ///  - fidelities: Array  (fidelity-0 supported iOS 14.5+; fidelity-1 for StoreKit-rendered surfaces)
     ///  - nonce: String                (adImpressionIdentifier; required if no fidelities)
     ///  - timestamp: String/Int        (required if no fidelities)
     ///  - signature: String            (required if no fidelities)
@@ -58,12 +58,7 @@ final class SKAdNetworkManager {
         let signature        = params["signature"] as? String
         let fidelities       = params["fidelities"] as? [[String: Any]]
 
-        let hasFidelities: Bool = {
-            if #available(iOS 16.1, *) {
-                return !(fidelities?.isEmpty ?? true)
-            }
-            return false
-        }()
+        let hasFidelities: Bool = !(fidelities?.isEmpty ?? true)
 
         // Validate that required strings are non-empty after trimming whitespace
         func isBlank(_ s: String?) -> Bool {
@@ -80,19 +75,10 @@ final class SKAdNetworkManager {
             if isBlank(signature) { missing.append("signature") }
         }
 
-        // When fidelities were provided but ignored due to OS version,
-        // include a clear hint in the error so the caller understands why the
-        // top-level nonce/timestamp/signature are still being required.
         guard missing.isEmpty else {
-            let hint: String? = (fidelities != nil && !hasFidelities)
-                ? "Note: fidelities array was provided but is only supported on iOS 16.1+. " +
-                "Top-level nonce/timestamp/signature are required on this OS version."
-                : nil
-
             completeOnMain(completion, FlutterError(
                 code: "MISSING_ARGUMENTS",
-                message: "Missing required arguments: \(missing.joined(separator: ", "))" +
-                        (hint.map { " \($0)" } ?? ""),
+                message: "Missing required arguments: \(missing.joined(separator: ", "))",
                 details: ["provided_keys": Array(params.keys)]
             ))
             return
@@ -121,20 +107,17 @@ final class SKAdNetworkManager {
             )
 
             if #available(iOS 16.1, *) {
-                // SKAN 4.0: hierarchical source identifier replaces adCampaignIdentifier
                 if let sourceIdentifier = sourceIdentifier {
                     imp.sourceIdentifier = sourceIdentifier
                 }
-                // SKAN 2.2 fidelity-type: 0 = view-through, 1 = StoreKit-rendered
-                if hasFidelities, let fidelities = fidelities {
-                    parseFidelities(fidelities, into: imp)
-                }
+            }
+            if hasFidelities, let fidelities = fidelities {
+                parseFidelities(fidelities, into: imp)  // runs on 14.5+, both branches
             }
 
             skImpression = imp
 
         } else {
-            // iOS 14.5–15.x: memberwise initializer not available, use property-based init
             let imp = SKAdImpression()
             imp.sourceAppStoreItemIdentifier     = sourceApp
             imp.advertisedAppStoreItemIdentifier = itunesItem!
@@ -144,6 +127,9 @@ final class SKAdNetworkManager {
             imp.timestamp                        = timestamp ?? NSNumber(value: 0)
             imp.signature                        = signature ?? ""
             imp.version                          = version!
+            if hasFidelities, let fidelities = fidelities {
+                parseFidelities(fidelities, into: imp) 
+            }
             skImpression = imp
         }
 
@@ -247,19 +233,18 @@ final class SKAdNetworkManager {
 
     /// Fills nonce/timestamp/signature on the impression from fidelity entries,
     /// only if those fields weren't already set at the top level.    
-    @available(iOS 16.1, *)
+    @available(iOS 14.5, *)
     private func parseFidelities(_ fidelities: [[String: Any]], into imp: SKAdImpression) {
-        for f in fidelities {
-            if imp.adImpressionIdentifier.isEmpty, let nonce = f["nonce"] as? String {
-                imp.adImpressionIdentifier = nonce
-            }
-            if imp.timestamp == NSNumber(value: 0) {
-                if let n = f["timestamp"] as? NSNumber { imp.timestamp = n }
-                else if let s = f["timestamp"] as? String, let i = Int(s) { imp.timestamp = NSNumber(value: i) }
-            }
-            if imp.signature.isEmpty, let sig = f["signature"] as? String {
-                imp.signature = sig
-            }
+        guard let f0 = fidelities.first(where: { ($0["fidelity"] as? Int) == 0 }) else { return }
+        if imp.adImpressionIdentifier.isEmpty, let nonce = f0["nonce"] as? String {
+            imp.adImpressionIdentifier = nonce
+        }
+        if imp.timestamp == NSNumber(value: 0) {
+            if let n = f0["timestamp"] as? NSNumber { imp.timestamp = n }
+            else if let s = f0["timestamp"] as? String, let i = Int(s) { imp.timestamp = NSNumber(value: i) }
+        }
+        if imp.signature.isEmpty, let sig = f0["signature"] as? String {
+            imp.signature = sig
         }
     }
 
