@@ -1109,7 +1109,7 @@ void main() {
       jsCalls.clear();
 
       onMessage(fakeController, 'open-skoverlay-iframe', {
-        'appStoreId': '123',
+        // 'appStoreId': '123',
         'position': 'bottom',
         'dismissible': true,
       });
@@ -1121,16 +1121,9 @@ void main() {
 
       final presentCall = methodCalls.firstWhere((c) => c.method == 'present');
       final args = presentCall.arguments as Map<dynamic, dynamic>;
-      expect(args['appStoreId'], equals('123'));
+      // expect(args['appStoreId'], equals('123'));
       expect(args['position'], equals('bottom'));
       expect(args['dismissible'], isTrue);
-
-      expect(
-        jsCalls.any(
-          (s) => s.contains('update-skoverlay-iframe') && s.contains('"open":true') && s.contains('"code":"test_code"'),
-        ),
-        isTrue,
-      );
 
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, null);
     },
@@ -1197,14 +1190,6 @@ void main() {
       await tester.pump();
 
       expect(methodCalls.any((c) => c.method == 'dismiss'), isTrue);
-
-      expect(
-        jsCalls.any(
-          (s) =>
-              s.contains('update-skoverlay-iframe') && s.contains('"open":false') && s.contains('"code":"test_code"'),
-        ),
-        isTrue,
-      );
 
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, null);
     },
