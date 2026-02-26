@@ -36,6 +36,8 @@ class AttributionFidelity {
   final int fidelity;
   final String signature;
   final String nonce;
+
+  /// Seconds since Unix epoch, as required by Apple's SKAdNetwork spec.
   final String timestamp;
 
   static AttributionFidelity? fromJson(Map<String, dynamic> json) {
@@ -92,6 +94,8 @@ class Skan {
   final String? campaign;
   final List<AttributionFidelity>? fidelities;
   final String? nonce;
+
+  /// Seconds since Unix epoch, as required by Apple's SKAdNetwork spec.
   final String? timestamp;
   final String? signature;
 
