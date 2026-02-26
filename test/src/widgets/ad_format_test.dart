@@ -4,7 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kontext_flutter_sdk/src/models/bid.dart';
 import 'package:kontext_flutter_sdk/src/models/ad_event.dart';
 import 'package:kontext_flutter_sdk/src/services/sk_overlay_service.dart';
-import 'package:kontext_flutter_sdk/src/services/sk_store_product_service.dart';
 import 'package:kontext_flutter_sdk/src/utils/types.dart' show Json, OpenIframeComponent;
 import 'package:kontext_flutter_sdk/src/widgets/ad_format.dart';
 import 'package:kontext_flutter_sdk/src/widgets/interstitial_modal.dart' show InterstitialModal;
