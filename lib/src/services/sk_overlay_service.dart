@@ -1,7 +1,9 @@
 import 'dart:io';
 
 import 'package:flutter/services.dart' show MethodChannel, PlatformException;
+import 'package:kontext_flutter_sdk/src/models/bid.dart';
 import 'package:kontext_flutter_sdk/src/services/logger.dart' show Logger;
+import 'package:kontext_flutter_sdk/src/utils/skan_utils.dart';
 
 enum SKOverlayPosition { bottom, bottomRaised }
 
@@ -11,19 +13,20 @@ abstract final class SKOverlayService {
   static bool Function() isIOS = () => Platform.isIOS;
 
   static Future<bool> present({
-    required String appStoreId,
+    required Skan skan,
     required SKOverlayPosition position,
     bool dismissible = true,
   }) async {
     if (!isIOS()) return false;
-    if (appStoreId.isEmpty) {
+    
+    if (skan.itunesItem.isEmpty) {
       Logger.error('SKOverlay: appStoreId cannot be empty');
       return false;
     }
 
     try {
       final result = await _channel.invokeMethod('present', {
-        'appStoreId': appStoreId,
+        'skan': skanToMap(skan),
         'position': position.name,
         'dismissible': dismissible,
       });
