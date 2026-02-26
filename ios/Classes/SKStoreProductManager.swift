@@ -68,6 +68,8 @@ final class SKStoreProductManager: NSObject, SKStoreProductViewControllerDelegat
 
     /// Appends all required SKAN install-validation keys to the SKStoreProduct params dict.
     private static func applySkanParams(_ skan: [String: Any], into params: inout [String: Any]) {
+        guard #available(iOS 14.0, *) else { return }
+
         guard
             let version   = skan["version"]   as? String, !version.isEmpty,
             let network   = skan["network"]   as? String, !network.isEmpty,
@@ -89,12 +91,14 @@ final class SKStoreProductManager: NSObject, SKStoreProductViewControllerDelegat
         if let uuid = UUID(uuidString: f1.nonce) {
             params[SKStoreProductParameterAdNetworkNonce] = uuid
         } else {
-            return  // nonce is malformed, skip attribution entirely
+            return
         }
 
-        if let sourceIdentifier = skan["sourceIdentifier"] as? String,
-           let sourceIdentifierInt = Int(sourceIdentifier) {
-            params[SKStoreProductParameterAdNetworkSourceIdentifier] = NSNumber(value: sourceIdentifierInt)
+        if #available(iOS 16.1, *) {
+            if let sourceIdentifier = skan["sourceIdentifier"] as? String,
+            let sourceIdentifierInt = Int(sourceIdentifier) {
+                params[SKStoreProductParameterAdNetworkSourceIdentifier] = NSNumber(value: sourceIdentifierInt)
+            }
         }
     }
     
