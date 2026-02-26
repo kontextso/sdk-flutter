@@ -123,6 +123,7 @@ class Api {
         headers: {
           'Kontextso-Publisher-Token': publisherToken,
           'Kontextso-Is-Disabled': isDisabled ? '1' : '0',
+          if (device.network.userAgent != null) 'User-Agent': device.network.userAgent!,
         },
       );
 
