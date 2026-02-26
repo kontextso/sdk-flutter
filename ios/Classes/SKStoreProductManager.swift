@@ -84,8 +84,13 @@ final class SKStoreProductManager: NSObject, SKStoreProductViewControllerDelegat
         params[SKStoreProductParameterAdNetworkSourceAppStoreIdentifier] = NSNumber(value: sourceAppInt)
         params[SKStoreProductParameterAdNetworkCampaignIdentifier]       = NSNumber(value: campaignInt)
         params[SKStoreProductParameterAdNetworkTimestamp]                = NSNumber(value: timestampInt)
-        params[SKStoreProductParameterAdNetworkNonce]                    = f1.nonce
         params[SKStoreProductParameterAdNetworkAttributionSignature]     = f1.signature
+
+        if let uuid = UUID(uuidString: f1.nonce) {
+            params[SKStoreProductParameterAdNetworkNonce] = uuid
+        } else {
+            return  // nonce is malformed, skip attribution entirely
+        }
 
         if let sourceIdentifier = skan["sourceIdentifier"] as? String,
            let sourceIdentifierInt = Int(sourceIdentifier) {
