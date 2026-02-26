@@ -1093,6 +1093,27 @@ void main() {
 
       await tester.pumpWidget(
         createDefaultProvider(
+          bids: [
+            Bid(
+              id: '1',
+              code: 'test_code',
+              position: AdDisplayPosition.afterAssistantMessage,
+              skan: Skan(
+                version: '4.0',
+                network: 'test.skadnetwork',
+                itunesItem: '123456',
+                sourceApp: '0',
+                fidelities: [
+                  AttributionFidelity(
+                    fidelity: 1,
+                    signature: 'test_sig',
+                    nonce: 'test_nonce',
+                    timestamp: '1234567890',
+                  ),
+                ],
+              ),
+            ),
+          ],
           child: AdFormat(
             code: 'test_code',
             messageId: 'msg_1',
@@ -1109,7 +1130,6 @@ void main() {
       jsCalls.clear();
 
       onMessage(fakeController, 'open-skoverlay-iframe', {
-        // 'appStoreId': '123',
         'position': 'bottom',
         'dismissible': true,
       });
@@ -1121,7 +1141,6 @@ void main() {
 
       final presentCall = methodCalls.firstWhere((c) => c.method == 'present');
       final args = presentCall.arguments as Map<dynamic, dynamic>;
-      // expect(args['appStoreId'], equals('123'));
       expect(args['position'], equals('bottom'));
       expect(args['dismissible'], isTrue);
 
