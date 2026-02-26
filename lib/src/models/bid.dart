@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 enum AdDisplayPosition { afterAssistantMessage, afterUserMessage }
 
 class Akk {
@@ -128,7 +130,7 @@ class Skan {
             sourceIdentifier == other.sourceIdentifier &&
             campaign == other.campaign &&
             nonce == other.nonce &&
-            fidelities == other.fidelities &&
+            listEquals(fidelities, other.fidelities) &&
             timestamp == other.timestamp &&
             signature == other.signature;
   }
@@ -141,7 +143,7 @@ class Skan {
         sourceApp,
         sourceIdentifier,
         campaign,
-        fidelities,
+        Object.hashAll(fidelities ?? const []),
         nonce,
         timestamp,
         signature,
