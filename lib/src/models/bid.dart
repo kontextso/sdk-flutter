@@ -128,6 +128,7 @@ class Skan {
             sourceIdentifier == other.sourceIdentifier &&
             campaign == other.campaign &&
             nonce == other.nonce &&
+            fidelities == other.fidelities &&
             timestamp == other.timestamp &&
             signature == other.signature;
   }
@@ -140,6 +141,7 @@ class Skan {
         sourceApp,
         sourceIdentifier,
         campaign,
+        fidelities,
         nonce,
         timestamp,
         signature,
