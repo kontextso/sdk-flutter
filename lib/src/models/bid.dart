@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 enum AdDisplayPosition { afterAssistantMessage, afterUserMessage }
+
 enum ImpressionTrigger { immediate, component }
 
 class Akk {
@@ -14,7 +15,7 @@ class Akk {
     } catch (_) {
       return null;
     }
-}
+  }
 
   @override
   bool operator ==(Object other) {
@@ -120,6 +121,29 @@ class Skan {
     }
   }
 
+  Map<String, dynamic> toJson() {
+    return {
+      'version': version,
+      'network': network,
+      'itunesItem': itunesItem,
+      'sourceApp': sourceApp,
+      if (sourceIdentifier != null) 'sourceIdentifier': sourceIdentifier,
+      if (campaign != null) 'campaign': campaign,
+      if (nonce != null) 'nonce': nonce,
+      if (timestamp != null) 'timestamp': timestamp,
+      if (signature != null) 'signature': signature,
+      if (fidelities != null)
+        'fidelities': fidelities!
+            .map((f) => {
+                  'fidelity': f.fidelity,
+                  'nonce': f.nonce,
+                  'timestamp': f.timestamp,
+                  'signature': f.signature,
+                })
+            .toList(),
+    };
+  }
+
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
@@ -158,7 +182,6 @@ class Skan {
   }
 }
 
-
 class Bid {
   Bid({
     required this.id,
@@ -167,7 +190,7 @@ class Bid {
     required this.position,
     this.akk,
     this.skan,
-    this.impressionTrigger = ImpressionTrigger.immediate
+    this.impressionTrigger = ImpressionTrigger.immediate,
   });
 
   final String id;
@@ -217,11 +240,10 @@ class Bid {
 
   static ImpressionTrigger _parseImpressionTrigger(Object? value) {
     if (value is! String) return ImpressionTrigger.immediate;
-    try {
-      return ImpressionTrigger.values.firstWhere((t) => t.name == value);
-    } catch (_) {
-      return ImpressionTrigger.immediate;
-    }
+    return ImpressionTrigger.values.firstWhere(
+      (t) => t.name == value,
+      orElse: () => ImpressionTrigger.immediate,
+    );
   }
 
   static double? _parseRevenue(Object? value) {

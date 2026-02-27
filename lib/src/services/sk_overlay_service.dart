@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter/services.dart' show MethodChannel, PlatformException;
 import 'package:kontext_flutter_sdk/src/models/bid.dart';
 import 'package:kontext_flutter_sdk/src/services/logger.dart' show Logger;
-import 'package:kontext_flutter_sdk/src/utils/skan_utils.dart';
 
 enum SKOverlayPosition { bottom, bottomRaised }
 
@@ -26,7 +25,7 @@ abstract final class SKOverlayService {
 
     try {
       final result = await _channel.invokeMethod('present', {
-        'skan': skanToMap(skan),
+        'skan': skan.toJson(),
         'position': position.name,
         'dismissible': dismissible,
       });

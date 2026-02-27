@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter/services.dart' show MethodChannel;
 import 'package:kontext_flutter_sdk/src/models/bid.dart' show Skan;
 import 'package:kontext_flutter_sdk/src/services/logger.dart' show Logger;
-import 'package:kontext_flutter_sdk/src/utils/skan_utils.dart';
 
 abstract final class SKStoreProductService {
   static const MethodChannel _channel = MethodChannel('kontext_flutter_sdk/sk_store_product');
@@ -14,7 +13,7 @@ abstract final class SKStoreProductService {
     if (!isIOS()) return false;
 
     try {
-      final result = await _channel.invokeMethod('present', skanToMap(skan));
+      final result = await _channel.invokeMethod('present', skan.toJson());
       Logger.debug('SKStoreProduct presented: $result');
       return result == true;
     } catch (e, stack) {
