@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 enum AdDisplayPosition { afterAssistantMessage, afterUserMessage }
+enum ImpressionTrigger { immediate, component }
 
 class Akk {
   Akk({required this.jws});
@@ -166,6 +167,7 @@ class Bid {
     required this.position,
     this.akk,
     this.skan,
+    this.impressionTrigger = ImpressionTrigger.immediate
   });
 
   final String id;
@@ -174,6 +176,7 @@ class Bid {
   final AdDisplayPosition position;
   final Akk? akk;
   final Skan? skan;
+  final ImpressionTrigger impressionTrigger;
 
   bool get isAfterAssistantMessage => position == AdDisplayPosition.afterAssistantMessage;
 
@@ -190,6 +193,7 @@ class Bid {
       ),
       akk: _parseAkk(json['akk']),
       skan: _parseSkan(json['skan']),
+      impressionTrigger: _parseImpressionTrigger(json['impressionTrigger']),
     );
   }
 
@@ -208,6 +212,15 @@ class Bid {
       return Skan.fromJson(value as Map<String, dynamic>);
     } catch (_) {
       return null;
+    }
+  }
+
+  static ImpressionTrigger _parseImpressionTrigger(Object? value) {
+    if (value is! String) return ImpressionTrigger.immediate;
+    try {
+      return ImpressionTrigger.values.firstWhere((t) => t.name == value);
+    } catch (_) {
+      return ImpressionTrigger.immediate;
     }
   }
 
@@ -237,14 +250,15 @@ class Bid {
             revenue == other.revenue &&
             position == other.position &&
             akk == other.akk &&
-            skan == other.skan;
+            skan == other.skan &&
+            impressionTrigger == other.impressionTrigger;
   }
 
   @override
-  int get hashCode => Object.hash(id, code, revenue, position, akk, skan);
+  int get hashCode => Object.hash(id, code, revenue, position, akk, skan, impressionTrigger);
 
   @override
   String toString() {
-    return 'Bid(id: $id, code: $code, revenue: $revenue, position: $position, akk: $akk, skan: $skan)';
+    return 'Bid(id: $id, code: $code, revenue: $revenue, position: $position, akk: $akk, skan: $skan, impressionTrigger: $impressionTrigger)';
   }
 }
