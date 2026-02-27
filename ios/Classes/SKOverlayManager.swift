@@ -124,7 +124,9 @@ final class SKOverlayManager: NSObject {
             }
         }
 
-        config.setAdImpression(imp)
+        if #available(iOS 16.0, *) {
+            config.setAdImpression(imp)
+        }
     }
     
     func dismiss(completion: @escaping (Bool) -> Void) {
