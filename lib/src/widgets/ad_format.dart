@@ -191,7 +191,9 @@ class AdFormat extends HookWidget {
         if (content != null) {
           adsProviderData.setCachedContent(bid.id, content);
         }
-        unawaited(_handleAttributionBeginView(key, attributionType));
+        if (bid.impressionTrigger == ImpressionTrigger.immediate) {
+          unawaited(_startAttributionImpression(attributionType));
+        }
         break;
       case 'open-component-iframe':
       case 'open-skoverlay-iframe':
@@ -207,6 +209,7 @@ class AdFormat extends HookWidget {
           controller: controller,
           inlineUri: inlineUri,
           component: component,
+          attributionType: attributionType,
           data: data,
           onEvent: adsProviderData.onEvent,
         );
@@ -252,27 +255,9 @@ class AdFormat extends HookWidget {
         return;
       }
 
-      /*
-      // AAK is temporarily disabled
-      final navigationHandled = await AdAttributionKit.handleTap(uri);
-      if (appStoreId == null) {
-        // if (uri != null && !navigationHandled) {
-          browserOpener.open(uri);
-        }
-        return;
-      }
-      */
-
       if (uri != null) {
         browserOpener.open(uri);
       }
-
-      /*
-      // AAK is temporarily disabled
-      if (!storeProductOpened && uri != null && !navigationHandled) {
-        browserOpener.open(uri);
-      }
-      */
 
     } catch (e, stack) {
       Logger.exception(e, stack);
@@ -353,32 +338,19 @@ class AdFormat extends HookWidget {
     ObjectRef<_AttributionType> attributionType,
   ) async {
     if (akk != null) {
-      /*
       // AAK is temporarily disabled
-      final success = await AdAttributionKit.initImpression(akk.jws);
-      if (success) attributionType.value = _AttributionType.aak;
-      */
     } else if (skan != null) {
       final success = await SKAdNetwork.initImpression(skan);
       if (success) attributionType.value = _AttributionType.skan;
     }
   }
 
-  Future<void> _handleAttributionBeginView(
-    GlobalKey key,
+  Future<void> _startAttributionImpression(
     ObjectRef<_AttributionType> attributionType,
   ) async {
     switch (attributionType.value) {
       case _AttributionType.aak:
-        /*
         // AAK is temporarily disabled
-        WidgetsBinding.instance.addPostFrameCallback((_) async {
-          final adContainer = _slotRectInWindow(key);
-          if (adContainer == null) return;
-          final frameSet = await AdAttributionKit.setAttributionFrame(adContainer);
-          if (frameSet) await AdAttributionKit.beginView();
-        });
-        */
         break;
       case _AttributionType.skan:
         await SKAdNetwork.startImpression();
@@ -393,11 +365,7 @@ class AdFormat extends HookWidget {
   ) async {
     switch (attributionType.value) {
       case _AttributionType.aak:
-        /*
         // AAK is temporarily disabled
-        await AdAttributionKit.endView();
-        await AdAttributionKit.dispose();
-        */
         break;
       case _AttributionType.skan:
         await SKAdNetwork.endImpression();
@@ -420,6 +388,7 @@ class AdFormat extends HookWidget {
     required InAppWebViewController controller,
     required Uri inlineUri,
     required OpenIframeComponent component,
+    required ObjectRef<_AttributionType> attributionType,
     Json? data,
     OnEventCallback? onEvent,
   }) async {
@@ -434,6 +403,9 @@ class AdFormat extends HookWidget {
 
     switch (component) {
       case OpenIframeComponent.modal:
+        if (bid.impressionTrigger == ImpressionTrigger.component) {
+          unawaited(_startAttributionImpression(attributionType));
+        }
         final modalUri = inlineUri.replacePath('/api/${component.name}/${bid.id}');
         (showInterstitial ?? InterstitialModal.show)(
           context,
@@ -459,6 +431,7 @@ class AdFormat extends HookWidget {
             controller: controller,
             inlineUri: inlineUri,
             component: component,
+            attributionType: attributionType,
             data: data,
             onEvent: onEvent,
           ),
