@@ -7,7 +7,7 @@ final class SKOverlayManager: NSObject {
     private override init() {}
     static let shared = SKOverlayManager()
 
-    @available(iOS 14.0, *)
+    @available(iOS 16.0, *)
     private var overlay: SKOverlay? {
         get { _overlay as? SKOverlay }
         set { _overlay = newValue }
@@ -20,11 +20,11 @@ final class SKOverlayManager: NSObject {
     func present(skan: [String: Any], position: String, dismissible: Bool, completion: @escaping (Any) -> Void) {
         runOnMain { [weak self] in
             guard let self = self else { return }
-            guard #available(iOS 14.0, *) else {
+            guard #available(iOS 16.0, *) else {
                 completion(
                     FlutterError(
                         code: "UNSUPPORTED_IOS",
-                        message: "SKOverlay requires iOS 14.0 or later",
+                        message: "SKOverlay requires iOS 16.0 or later",
                         details: nil
                     )
                 )
@@ -63,7 +63,14 @@ final class SKOverlayManager: NSObject {
                 config.userDismissible = dismissible
 
                 // Wire up fidelity-1 SKAN attribution if available
-                Self.applyImpression(skan, to: config)
+                guard Self.applyImpression(skan, to: config) else {
+                    completion(FlutterError(
+                        code: "INVALID_ARGUMENTS",
+                        message: "Failed to apply SKAN impression — fidelity-1 data missing or invalid",
+                        details: nil
+                    ))
+                    return
+                }
 
                 let overlay = SKOverlay(configuration: config)
                 overlay.delegate = self
@@ -76,7 +83,7 @@ final class SKOverlayManager: NSObject {
     }
 
     // MARK: - SKAN
-    @available(iOS 14.5, *)
+    @available(iOS 16.0, *)
     private static func fidelity1Values(from skan: [String: Any]) -> (nonce: String, timestamp: NSNumber, signature: String)? {
         guard let fidelities = skan["fidelities"] as? [[String: Any]],
             let f1 = fidelities.first(where: { ($0["fidelity"] as? Int) == 1 }),
@@ -92,8 +99,8 @@ final class SKOverlayManager: NSObject {
         return (nonce, timestamp, signature)
     }
 
-    private static func applyImpression(_ skan: [String: Any], to config: SKOverlay.AppConfiguration) {
-        guard #available(iOS 14.5, *) else { return }
+    private static func applyImpression(_ skan: [String: Any], to config: SKOverlay.AppConfiguration) -> Bool {
+        guard #available(iOS 16.0, *) else { return false }
 
         guard
             let version   = skan["version"]   as? String, !version.isEmpty,
@@ -102,7 +109,7 @@ final class SKOverlayManager: NSObject {
             let itemId    = Int(itunesItem),
             let sourceApp = skan["sourceApp"] as? String,
             let f1        = fidelity1Values(from: skan)
-        else { return }
+        else { return false }
 
         let sourceAppInt = Int(sourceApp) ?? 0
         let campaignInt  = (skan["campaign"] as? String).flatMap { Int($0) } ?? 0
@@ -124,9 +131,8 @@ final class SKOverlayManager: NSObject {
             }
         }
 
-        if #available(iOS 16.0, *) {
-            config.setAdImpression(imp)
-        }
+        config.setAdImpression(imp)
+        return true
     }
     
     func dismiss(completion: @escaping (Bool) -> Void) {
@@ -135,7 +141,7 @@ final class SKOverlayManager: NSObject {
                 completion(false)
                 return
             }
-            guard #available(iOS 14.0, *) else {
+            guard #available(iOS 16.0, *) else {
                 completion(false)
                 return
             }
@@ -173,7 +179,7 @@ final class SKOverlayManager: NSObject {
     }
 }
 
-@available(iOS 14.0, *)
+@available(iOS 16.0, *)
 extension SKOverlayManager: SKOverlayDelegate {
     func storeOverlayDidFailToLoad(_ overlay: SKOverlay, error: Error) {
         runOnMain { [weak self] in
