@@ -14,10 +14,10 @@ public class SKOverlayPlugin: NSObject, FlutterPlugin {
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         switch call.method {
         case "present":
-            guard let args = call.arguments as? [String: Any],
-                  let appStoreId = args["appStoreId"] as? String,
-                  let position = args["position"] as? String,
-                  let dismissible = args["dismissible"] as? Bool else {
+                guard let args = call.arguments as? [String: Any],
+                    let skan = args["skan"] as? [String: Any],
+                    let position = args["position"] as? String,
+                    let dismissible = args["dismissible"] as? Bool else {
                 result(FlutterError(
                     code: "INVALID_ARGUMENTS",
                     message: "Invalid or missing arguments",
@@ -30,7 +30,7 @@ public class SKOverlayPlugin: NSObject, FlutterPlugin {
             }
             DispatchQueue.main.async {
                 SKOverlayManager.shared.present(
-                    appStoreId: appStoreId,
+                    skan: skan,
                     position: position,
                     dismissible: dismissible
                 ) { res in
