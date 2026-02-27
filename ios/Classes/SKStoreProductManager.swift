@@ -56,12 +56,13 @@ final class SKStoreProductManager: NSObject, SKStoreProductViewControllerDelegat
     /// Picks nonce/timestamp/signature from the fidelity-1 entry only.
     /// Returns nil if no fidelity-1 entry exists — no fallback to top-level fields
     /// since those are fidelity-0 values signed with a different formula.
-    private static func fidelity1Values(from skan: [String: Any]) -> (nonce: String, timestamp: String, signature: String)? {
+    private static func fidelity1Values(from skan: [String: Any]) -> (nonce: UUID, timestamp: String, signature: String)? {
         guard let fidelities = skan["fidelities"] as? [[String: Any]],
-              let f1 = fidelities.first(where: { ($0["fidelity"] as? Int) == 1 }),
-              let nonce     = f1["nonce"]     as? String, !nonce.isEmpty,
-              let timestamp = f1["timestamp"] as? String, !timestamp.isEmpty,
-              let signature = f1["signature"] as? String, !signature.isEmpty
+            let f1 = fidelities.first(where: { ($0["fidelity"] as? Int) == 1 }),
+            let nonceStr  = f1["nonce"]      as? String, !nonceStr.isEmpty,
+            let nonce     = UUID(uuidString: nonceStr),   // validate UUID here
+            let timestamp = f1["timestamp"]  as? String, !timestamp.isEmpty,
+            let signature = f1["signature"]  as? String, !signature.isEmpty
         else { return nil }
         return (nonce, timestamp, signature)
     }
@@ -87,12 +88,7 @@ final class SKStoreProductManager: NSObject, SKStoreProductViewControllerDelegat
         params[SKStoreProductParameterAdNetworkCampaignIdentifier]       = NSNumber(value: campaignInt)
         params[SKStoreProductParameterAdNetworkTimestamp]                = NSNumber(value: timestampInt)
         params[SKStoreProductParameterAdNetworkAttributionSignature]     = f1.signature
-
-        if let uuid = UUID(uuidString: f1.nonce) {
-            params[SKStoreProductParameterAdNetworkNonce] = uuid
-        } else {
-            return
-        }
+        params[SKStoreProductParameterAdNetworkNonce]                    = f1.nonce
 
         if #available(iOS 16.1, *) {
             if let sourceIdentifier = skan["sourceIdentifier"] as? String,
