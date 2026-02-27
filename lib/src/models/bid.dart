@@ -1,4 +1,8 @@
+import 'package:flutter/foundation.dart';
+
 enum AdDisplayPosition { afterAssistantMessage, afterUserMessage }
+
+enum ImpressionTrigger { immediate, component }
 
 class Akk {
   Akk({required this.jws});
@@ -11,7 +15,7 @@ class Akk {
     } catch (_) {
       return null;
     }
-}
+  }
 
   @override
   bool operator ==(Object other) {
@@ -121,6 +125,29 @@ class Skan {
     }
   }
 
+  Map<String, dynamic> toJson() {
+    return {
+      'version': version,
+      'network': network,
+      'itunesItem': itunesItem,
+      'sourceApp': sourceApp,
+      if (sourceIdentifier != null) 'sourceIdentifier': sourceIdentifier,
+      if (campaign != null) 'campaign': campaign,
+      if (nonce != null) 'nonce': nonce,
+      if (timestamp != null) 'timestamp': timestamp,
+      if (signature != null) 'signature': signature,
+      if (fidelities != null)
+        'fidelities': fidelities!
+            .map((f) => {
+                  'fidelity': f.fidelity,
+                  'nonce': f.nonce,
+                  'timestamp': f.timestamp,
+                  'signature': f.signature,
+                })
+            .toList(),
+    };
+  }
+
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
@@ -132,6 +159,7 @@ class Skan {
             sourceIdentifier == other.sourceIdentifier &&
             campaign == other.campaign &&
             nonce == other.nonce &&
+            listEquals(fidelities, other.fidelities) &&
             timestamp == other.timestamp &&
             signature == other.signature;
   }
@@ -144,6 +172,7 @@ class Skan {
         sourceApp,
         sourceIdentifier,
         campaign,
+        Object.hashAll(fidelities ?? const []),
         nonce,
         timestamp,
         signature,
@@ -157,7 +186,6 @@ class Skan {
   }
 }
 
-
 class Bid {
   Bid({
     required this.id,
@@ -166,6 +194,7 @@ class Bid {
     required this.position,
     this.akk,
     this.skan,
+    this.impressionTrigger = ImpressionTrigger.immediate,
   });
 
   final String id;
@@ -174,6 +203,7 @@ class Bid {
   final AdDisplayPosition position;
   final Akk? akk;
   final Skan? skan;
+  final ImpressionTrigger impressionTrigger;
 
   bool get isAfterAssistantMessage => position == AdDisplayPosition.afterAssistantMessage;
 
@@ -190,6 +220,7 @@ class Bid {
       ),
       akk: _parseAkk(json['akk']),
       skan: _parseSkan(json['skan']),
+      impressionTrigger: _parseImpressionTrigger(json['impressionTrigger']),
     );
   }
 
@@ -209,6 +240,14 @@ class Bid {
     } catch (_) {
       return null;
     }
+  }
+
+  static ImpressionTrigger _parseImpressionTrigger(Object? value) {
+    if (value is! String) return ImpressionTrigger.immediate;
+    return ImpressionTrigger.values.firstWhere(
+      (t) => t.name == value,
+      orElse: () => ImpressionTrigger.immediate,
+    );
   }
 
   static double? _parseRevenue(Object? value) {
@@ -237,14 +276,15 @@ class Bid {
             revenue == other.revenue &&
             position == other.position &&
             akk == other.akk &&
-            skan == other.skan;
+            skan == other.skan &&
+            impressionTrigger == other.impressionTrigger;
   }
 
   @override
-  int get hashCode => Object.hash(id, code, revenue, position, akk, skan);
+  int get hashCode => Object.hash(id, code, revenue, position, akk, skan, impressionTrigger);
 
   @override
   String toString() {
-    return 'Bid(id: $id, code: $code, revenue: $revenue, position: $position, akk: $akk, skan: $skan)';
+    return 'Bid(id: $id, code: $code, revenue: $revenue, position: $position, akk: $akk, skan: $skan, impressionTrigger: $impressionTrigger)';
   }
 }
