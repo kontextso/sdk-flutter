@@ -99,5 +99,10 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Set up Dart (pub.dev OIDC)
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
       - name: Publish to pub.dev
         run: dart pub publish --force
