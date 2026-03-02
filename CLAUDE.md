@@ -28,10 +28,13 @@ The SDK is a Flutter plugin with Dart logic and native iOS (Swift) / Android (Ko
 
 ### Public API (`lib/src/main.dart`)
 
-**`AdsProvider`** — root `HookWidget` managing ads state for a conversation. Required props:
+**`AdsProvider`** — root `HookWidget` managing ads state for a conversation.
+
+Required props:
 - `publisherToken`, `userId`, `conversationId`, `messages`, `enabledPlacementCodes`
 
-Optional props: `adServerUrl`, `userEmail`, `character`, `vendorId`, `variantId`, `advertisingId`, `logLevel`, `iosAppStoreId`, `regulatory`, `otherParams`, `onEvent`
+Optional props:
+- `adServerUrl`, `userEmail`, `character`, `vendorId`, `variantId`, `advertisingId`, `logLevel`, `iosAppStoreId`, `regulatory`, `otherParams`, `onEvent`
 
 **`InlineAd`** — widget for embedding an ad inline in a chat feed. Props: `code` (placement code), `messageId`
 
@@ -67,10 +70,4 @@ Optional props: `adServerUrl`, `userEmail`, `character`, `vendorId`, `variantId`
 
 ## Release Process
 
-1. Update version in `pubspec.yaml` and `lib/src/utils/constants.dart` (`kSdkVersion`)
-2. Update `CHANGELOG.md`
-3. Commit and PR to `main`
-4. Create annotated tag: `git tag -a X.Y.Z -m "Release X.Y.Z"`
-5. Push tag — triggers `publish.yml` which runs `pana` + pub dry-run, then requires manual approval to publish to pub.dev
-
-Version tags use the `v` prefix (e.g. `v2.2.1`).
+See [RELEASING.md](RELEASING.md).
