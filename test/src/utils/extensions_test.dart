@@ -64,7 +64,7 @@ void main() {
 
     test('returns last N messages when list exceeds count', () {
       final messages = List.generate(35, (i) => makeMessage('$i'));
-      final result = messages.getLastMessages(count: 30);
+      final result = messages.getLastMessages();
       expect(result.length, 30);
       expect(result.first.id, '5');
       expect(result.last.id, '34');
