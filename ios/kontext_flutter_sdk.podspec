@@ -13,7 +13,7 @@ Kontext Flutter SDK: sound status, app info, hardware, power, network, etc.
   s.source_files        = 'Classes/**/*'
   s.public_header_files = 'Classes/**/*.h'
   s.dependency          'Flutter'
-  s.platform            = :ios, '14.0'
+  s.platform            = :ios, '13.0'
   s.swift_version       = '5.0'
 
   s.frameworks = 'AVFoundation', 'SystemConfiguration', 'CoreTelephony', 'WebKit', 'AdSupport', 'AppTrackingTransparency', 'StoreKit'
