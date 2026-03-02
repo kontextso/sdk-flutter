@@ -99,6 +99,7 @@ final class SKOverlayManager: NSObject {
         return (nonce, timestamp, signature)
     }
 
+    @available(iOS 16.0, *)
     private static func applyImpression(_ skan: [String: Any], to config: SKOverlay.AppConfiguration) -> Bool {
         guard #available(iOS 16.0, *) else { return false }
 
