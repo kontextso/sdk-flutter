@@ -55,7 +55,7 @@ final _flushMsgQueue = '''
     } catch (e) {
       console.error('Error flushing message queue to Flutter: ', e);
     }
-  })();
+  })(); null
 ''';
 
 typedef OnEventIframe = void Function(InAppWebViewController controller, Json? data);

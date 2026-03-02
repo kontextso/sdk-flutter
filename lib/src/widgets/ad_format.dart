@@ -145,7 +145,7 @@ class AdFormat extends HookWidget {
     Json payload,
   ) {
     controller.evaluateJavascript(source: '''
-      window.postMessage(${jsonEncode(payload)}, '$adServerUrl');
+      window.postMessage(${jsonEncode(payload)}, '$adServerUrl'); null
     ''');
   }
 
