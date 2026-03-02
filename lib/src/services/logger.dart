@@ -1,6 +1,7 @@
 import 'dart:developer' as developer;
 import 'package:flutter/foundation.dart';
 import 'package:kontext_flutter_sdk/src/services/http_client.dart';
+import 'package:kontext_flutter_sdk/src/utils/constants.dart';
 import 'package:kontext_flutter_sdk/src/utils/types.dart' show Json;
 
 /// Log levels for the logger.
@@ -116,7 +117,7 @@ class Logger {
 
     developer.log(
       message,
-      name: 'Kontext',
+      name: kLoggerName,
       level: level.developerLogLevel,
       error: error,
       stackTrace: stackTrace,
@@ -138,8 +139,8 @@ class Logger {
       if (kDebugMode) {
         developer.log(
           'Failed to log to remote: $e',
-          name: 'Kontext',
-          level: 1000,
+          name: kLoggerName,
+          level: LogLevel.error.developerLogLevel,
         );
       }
     }
@@ -156,8 +157,8 @@ class Logger {
       if (kDebugMode) {
         developer.log(
           'Failed to log exception to remote: $e',
-          name: 'Kontext',
-          level: 1000,
+          name: kLoggerName,
+          level: LogLevel.error.developerLogLevel,
         );
       }
     }

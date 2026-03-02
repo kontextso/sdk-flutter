@@ -2,6 +2,7 @@ import 'dart:async' show Timer;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show DeviceOrientation, SystemChrome;
+import 'package:kontext_flutter_sdk/src/utils/constants.dart';
 import 'package:kontext_flutter_sdk/src/utils/types.dart' show Json, OpenIframeComponent;
 import 'package:kontext_flutter_sdk/src/widgets/kontext_webview.dart';
 
@@ -71,7 +72,7 @@ class InterstitialModal {
               child: AnimatedOpacity(
                 key: animatedOpacityKey,
                 opacity: isVisible ? 1.0 : 0.0,
-                duration: const Duration(milliseconds: 300),
+                duration: const Duration(milliseconds: kInterstitialFadeDurationMs),
                 curve: Curves.easeInOut,
                 child: SizedBox(
                   width: double.infinity,

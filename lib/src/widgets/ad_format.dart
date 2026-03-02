@@ -243,7 +243,7 @@ class AdFormat extends HookWidget {
       // Check if bid has fidelity-1 SKAN data for StoreKit-rendered attribution.
       // If so, we open SKStoreProductViewController instead of the browser.
       final skan = bid.skan;
-      final hasFidelity1 = skan != null && (skan.fidelities?.any((f) => f.fidelity == 1) ?? false);
+      final hasFidelity1 = skan != null && (skan.fidelities?.any((f) => f.fidelity == kSkanFidelityFull) ?? false);
 
       if (hasFidelity1) {
         final storeProductOpened = await _presentSkStoreProduct(skan);
@@ -291,7 +291,7 @@ class AdFormat extends HookWidget {
   Future<bool> _presentSkOverlay(Json data, Skan? skan) async {
     // SKOverlay requires fidelity-1 SKAN data for attribution.
     // Without it there's no point opening the overlay.
-    final hasFidelity1 = skan != null && (skan.fidelities?.any((f) => f.fidelity == 1) ?? false);
+    final hasFidelity1 = skan != null && (skan.fidelities?.any((f) => f.fidelity == kSkanFidelityFull) ?? false);
     if (!hasFidelity1) {
       Logger.error('SKOverlay requires fidelity-1 SKAN data. Skipping.');
       return false;
@@ -557,7 +557,7 @@ class AdFormat extends HookWidget {
       final shouldRun = iframeLoaded.value && showIframe.value;
       if (shouldRun && ticker.value == null && delayedTicker.value == null) {
         // Start after a short delay to allow initial layout to settle
-        delayedTicker.value = Timer(const Duration(milliseconds: 500), () {
+        delayedTicker.value = Timer(const Duration(milliseconds: kAdDimensionInitialDelayMs), () {
           delayedTicker.value = null;
           if (!iframeLoaded.value || !showIframe.value || disposed.value) {
             return;
@@ -565,7 +565,7 @@ class AdFormat extends HookWidget {
           // First call immediately without waiting for the first tick
           postDimensions();
           ticker.value = Timer.periodic(
-            const Duration(milliseconds: 300),
+            const Duration(milliseconds: kAdDimensionIntervalMs),
             (_) => postDimensions(),
           );
         });
