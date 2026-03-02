@@ -2,28 +2,21 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-
-  <key>NSPrivacyTracking</key><true/>
-
+  <key>NSPrivacyTracking</key><false/>
   <key>NSPrivacyTrackingDomains</key>
-  <array>
-    <string>megabrain.co</string>
-  </array>
-
+  <array/>
   <key>NSPrivacyCollectedDataTypes</key>
   <array>
-
     <dict>
       <key>NSPrivacyCollectedDataType</key>
       <string>NSPrivacyCollectedDataTypeDeviceID</string>
-      <key>NSPrivacyCollectedDataTypeLinked</key><true/>
-      <key>NSPrivacyCollectedDataTypeTracking</key><true/>
+      <key>NSPrivacyCollectedDataTypeLinked</key><false/>
+      <key>NSPrivacyCollectedDataTypeTracking</key><false/>
       <key>NSPrivacyCollectedDataTypePurposes</key>
       <array>
-        <string>NSPrivacyCollectedDataTypePurposeThirdPartyAdvertising</string>
+        <string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
       </array>
     </dict>
-
     <dict>
       <key>NSPrivacyCollectedDataType</key>
       <string>NSPrivacyCollectedDataTypeOtherAppInfo</string>
@@ -34,7 +27,6 @@
         <string>NSPrivacyCollectedDataTypePurposeAnalytics</string>
       </array>
     </dict>
-
     <dict>
       <key>NSPrivacyCollectedDataType</key>
       <string>NSPrivacyCollectedDataTypeOtherDiagnosticData</string>
@@ -45,9 +37,7 @@
         <string>NSPrivacyCollectedDataTypePurposeAnalytics</string>
       </array>
     </dict>
-
   </array>
-
   <key>NSPrivacyAccessedAPITypes</key>
   <array>
     <dict>
