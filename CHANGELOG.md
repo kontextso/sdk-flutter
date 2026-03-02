@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.2.2
+* BREAKING: Update minimum requirements to Flutter `>=3.38.0` and iOS deployment target `13.0`.
+* Set NSPrivacyTracking to false and clear tracking domains.
+
 ## 2.2.1
 * Add `revenue` to `AdEvent.adViewed` events.
 
