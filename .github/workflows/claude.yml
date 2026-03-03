@@ -1,0 +1,37 @@
+name: Claude Code
+
+on:
+  pull_request_review_comment:
+    types: [created]
+  pull_request_review:
+    types: [submitted]
+  issue_comment:
+    types: [created]
+
+jobs:
+  claude:
+    if: |
+      contains(github.event.comment.body, '@claude') ||
+      contains(github.event.review.body, '@claude')
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    permissions:
+      contents: write
+      pull-requests: write
+      id-token: write
+      actions: read
+    steps:
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          model: claude-sonnet-4-6
+          max_turns: 20
+          allowed_tools: |
+            Bash(gh pr comment:*)
+            Bash(gh pr review:*)
+            Bash(gh issue comment:*)
+            Bash(gh api:*)
+            Bash(git fetch:*)
+            Bash(git diff:*)
+            Bash(git log:*)
+            Bash(git show:*)
