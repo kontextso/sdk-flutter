@@ -21,17 +21,11 @@ jobs:
       id-token: write
       actions: read
     steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
       - uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          model: claude-sonnet-4-6
-          max_turns: 20
-          allowed_tools: |
-            Bash(gh pr comment:*)
-            Bash(gh pr review:*)
-            Bash(gh issue comment:*)
-            Bash(gh api:*)
-            Bash(git fetch:*)
-            Bash(git diff:*)
-            Bash(git log:*)
-            Bash(git show:*)
+          trigger_phrase: "@claude"
+          claude_args: "--max-turns 20"
