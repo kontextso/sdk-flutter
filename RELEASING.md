@@ -107,15 +107,7 @@ Pushing the tag triggers the `publish.yml` GitHub Actions workflow:
 3. Pauses for **manual approval** in the `pubdev-release` environment
 4. Go to the GitHub Actions run, review the pana/dry-run reports, and approve to publish to pub.dev
 
-## 10. Create GitHub release
-
-1. Go to GitHub releases (under tags)
-2. Draft a new release using the tag `v1.0.0`
-3. Use a release title that describes the changes as a whole
-4. Copy over the last `CHANGELOG.md` entry as release notes
-5. Publish the release
-
-## 11. Verify
+## 10. Verify
 
 1. Check that the version is available on the [pub.dev page](https://pub.dev/packages/kontext_flutter_sdk).
 2. Integrate the new version into the internal testing app and confirm it builds and runs.
