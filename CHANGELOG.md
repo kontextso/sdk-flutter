@@ -1,7 +1,9 @@
 # Changelog
 
 ## 2.2.2
-* BREAKING: Update minimum requirements to Flutter `>=3.38.0` and iOS deployment target `13.0`.
+### Breaking
+Update minimum requirements to Flutter `>=3.38.0` and iOS deployment target `13.0`.
+
 * Set NSPrivacyTracking to false and clear tracking domains.
 
 ## 2.2.1
@@ -36,38 +38,12 @@
 
 ## 2.0.0
 ### Breaking
-`AdEvent` structure changed. The event now exposes normalized typed fields instead of loose payload maps. If you previously accessed dynamic payload values, you must update your code.
+`AdEvent` structure changed. The event now exposes normalized typed fields instead of loose payload maps. If you previously accessed dynamic payload values, you must update your code. Use the new typed fields and switch on `event.type`. When `AdEventType.adNoFill` is returned, check `event.skipCode` for the reason.
 
-> `onEvent(AdEvent event)` callback stays the same - only the event model changed.
-
-### Migration
-Use the new typed fields + switch on `event.type`.
-
-```dart
-AdsProvider(
-    ...
-    onEvent: (AdEvent event) {
-      switch (event.type) {
-        case AdEventType.adClicked:
-          break;
-        case AdEventType.videoCompleted:
-          break;
-        // Handle other event types...
-      }
-    },
-    ...
-);
-```
-
-### Additional note
-When `AdEventType.adNoFill` is returned, check `event.skipCode`.  
-`skipCode` explains why the ad could not be rendered (reason of no-fill).
-
-### Other changes
-* Clicking on an ad now opens an in-app browser instead of external browser
-* Added optional `userEmail` property to `AdsProvider`
-* Added more tests
-* Minor optimizations and internal clean-up
+* Clicking on an ad now opens an in-app browser instead of external browser.
+* Added optional `userEmail` property to `AdsProvider`.
+* Added more tests.
+* Minor optimizations and internal clean-up.
 
 ## 1.1.2
 * Updated README.
@@ -79,47 +55,38 @@ When `AdEventType.adNoFill` is returned, check `event.skipCode`.
 * Send keyboard height to the server to determine whether an ad is visible.
 
 ## 1.1.0
-
-* BREAKING CHANGE: Removed `onAdView`, `onAdClick` and `onAdDone` callbacks from `AdsProvider` widget. Use `onEvent` callback instead.
-* BREAKING CHANGE: Removed `PublicAd` class. Use `AdEvent` class instead.
+### Breaking
+Removed `onAdView`, `onAdClick` and `onAdDone` callbacks from `AdsProvider` widget. Use `onEvent` callback instead. Removed `PublicAd` class. Use `AdEvent` class instead.
 
 ## 1.0.7
-
 * Fixed `setState() called after dispose()` issue in `InlineAd` widget.
 * Periodically report ad dimensions to the server.
 
 ## 1.0.6
-
 * Enhanced InlineAd and AdFormat to manage active state and keep-alive behavior.
 * Refactored ad preloading logic to prevent multiple concurrent requests.
 * Updated README.
 
 ## 1.0.5
-
 * Added support for interstitial ads.
 * Added `Regulatory` object to `AdsProvider`.
 * Added new parameters to preload API request body.
 * Updated README.
 
 ## 1.0.4
-
 * Removed assertions for `gdpr` and `coppa` parameters.
 
 ## 1.0.3
-
 * Refactored `gppSid` parameter to use `List<int>` instead of `String` in `AdsProvider`.
 
 ## 1.0.2
-
 * Added optional regulatory-related parameters to `AdsProvider`.
 * Updated URLs and description in `pubspec.yaml`.
 
 ## 1.0.1
-
 * Removed unnecessary comments.
 * Added platform support for Android and iOS in pubspec.yaml.
 
 ## 1.0.0
-
 * Initial public release of `kontext_flutter_sdk`.
 * Full documentation available at [https://docs.kontext.so/sdk/flutter](https://docs.kontext.so/sdk/flutter).
