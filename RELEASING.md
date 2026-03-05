@@ -39,13 +39,24 @@ Before updating any version numbers, compare the new release against the previou
 
 ## 3. Update the changelog
 
-Edit `CHANGELOG.md` to include the new release notes at the top:
+Edit `CHANGELOG.md` to include the new release notes at the top.
 
+Standard release:
 ```markdown
 ## 1.0.0
-* New feature added.
-* Some feature updated.
-* Old feature removed.
+* Add new feature.
+* Fix some bug.
+* Remove old feature.
+```
+
+If the release contains breaking changes, add a `### Breaking` section before the bullet points:
+```markdown
+## 2.0.0
+### Breaking
+Short description of what changed and what integrators need to do.
+
+* Add new feature.
+* Fix some bug.
 ```
 
 ## 4. Update pubspec.yaml
