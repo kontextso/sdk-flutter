@@ -1,6 +1,7 @@
 import 'package:flutter_inappwebview/flutter_inappwebview.dart'
     show ChromeSafariBrowser, WebUri, ChromeSafariBrowserSettings;
 import 'package:kontext_flutter_sdk/src/services/logger.dart';
+import 'package:kontext_flutter_sdk/src/utils/constants.dart';
 import 'package:kontext_flutter_sdk/src/utils/helper_methods.dart';
 import 'package:kontext_flutter_sdk/src/models/message.dart';
 
@@ -29,7 +30,7 @@ extension ListExtension<E> on List<E> {
 }
 
 extension MessageListExtension on List<Message> {
-  List<Message> getLastMessages({int count = 30}) {
+  List<Message> getLastMessages({int count = kMaxMessageHistory}) {
     return length > count ? sublist(length - count) : this;
   }
 }
