@@ -55,6 +55,8 @@ final class KontextInAppWebViewPlatformView: NSObject, FlutterPlatformView, WKNa
     private let channel: FlutterMethodChannel
     private let webView: WKWebView
     private let settings: IOSInAppWebViewSettings
+    private var hasLoadedInitialUrl = false
+    private let initialUrl: URL?
 
     init(
         frame: CGRect,
@@ -63,6 +65,11 @@ final class KontextInAppWebViewPlatformView: NSObject, FlutterPlatformView, WKNa
         creationParams: [String: Any]?
     ) {
         self.settings = IOSInAppWebViewSettings(creationParams: creationParams)
+        if let urlString = ((creationParams?["initialUrlRequest"] as? [String: Any])?["url"] as? String) {
+            self.initialUrl = URL(string: urlString)
+        } else {
+            self.initialUrl = nil
+        }
 
         let userContentController = WKUserContentController()
         let bridgeScript = KontextInAppWebViewPlatformView.makeBridgeScript()
@@ -132,11 +139,6 @@ final class KontextInAppWebViewPlatformView: NSObject, FlutterPlatformView, WKNa
         channel.setMethodCallHandler { [weak self] call, result in
             self?.handle(call, result: result)
         }
-
-        if let urlString = ((creationParams?["initialUrlRequest"] as? [String: Any])?["url"] as? String),
-           let url = URL(string: urlString) {
-            webView.load(URLRequest(url: url))
-        }
     }
 
     deinit {
@@ -161,6 +163,9 @@ final class KontextInAppWebViewPlatformView: NSObject, FlutterPlatformView, WKNa
                     result(value)
                 }
             }
+        case "loadInitialUrl":
+            loadInitialUrl()
+            result(nil)
         default:
             result(FlutterMethodNotImplemented)
         }
@@ -273,6 +278,14 @@ final class KontextInAppWebViewPlatformView: NSObject, FlutterPlatformView, WKNa
                 ]
             ]
         )
+    }
+
+    private func loadInitialUrl() {
+        guard !hasLoadedInitialUrl else { return }
+        hasLoadedInitialUrl = true
+
+        guard let initialUrl else { return }
+        webView.load(URLRequest(url: initialUrl))
     }
 
     private static func makeBridgeScript() -> String {

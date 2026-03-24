@@ -18,24 +18,21 @@ import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
-import androidx.webkit.ScriptHandler
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.platform.PlatformView
-import org.json.JSONObject
-
 private const val CHANNEL_PREFIX = "kontext_flutter_sdk/in_app_webview/"
-private const val BRIDGE_INTERFACE_NAME = "__kontextNativeBridge"
+private const val JAVASCRIPT_BRIDGE_NAME = "flutter_inappwebview"
 private const val PLATFORM_READY_SCRIPT = """
     (function() {
       if ((window.top == null || window.top === window) &&
-          window.flutter_inappwebview != null &&
-          window.flutter_inappwebview._platformReady == null) {
+          window.$JAVASCRIPT_BRIDGE_NAME != null &&
+          window.$JAVASCRIPT_BRIDGE_NAME._platformReady == null) {
         window.dispatchEvent(new Event('flutterInAppWebViewPlatformReady'));
-        window.flutter_inappwebview._platformReady = true;
+        window.$JAVASCRIPT_BRIDGE_NAME._platformReady = true;
       }
     })();
 """
@@ -55,43 +52,60 @@ internal class KontextInAppWebView(
     private val initialUrl = readInitialUrl(creationParams)
     private val settings = readSettings(creationParams)
     private val initialUserScripts = readUserScripts(creationParams)
+    private var hasLoadedInitialUrl = false
 
     private val bypassMainFrameLoads = mutableSetOf<String>()
-    private val documentStartHandlers = mutableListOf<ScriptHandler>()
     private val documentStartSupported = WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)
 
     private val bridgeScript = """
         (function() {
-          if (window.flutter_inappwebview && window.flutter_inappwebview.callHandler) {
-            return;
+          if (window.$JAVASCRIPT_BRIDGE_NAME != null) {
+            window.$JAVASCRIPT_BRIDGE_NAME.callHandler = function() {
+              var _callHandlerID = setTimeout(function(){});
+              window.$JAVASCRIPT_BRIDGE_NAME._callHandler(
+                arguments[0],
+                _callHandlerID,
+                JSON.stringify(Array.prototype.slice.call(arguments, 1))
+              );
+              return new Promise(function(resolve, reject) {
+                window.$JAVASCRIPT_BRIDGE_NAME[_callHandlerID] = {resolve: resolve, reject: reject};
+              });
+            };
           }
-          window.flutter_inappwebview = window.flutter_inappwebview || {};
-          window.flutter_inappwebview.callHandler = function(handlerName) {
-            var args = Array.prototype.slice.call(arguments, 1);
-            window.$BRIDGE_INTERFACE_NAME.postMessage(JSON.stringify({
-              handlerName: handlerName,
-              args: JSON.stringify(args)
-            }));
-          };
+          if (window.top != null && window.top !== window && window.$JAVASCRIPT_BRIDGE_NAME == null) {
+            window.$JAVASCRIPT_BRIDGE_NAME = {};
+            window.$JAVASCRIPT_BRIDGE_NAME.callHandler = function() {
+              var _callHandlerID = setTimeout(function(){});
+              try {
+                window.top.$JAVASCRIPT_BRIDGE_NAME._callHandler(
+                  arguments[0],
+                  _callHandlerID,
+                  JSON.stringify(Array.prototype.slice.call(arguments, 1))
+                );
+                return new Promise(function(resolve, reject) {
+                  window.top.$JAVASCRIPT_BRIDGE_NAME[_callHandlerID] = {resolve: resolve, reject: reject};
+                });
+              } catch (error) {
+                return new Promise(function(resolve, reject) {
+                  reject(error);
+                });
+              }
+            };
+          }
         })();
     """.trimIndent()
 
     init {
         channel.setMethodCallHandler(this)
         configureWebView()
-        loadInitialUrl()
     }
 
     override fun getView(): View = webView
 
     override fun dispose() {
         channel.setMethodCallHandler(null)
-        if (documentStartSupported) {
-            documentStartHandlers.forEach { it.remove() }
-            documentStartHandlers.clear()
-        }
         webView.stopLoading()
-        webView.removeJavascriptInterface(BRIDGE_INTERFACE_NAME)
+        webView.removeJavascriptInterface(JAVASCRIPT_BRIDGE_NAME)
         webView.destroy()
     }
 
@@ -109,12 +123,18 @@ internal class KontextInAppWebView(
                     }
                 }
             }
+            "loadInitialUrl" -> {
+                mainHandler.post {
+                    loadInitialUrl()
+                    result.success(null)
+                }
+            }
             else -> result.notImplemented()
         }
     }
 
     private fun configureWebView() {
-        webView.addJavascriptInterface(NativeBridge(), BRIDGE_INTERFACE_NAME)
+        webView.addJavascriptInterface(NativeBridge(), JAVASCRIPT_BRIDGE_NAME)
         webView.layoutParams = FrameLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.MATCH_PARENT,
@@ -282,18 +302,21 @@ internal class KontextInAppWebView(
     }
 
     private fun loadInitialUrl() {
+        if (hasLoadedInitialUrl) {
+            return
+        }
+        hasLoadedInitialUrl = true
         if (!initialUrl.isNullOrBlank()) {
             webView.loadUrl(initialUrl)
         }
     }
 
     private fun addDocumentStartScript(source: String) {
-        val handler = WebViewCompat.addDocumentStartJavaScript(
+        WebViewCompat.addDocumentStartJavaScript(
             webView,
             source,
             hashSetOf("*")
         )
-        documentStartHandlers.add(handler)
     }
 
     private fun injectFallbackStartScripts() {
@@ -307,19 +330,29 @@ internal class KontextInAppWebView(
         webView.evaluateJavascript(source, null)
     }
 
+    private fun resolveJavaScriptCall(callHandlerId: String?, value: String = "null") {
+        if (callHandlerId.isNullOrBlank()) {
+            return
+        }
+        evaluateJavascript(
+            """
+            (function() {
+              if (window.$JAVASCRIPT_BRIDGE_NAME[$callHandlerId] != null) {
+                window.$JAVASCRIPT_BRIDGE_NAME[$callHandlerId].resolve($value);
+                delete window.$JAVASCRIPT_BRIDGE_NAME[$callHandlerId];
+              }
+            })();
+            """.trimIndent()
+        )
+    }
+
     private inner class NativeBridge {
         @JavascriptInterface
-        fun postMessage(payload: String?) {
-            if (payload.isNullOrBlank()) {
+        fun _callHandler(handlerName: String?, callHandlerId: String?, args: String?) {
+            if (handlerName.isNullOrBlank()) {
                 return
             }
-            val data = try {
-                JSONObject(payload)
-            } catch (_: Exception) {
-                return
-            }
-            val handlerName = data.optString("handlerName")
-            val argsJson = data.optString("args", "[]")
+            val argsJson = args ?: "[]"
 
             mainHandler.post {
                 channel.invokeMethod(
@@ -327,7 +360,20 @@ internal class KontextInAppWebView(
                     mapOf(
                         "handlerName" to handlerName,
                         "args" to argsJson,
-                    )
+                    ),
+                    object : MethodChannel.Result {
+                        override fun success(result: Any?) {
+                            resolveJavaScriptCall(callHandlerId)
+                        }
+
+                        override fun error(errorCode: String, errorMessage: String?, errorDetails: Any?) {
+                            resolveJavaScriptCall(callHandlerId)
+                        }
+
+                        override fun notImplemented() {
+                            resolveJavaScriptCall(callHandlerId)
+                        }
+                    }
                 )
             }
         }

@@ -3,7 +3,10 @@ import 'dart:async';
 import 'dart:collection';
 import 'dart:io' show Platform;
 
+import 'package:flutter/foundation.dart' show Factory;
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show PlatformViewHitTestBehavior;
 import 'package:flutter/services.dart';
 import 'package:kontext_flutter_sdk/src/webview/compat_types.dart';
 
@@ -48,12 +51,25 @@ class InAppWebView extends StatefulWidget {
 
 class _InAppWebViewState extends State<InAppWebView> {
   _CustomInAppWebViewController? _controller;
+  bool _hasDeliveredOnWebViewCreated = false;
 
   Map<String, dynamic> _creationParams() => {
         'initialUrlRequest': widget.initialUrlRequest?.toMap(),
         'initialUserScripts': widget.initialUserScripts?.map((script) => script.toMap()).toList(),
         'initialSettings': widget.initialSettings.toMap(),
       };
+
+  _CustomInAppWebViewController _ensureController(int id) {
+    final existingController = _controller;
+    if (existingController != null) {
+      return existingController;
+    }
+
+    final controller = _CustomInAppWebViewController(id);
+    _controller = controller;
+    _attachCallbacks();
+    return controller;
+  }
 
   void _attachCallbacks() {
     _controller?.callbacks = _CustomInAppWebViewCallbacks(
@@ -64,11 +80,22 @@ class _InAppWebViewState extends State<InAppWebView> {
     );
   }
 
-  void _onPlatformViewCreated(int id) {
-    final controller = _CustomInAppWebViewController(id);
-    _controller = controller;
-    _attachCallbacks();
+  void _deliverOnWebViewCreated(_CustomInAppWebViewController controller) {
+    if (_hasDeliveredOnWebViewCreated) {
+      return;
+    }
+
+    _hasDeliveredOnWebViewCreated = true;
     widget.onWebViewCreated?.call(controller);
+    unawaited(controller.startInitialLoad());
+  }
+
+  void _onPlatformViewCreated(int id) {
+    final controller = _ensureController(id);
+    controller.markPlatformReady();
+    if (Platform.isIOS) {
+      _deliverOnWebViewCreated(controller);
+    }
   }
 
   @override
@@ -88,11 +115,33 @@ class _InAppWebViewState extends State<InAppWebView> {
       );
     }
 
-    return AndroidView(
+    return PlatformViewLink(
       viewType: _viewType,
-      onPlatformViewCreated: _onPlatformViewCreated,
-      creationParams: _creationParams(),
-      creationParamsCodec: const StandardMessageCodec(),
+      surfaceFactory: (context, controller) {
+        return AndroidViewSurface(
+          controller: controller as AndroidViewController,
+          gestureRecognizers: const <Factory<OneSequenceGestureRecognizer>>{},
+          hitTestBehavior: PlatformViewHitTestBehavior.opaque,
+        );
+      },
+      onCreatePlatformView: (params) {
+        final controller = PlatformViewsService.initExpensiveAndroidView(
+          id: params.id,
+          viewType: _viewType,
+          layoutDirection: Directionality.maybeOf(context) ?? TextDirection.ltr,
+          creationParams: _creationParams(),
+          creationParamsCodec: const StandardMessageCodec(),
+        );
+
+        controller
+          ..addOnPlatformViewCreatedListener(params.onPlatformViewCreated)
+          ..addOnPlatformViewCreatedListener(_onPlatformViewCreated)
+          ..create();
+
+        final webViewController = _ensureController(params.id);
+        _deliverOnWebViewCreated(webViewController);
+        return controller;
+      },
     );
   }
 }
@@ -130,8 +179,17 @@ class _CustomInAppWebViewController extends InAppWebViewController {
   final MethodChannel _channel;
   final Map<String, JavaScriptHandlerCallback> _javaScriptHandlers = <String, JavaScriptHandlerCallback>{};
   final Map<String, List<List<dynamic>>> _pendingJavaScriptCalls = <String, List<List<dynamic>>>{};
+  final Completer<void> _platformReadyCompleter = Completer<void>();
 
   _CustomInAppWebViewCallbacks callbacks = _CustomInAppWebViewCallbacks();
+
+  void markPlatformReady() {
+    if (_platformReadyCompleter.isCompleted) {
+      return;
+    }
+
+    _platformReadyCompleter.complete();
+  }
 
   @override
   void addJavaScriptHandler({
@@ -152,9 +210,21 @@ class _CustomInAppWebViewController extends InAppWebViewController {
 
   @override
   Future<dynamic> evaluateJavascript({required String source}) {
-    return _channel.invokeMethod<dynamic>('evaluateJavascript', {
-      'source': source,
-    });
+    return _invokeMethodWhenReady<dynamic>(
+      'evaluateJavascript',
+      <String, dynamic>{
+        'source': source,
+      },
+    );
+  }
+
+  Future<void> startInitialLoad() async {
+    await _invokeMethodWhenReady<void>('loadInitialUrl');
+  }
+
+  Future<T?> _invokeMethodWhenReady<T>(String method, [Map<String, dynamic>? arguments]) async {
+    await _platformReadyCompleter.future;
+    return _channel.invokeMethod<T>(method, arguments);
   }
 
   Future<dynamic> _handleMethodCall(MethodCall call) async {
