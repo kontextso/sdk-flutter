@@ -56,6 +56,8 @@ final class KontextInAppWebViewPlatformView: NSObject, FlutterPlatformView, WKNa
     private let webView: WKWebView
     private let settings: IOSInAppWebViewSettings
     private var hasLoadedInitialUrl = false
+    private var isInitialCookieSeedingComplete: Bool
+    private var hasPendingInitialLoad = false
     private let initialUrl: URL?
 
     init(
@@ -70,6 +72,13 @@ final class KontextInAppWebViewPlatformView: NSObject, FlutterPlatformView, WKNa
         } else {
             self.initialUrl = nil
         }
+        let initialCookiesToSeed: [HTTPCookie]
+        if #available(iOS 11.0, *), self.settings.sharedCookiesEnabled {
+            initialCookiesToSeed = HTTPCookieStorage.shared.cookies ?? []
+        } else {
+            initialCookiesToSeed = []
+        }
+        self.isInitialCookieSeedingComplete = initialCookiesToSeed.isEmpty
 
         let userContentController = WKUserContentController()
         let bridgeScript = KontextInAppWebViewPlatformView.makeBridgeScript()
@@ -138,6 +147,10 @@ final class KontextInAppWebViewPlatformView: NSObject, FlutterPlatformView, WKNa
 
         channel.setMethodCallHandler { [weak self] call, result in
             self?.handle(call, result: result)
+        }
+
+        if #available(iOS 11.0, *), !initialCookiesToSeed.isEmpty {
+            seedInitialCookies(initialCookiesToSeed)
         }
     }
 
@@ -209,6 +222,7 @@ final class KontextInAppWebViewPlatformView: NSObject, FlutterPlatformView, WKNa
         channel.invokeMethod(
             "shouldOverrideUrlLoading",
             arguments: [
+                "isForMainFrame": navigationAction.targetFrame?.isMainFrame ?? false,
                 "request": [
                     "url": urlArgument(navigationAction.request.url)
                 ]
@@ -281,11 +295,38 @@ final class KontextInAppWebViewPlatformView: NSObject, FlutterPlatformView, WKNa
     }
 
     private func loadInitialUrl() {
+        guard isInitialCookieSeedingComplete else {
+            hasPendingInitialLoad = true
+            return
+        }
         guard !hasLoadedInitialUrl else { return }
         hasLoadedInitialUrl = true
 
         guard let initialUrl else { return }
         webView.load(URLRequest(url: initialUrl))
+    }
+
+    @available(iOS 11.0, *)
+    private func seedInitialCookies(_ cookies: [HTTPCookie]) {
+        let cookieStore = webView.configuration.websiteDataStore.httpCookieStore
+        var remainingCookies = cookies.count
+
+        for cookie in cookies {
+            cookieStore.setCookie(cookie) { [weak self] in
+                DispatchQueue.main.async {
+                    guard let self else { return }
+
+                    remainingCookies -= 1
+                    if remainingCookies == 0 {
+                        self.isInitialCookieSeedingComplete = true
+                        if self.hasPendingInitialLoad {
+                            self.hasPendingInitialLoad = false
+                            self.loadInitialUrl()
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private static func makeBridgeScript() -> String {
@@ -353,6 +394,7 @@ private struct IOSInAppWebViewSettings {
     let allowsInlineMediaPlayback: Bool
     let verticalScrollBarEnabled: Bool
     let horizontalScrollBarEnabled: Bool
+    let sharedCookiesEnabled: Bool
 
     init(creationParams: [String: Any]?) {
         let initialSettings = creationParams?["initialSettings"] as? [String: Any]
@@ -362,5 +404,6 @@ private struct IOSInAppWebViewSettings {
         allowsInlineMediaPlayback = initialSettings?["allowsInlineMediaPlayback"] as? Bool ?? false
         verticalScrollBarEnabled = initialSettings?["verticalScrollBarEnabled"] as? Bool ?? true
         horizontalScrollBarEnabled = initialSettings?["horizontalScrollBarEnabled"] as? Bool ?? true
+        sharedCookiesEnabled = initialSettings?["sharedCookiesEnabled"] as? Bool ?? false
     }
 }

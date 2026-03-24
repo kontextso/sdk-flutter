@@ -76,6 +76,7 @@ class InAppWebView extends StatelessWidget {
                       ? null
                       : WebUri.uri(navigationAction.request.url!.uriValue),
                 ),
+                isForMainFrame: navigationAction.isForMainFrame,
               );
               final result = await shouldOverrideUrlLoading!(adapter, action);
               return _toUpstreamNavigationActionPolicy(result ?? NavigationActionPolicy.CANCEL);

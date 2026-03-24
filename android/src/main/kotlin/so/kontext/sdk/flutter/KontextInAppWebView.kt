@@ -204,6 +204,7 @@ internal class KontextInAppWebView(
                     "shouldOverrideUrlLoading",
                     mapOf(
                         "request" to mapOf("url" to url),
+                        "isForMainFrame" to request.isForMainFrame,
                     ),
                     object : MethodChannel.Result {
                         override fun success(result: Any?) {

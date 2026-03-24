@@ -116,13 +116,18 @@ class InAppWebViewSettings {
 
 @immutable
 class NavigationAction {
-  const NavigationAction({required this.request});
+  const NavigationAction({
+    required this.request,
+    required this.isForMainFrame,
+  });
 
   final URLRequest request;
+  final bool isForMainFrame;
 
   factory NavigationAction.fromMap(Map<dynamic, dynamic> map) {
     return NavigationAction(
       request: URLRequest.fromMap((map['request'] as Map<dynamic, dynamic>?) ?? const {}),
+      isForMainFrame: map['isForMainFrame'] as bool? ?? true,
     );
   }
 }

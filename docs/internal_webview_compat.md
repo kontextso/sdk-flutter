@@ -70,6 +70,8 @@ Implemented subset:
 - `WebResourceError`
 - `WebResourceResponse`
 
+`NavigationAction` now includes `isForMainFrame`. This is metadata only; `KontextWebview` still decides navigation using the existing URL-based policy.
+
 This is intentionally a narrow subset of upstream, not a full reimplementation.
 
 ## Backends
@@ -237,6 +239,8 @@ window.$JAVASCRIPT_BRIDGE_NAME.callHandler = function() {
 };
 ```
 
+Android custom still only surfaces main-frame `shouldOverrideUrlLoading` callbacks because the native guard returns early for non-main-frame requests before invoking the method channel.
+
 ### iOS
 
 Relevant code: [`ios/Classes/KontextInAppWebViewPlugin.swift`](/Users/duc/StudioProjects/kontext_flutter_sdk/ios/Classes/KontextInAppWebViewPlugin.swift)
@@ -281,6 +285,9 @@ Android:
 
 iOS:
 - initial URL loading is also deferred behind `loadInitialUrl()` to match the custom backend lifecycle shape across platforms
+- `sharedCookiesEnabled` performs initial cookie seeding from `HTTPCookieStorage.shared` into `WKHTTPCookieStore`
+- the first `loadInitialUrl()` waits for that cookie seeding to finish so the initial request can observe the seeded cookies
+- that seeding is not a continuous sync after the `WKWebView` is created
 
 ## Adding Future Hooks
 
