@@ -8,6 +8,7 @@ void main() {
       String position = 'afterAssistantMessage',
       Map<String, dynamic>? akk,
       Map<String, dynamic>? skan,
+      Map<String, dynamic>? om,
     }) =>
         {
           'bidId': 'bid-1',
@@ -16,6 +17,7 @@ void main() {
           'adDisplayPosition': position,
           if (akk != null) 'akk': akk,
           if (skan != null) 'skan': skan,
+          if (om != null) 'om': om,
         };
 
     // --- revenue ---
@@ -233,6 +235,34 @@ void main() {
       });
     });
 
+    group('om', () {
+      test('parses display creative type', () {
+        final bid = Bid.fromJson(baseJson(om: {'creativeType': 'display'}));
+        expect(bid.om, OmCreativeType.display);
+      });
+
+      test('parses video creative type', () {
+        final bid = Bid.fromJson(baseJson(om: {'creativeType': 'video'}));
+        expect(bid.om, OmCreativeType.video);
+      });
+
+      test('returns null when om is missing', () {
+        final bid = Bid.fromJson(baseJson());
+        expect(bid.om, isNull);
+      });
+
+      test('returns null for invalid creative type', () {
+        final bid = Bid.fromJson(baseJson(om: {'creativeType': 'unknown'}));
+        expect(bid.om, isNull);
+      });
+
+      test('returns null when om is wrong type', () {
+        final json = baseJson()..['om'] = 'not-a-map';
+        final bid = Bid.fromJson(json);
+        expect(bid.om, isNull);
+      });
+    });
+
     // --- equality ---
 
     group('equality', () {
@@ -264,6 +294,22 @@ void main() {
         final b = Bid.fromJson({'bidId': 'bid-1', 'code': 'code-1', 'adDisplayPosition': 'afterAssistantMessage', 'akk': {'jws': 'token-b'}});
         expect(a, isNot(equals(b)));
       });
+
+      test('two bids with different om are not equal', () {
+        final a = Bid.fromJson({
+          'bidId': 'bid-1',
+          'code': 'code-1',
+          'adDisplayPosition': 'afterAssistantMessage',
+          'om': {'creativeType': 'display'},
+        });
+        final b = Bid.fromJson({
+          'bidId': 'bid-1',
+          'code': 'code-1',
+          'adDisplayPosition': 'afterAssistantMessage',
+          'om': {'creativeType': 'video'},
+        });
+        expect(a, isNot(equals(b)));
+      });
     });
 
     // --- toString ---
@@ -281,6 +327,16 @@ void main() {
         expect(str, contains('code-1'));
         expect(str, contains('9.99'));
         expect(str, contains('afterUserMessage'));
+      });
+
+      test('includes om field', () {
+        final bid = Bid.fromJson({
+          'bidId': 'bid-1',
+          'code': 'code-1',
+          'adDisplayPosition': 'afterAssistantMessage',
+          'om': {'creativeType': 'display'},
+        });
+        expect(bid.toString(), contains('om: OmCreativeType.display'));
       });
     });
   });

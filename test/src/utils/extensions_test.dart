@@ -7,17 +7,17 @@ void main() {
     group('firstWhereOrElse', () {
       test('returns first matching element', () {
         final list = [1, 2, 3, 4];
-        expect(list.firstWhereOrElse((e) => e > 2), 3);
+        expect(list.firstWhereOrMaybeElse((e) => e > 2), 3);
       });
 
       test('returns null when no match and no orElse', () {
         final list = [1, 2, 3];
-        expect(list.firstWhereOrElse((e) => e > 10), null);
+        expect(list.firstWhereOrMaybeElse((e) => e > 10), null);
       });
 
       test('calls orElse when no match', () {
         final list = [1, 2, 3];
-        expect(list.firstWhereOrElse((e) => e > 10, orElse: () => 99), 99);
+        expect(list.firstWhereOrMaybeElse((e) => e > 10, orElse: () => 99), 99);
       });
     });
 

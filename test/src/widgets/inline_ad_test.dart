@@ -14,7 +14,20 @@ void main() {
 
   tearDown(() => InterstitialModal.closeModal());
 
-  when(() => fakeController.evaluateJavascript(source: any(named: 'source'))).thenAnswer((_) async => null);
+  setUpAll(() {
+    registerFallbackValue(OmCreativeType.display);
+  });
+
+  setUp(() {
+    when(() => fakeController.evaluateJavascript(source: any(named: 'source'))).thenAnswer((_) async => null);
+    when(() => fakeController.configureOpenMeasurement(any())).thenAnswer((_) async {});
+    when(() => fakeController.startOpenMeasurementSession()).thenAnswer((_) async {});
+    when(() => fakeController.logOpenMeasurementError(
+          errorType: any(named: 'errorType'),
+          message: any(named: 'message'),
+        )).thenAnswer((_) async {});
+    when(() => fakeController.finishOpenMeasurementSession()).thenAnswer((_) async {});
+  });
 
   testWidgets(
     'InlineAd becomes keepAlive when ad is active and stops when inactive',
@@ -27,6 +40,7 @@ void main() {
         required List<String> allowedOrigins,
         required OnEventIframe onEventIframe,
         required OnMessageReceived onMessageReceived,
+        OmCreativeType? omCreativeType,
       }) {
         onMessage = onMessageReceived;
         return FakeWebview(

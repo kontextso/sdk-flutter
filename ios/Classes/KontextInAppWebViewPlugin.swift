@@ -55,10 +55,16 @@ final class KontextInAppWebViewPlatformView: NSObject, FlutterPlatformView, WKNa
     private let channel: FlutterMethodChannel
     private let webView: WKWebView
     private let settings: IOSInAppWebViewSettings
+    private let omService: OMManaging
     private var hasLoadedInitialUrl = false
     private var isInitialCookieSeedingComplete: Bool
     private var hasPendingInitialLoad = false
     private let initialUrl: URL?
+    private var omCreativeType: OMCreativeType?
+    private var hasLoadedPage = false
+    private var pendingOpenMeasurementStart = false
+    private var activeOMSession: OMSession?
+    private var lastContentURL: URL?
 
     init(
         frame: CGRect,
@@ -67,10 +73,16 @@ final class KontextInAppWebViewPlatformView: NSObject, FlutterPlatformView, WKNa
         creationParams: [String: Any]?
     ) {
         self.settings = IOSInAppWebViewSettings(creationParams: creationParams)
+        self.omService = OMManager.shared
         if let urlString = ((creationParams?["initialUrlRequest"] as? [String: Any])?["url"] as? String) {
             self.initialUrl = URL(string: urlString)
         } else {
             self.initialUrl = nil
+        }
+        if let creativeType = creationParams?["initialOmCreativeType"] as? String {
+            self.omCreativeType = OMCreativeType(rawValue: creativeType)
+        } else {
+            self.omCreativeType = nil
         }
         let initialCookiesToSeed: [HTTPCookie]
         if #available(iOS 11.0, *), self.settings.sharedCookiesEnabled {
@@ -89,6 +101,15 @@ final class KontextInAppWebViewPlatformView: NSObject, FlutterPlatformView, WKNa
                 forMainFrameOnly: false
             )
         )
+        if let omsdkJS = KontextInAppWebViewPlatformView.loadOpenMeasurementJavaScript() {
+            userContentController.addUserScript(
+                WKUserScript(
+                    source: omsdkJS,
+                    injectionTime: .atDocumentStart,
+                    forMainFrameOnly: true
+                )
+            )
+        }
         userContentController.addUserScript(
             WKUserScript(
                 source: KontextInAppWebViewPlatformView.makeConsoleShimScript(),
@@ -155,6 +176,7 @@ final class KontextInAppWebViewPlatformView: NSObject, FlutterPlatformView, WKNa
     }
 
     deinit {
+        finishOpenMeasurementSession()
         webView.configuration.userContentController.removeScriptMessageHandler(forName: kontextNativeBridgeName)
         webView.configuration.userContentController.removeScriptMessageHandler(forName: kontextConsoleBridgeName)
         channel.setMethodCallHandler(nil)
@@ -178,6 +200,27 @@ final class KontextInAppWebViewPlatformView: NSObject, FlutterPlatformView, WKNa
             }
         case "loadInitialUrl":
             loadInitialUrl()
+            result(nil)
+        case "configureOpenMeasurement":
+            let args = call.arguments as? [String: Any]
+            if let creativeType = args?["creativeType"] as? String {
+                configureOpenMeasurement(creativeType: creativeType)
+            } else {
+                omCreativeType = nil
+            }
+            result(nil)
+        case "startOpenMeasurementSession":
+            startOpenMeasurementSession()
+            result(nil)
+        case "logOpenMeasurementError":
+            let args = call.arguments as? [String: Any]
+            logOpenMeasurementError(
+                errorType: args?["errorType"] as? String,
+                message: args?["message"] as? String
+            )
+            result(nil)
+        case "finishOpenMeasurementSession":
+            finishOpenMeasurementSession()
             result(nil)
         default:
             result(FlutterMethodNotImplemented)
@@ -278,7 +321,10 @@ final class KontextInAppWebViewPlatformView: NSObject, FlutterPlatformView, WKNa
     }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        hasLoadedPage = true
+        lastContentURL = webView.url ?? initialUrl
         webView.evaluateJavaScript(kontextPlatformReadyScript, completionHandler: nil)
+        startOpenMeasurementSessionIfReady()
     }
 
     private func sendLoadError(_ error: Error, failingURL: URL?) {
@@ -336,6 +382,8 @@ final class KontextInAppWebViewPlatformView: NSObject, FlutterPlatformView, WKNa
         }
         guard !hasLoadedInitialUrl else { return }
         hasLoadedInitialUrl = true
+        hasLoadedPage = false
+        lastContentURL = initialUrl
 
         guard let initialUrl else { return }
         webView.load(URLRequest(url: initialUrl))
@@ -426,6 +474,86 @@ final class KontextInAppWebViewPlatformView: NSObject, FlutterPlatformView, WKNa
           });
         })();
         """
+    }
+
+    private func configureOpenMeasurement(creativeType: String) {
+        omCreativeType = OMCreativeType(rawValue: creativeType)
+        startOpenMeasurementSessionIfReady()
+    }
+
+    private func startOpenMeasurementSession() {
+        pendingOpenMeasurementStart = true
+        startOpenMeasurementSessionIfReady()
+    }
+
+    private func startOpenMeasurementSessionIfReady() {
+        guard activeOMSession == nil else {
+            return
+        }
+
+        guard pendingOpenMeasurementStart else {
+            return
+        }
+
+        guard let omCreativeType else {
+            return
+        }
+
+        guard hasLoadedPage else {
+            return
+        }
+
+        do {
+            let session = try omService.createSession(
+                webView,
+                url: lastContentURL ?? webView.url ?? initialUrl,
+                creativeType: omCreativeType
+            )
+            session.start()
+            activeOMSession = session
+            pendingOpenMeasurementStart = false
+        } catch {
+            pendingOpenMeasurementStart = false
+        }
+    }
+
+    private func logOpenMeasurementError(errorType: String?, message: String?) {
+        activeOMSession?.logError(errorType: errorType, message: message)
+    }
+
+    private func finishOpenMeasurementSession() {
+        pendingOpenMeasurementStart = false
+
+        guard let activeOMSession else {
+            return
+        }
+
+        self.activeOMSession = nil
+        activeOMSession.retire()
+        activeOMSession.finish()
+        OMRetentionPool.shared.retain(activeOMSession)
+    }
+
+    private static func loadOpenMeasurementJavaScript() -> String? {
+        let classBundle = Bundle(for: KontextInAppWebViewPlatformView.self)
+        let bundleCandidates: [Bundle] = [
+            Bundle.main,
+            classBundle,
+            classBundle.url(forResource: "kontext_flutter_sdk", withExtension: "bundle").flatMap(Bundle.init(url:)),
+            Bundle.main.url(forResource: "kontext_flutter_sdk", withExtension: "bundle").flatMap(Bundle.init(url:))
+        ].compactMap { $0 }
+
+        for bundle in bundleCandidates {
+            guard let url = bundle.url(forResource: "omsdk-v1", withExtension: "js") else {
+                continue
+            }
+
+            if let source = try? String(contentsOf: url, encoding: .utf8) {
+                return source
+            }
+        }
+
+        return nil
     }
 
     private func urlArgument(_ url: URL?) -> Any {

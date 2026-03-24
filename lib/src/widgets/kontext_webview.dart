@@ -1,7 +1,9 @@
+import 'dart:async' show unawaited;
 import 'dart:collection' show UnmodifiableListView;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:kontext_flutter_sdk/src/models/bid.dart';
 import 'package:kontext_flutter_sdk/src/services/logger.dart' show Logger;
 import 'package:kontext_flutter_sdk/src/utils/types.dart' show Json;
 import 'package:kontext_flutter_sdk/src/webview/in_app_webview.dart';
@@ -64,6 +66,7 @@ typedef KontextWebviewBuilder = Widget Function({
   Key? key,
   required Uri uri,
   required List<String> allowedOrigins,
+  OmCreativeType? omCreativeType,
   required OnEventIframe onEventIframe,
   required OnMessageReceived onMessageReceived,
 });
@@ -73,12 +76,14 @@ class KontextWebview extends HookWidget {
     super.key,
     required this.uri,
     required this.allowedOrigins,
+    this.omCreativeType,
     required this.onEventIframe,
     required this.onMessageReceived,
   });
 
   final Uri uri;
   final List<String> allowedOrigins;
+  final OmCreativeType? omCreativeType;
   final OnEventIframe onEventIframe;
   final OnMessageReceived onMessageReceived;
 
@@ -110,6 +115,7 @@ class KontextWebview extends HookWidget {
   Widget build(BuildContext context) {
     final webViewConsoleErrorLimiter = useMemoized(() => WebViewConsoleErrorLimiter());
     final previousUri = useRef<Uri?>(null);
+    final controllerRef = useRef<InAppWebViewController?>(null);
 
     useEffect(() {
       if (previousUri.value != null && previousUri.value != uri) {
@@ -118,6 +124,17 @@ class KontextWebview extends HookWidget {
       previousUri.value = uri;
       return null;
     }, [uri, webViewConsoleErrorLimiter]);
+
+    useEffect(() {
+      return () {
+        final controller = controllerRef.value;
+        if (controller == null || omCreativeType == null) {
+          return;
+        }
+
+        unawaited(controller.finishOpenMeasurementSession());
+      };
+    }, [omCreativeType]);
 
     return InAppWebView(
       initialUrlRequest: URLRequest(url: WebUri.uri(uri)),
@@ -132,6 +149,7 @@ class KontextWebview extends HookWidget {
         horizontalScrollBarEnabled: false,
         sharedCookiesEnabled: true,
       ),
+      initialOmCreativeType: omCreativeType,
       shouldOverrideUrlLoading: (controller, navigationAction) async {
         final url = navigationAction.request.url?.toString();
         if (url == null) {
@@ -149,6 +167,11 @@ class KontextWebview extends HookWidget {
         return NavigationActionPolicy.CANCEL;
       },
       onWebViewCreated: (controller) {
+        controllerRef.value = controller;
+        if (omCreativeType != null) {
+          unawaited(controller.configureOpenMeasurement(omCreativeType!));
+        }
+
         controller.addJavaScriptHandler(
           handlerName: 'postMessage',
           callback: (args) {

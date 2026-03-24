@@ -77,10 +77,10 @@ class DeviceNetwork {
   }
 
   static NetworkType? _getNetworkType(String? type) {
-    return NetworkType.values.firstWhereOrElse((t) => t.name == type);
+    return NetworkType.values.firstWhereOrMaybeElse((t) => t.name == type);
   }
 
   static NetworkDetail? _getNetworkDetail(String? detail) {
-    return NetworkDetail.values.firstWhereOrElse((d) => d.name == detail);
+    return NetworkDetail.values.firstWhereOrMaybeElse((d) => d.name == detail);
   }
 }

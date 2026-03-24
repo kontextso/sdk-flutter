@@ -1,4 +1,5 @@
 import 'dart:async' show unawaited;
+import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart' show HookWidget, useState, useEffect, useRef;
@@ -8,11 +9,13 @@ import 'package:kontext_flutter_sdk/src/services/api.dart';
 import 'package:kontext_flutter_sdk/src/services/advertising_id_service.dart';
 import 'package:kontext_flutter_sdk/src/services/http_client.dart';
 import 'package:kontext_flutter_sdk/src/services/logger.dart';
+import 'package:kontext_flutter_sdk/src/services/omsdk_service.dart';
 import 'package:kontext_flutter_sdk/src/utils/types.dart' show OnEventCallback;
 import 'package:kontext_flutter_sdk/src/widgets/ads_provider_data.dart';
 import 'package:kontext_flutter_sdk/src/models/message.dart';
 import 'package:kontext_flutter_sdk/src/models/character.dart';
 import 'package:kontext_flutter_sdk/src/utils/constants.dart';
+import 'package:kontext_flutter_sdk/src/widgets/interstitial_modal.dart';
 import 'package:kontext_flutter_sdk/src/widgets/utils/use_last_messages.dart';
 import 'package:kontext_flutter_sdk/src/widgets/utils/use_preload_ads.dart';
 
@@ -161,6 +164,17 @@ class AdsProvider extends HookWidget {
     useEffect(() {
       unawaited(AdvertisingIdService.requestTrackingAuthorization());
       return null;
+    }, const []);
+
+    useEffect(() {
+      if (Platform.isIOS) {
+        unawaited(OMSDKService.activate());
+      }
+      return null;
+    }, const []);
+
+    useEffect(() {
+      return () => InterstitialModal.closeModal();
     }, const []);
 
     usePreloadAds(

@@ -8,6 +8,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show PlatformViewHitTestBehavior;
 import 'package:flutter/services.dart';
+import 'package:kontext_flutter_sdk/src/models/bid.dart';
 import 'package:kontext_flutter_sdk/src/webview/compat_types.dart';
 
 const _viewType = 'kontext_flutter_sdk/in_app_webview';
@@ -18,6 +19,7 @@ class InAppWebView extends StatefulWidget {
     this.initialUrlRequest,
     this.initialUserScripts,
     this.initialSettings = const InAppWebViewSettings(),
+    this.initialOmCreativeType,
     this.shouldOverrideUrlLoading,
     this.onWebViewCreated,
     this.onConsoleMessage,
@@ -28,6 +30,7 @@ class InAppWebView extends StatefulWidget {
   final URLRequest? initialUrlRequest;
   final UnmodifiableListView<UserScript>? initialUserScripts;
   final InAppWebViewSettings initialSettings;
+  final OmCreativeType? initialOmCreativeType;
   final Future<NavigationActionPolicy?> Function(
     InAppWebViewController controller,
     NavigationAction navigationAction,
@@ -57,6 +60,7 @@ class _InAppWebViewState extends State<InAppWebView> {
         'initialUrlRequest': widget.initialUrlRequest?.toMap(),
         'initialUserScripts': widget.initialUserScripts?.map((script) => script.toMap()).toList(),
         'initialSettings': widget.initialSettings.toMap(),
+        'initialOmCreativeType': widget.initialOmCreativeType?.name,
       };
 
   _CustomInAppWebViewController _ensureController(int id) {
@@ -220,6 +224,40 @@ class _CustomInAppWebViewController extends InAppWebViewController {
 
   Future<void> startInitialLoad() async {
     await _invokeMethodWhenReady<void>('loadInitialUrl');
+  }
+
+  @override
+  Future<void> configureOpenMeasurement(OmCreativeType creativeType) async {
+    await _invokeMethodWhenReady<void>(
+      'configureOpenMeasurement',
+      <String, dynamic>{
+        'creativeType': creativeType.name,
+      },
+    );
+  }
+
+  @override
+  Future<void> startOpenMeasurementSession() async {
+    await _invokeMethodWhenReady<void>('startOpenMeasurementSession');
+  }
+
+  @override
+  Future<void> logOpenMeasurementError({
+    String? errorType,
+    String? message,
+  }) async {
+    await _invokeMethodWhenReady<void>(
+      'logOpenMeasurementError',
+      <String, dynamic>{
+        'errorType': errorType,
+        'message': message,
+      },
+    );
+  }
+
+  @override
+  Future<void> finishOpenMeasurementSession() async {
+    await _invokeMethodWhenReady<void>('finishOpenMeasurementSession');
   }
 
   Future<T?> _invokeMethodWhenReady<T>(String method, [Map<String, dynamic>? arguments]) async {

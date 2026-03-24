@@ -58,7 +58,7 @@ class DeviceAudio {
       return null;
     }
     return types.map((type) {
-      return AudioOutputType.values.firstWhereOrElse((t) => t.name == type) ?? AudioOutputType.other;
+      return AudioOutputType.values.firstWhereOrMaybeElse((t) => t.name == type) ?? AudioOutputType.other;
     }).toList();
   }
 }

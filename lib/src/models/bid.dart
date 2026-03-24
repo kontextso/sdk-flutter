@@ -1,8 +1,11 @@
 import 'package:flutter/foundation.dart';
+import 'package:kontext_flutter_sdk/src/utils/extensions.dart';
 
 enum AdDisplayPosition { afterAssistantMessage, afterUserMessage }
 
 enum ImpressionTrigger { immediate, component }
+
+enum OmCreativeType { display, video }
 
 class Akk {
   Akk({required this.jws});
@@ -195,6 +198,7 @@ class Bid {
     this.akk,
     this.skan,
     this.impressionTrigger = ImpressionTrigger.immediate,
+    this.om,
   });
 
   final String id;
@@ -204,6 +208,7 @@ class Bid {
   final Akk? akk;
   final Skan? skan;
   final ImpressionTrigger impressionTrigger;
+  final OmCreativeType? om;
 
   bool get isAfterAssistantMessage => position == AdDisplayPosition.afterAssistantMessage;
 
@@ -221,6 +226,7 @@ class Bid {
       akk: _parseAkk(json['akk']),
       skan: _parseSkan(json['skan']),
       impressionTrigger: _parseImpressionTrigger(json['impressionTrigger']),
+      om: _parseOmCreativeType(json['om']),
     );
   }
 
@@ -247,6 +253,21 @@ class Bid {
     return ImpressionTrigger.values.firstWhere(
       (t) => t.name == value,
       orElse: () => ImpressionTrigger.immediate,
+    );
+  }
+
+  static OmCreativeType? _parseOmCreativeType(Object? value) {
+    if (value is! Map<String, dynamic>) {
+      return null;
+    }
+
+    final creativeType = value['creativeType'];
+    if (creativeType is! String) {
+      return null;
+    }
+
+    return OmCreativeType.values.firstWhereOrMaybeElse(
+      (type) => type.name == creativeType,
     );
   }
 
@@ -277,14 +298,15 @@ class Bid {
             position == other.position &&
             akk == other.akk &&
             skan == other.skan &&
-            impressionTrigger == other.impressionTrigger;
+            impressionTrigger == other.impressionTrigger &&
+            om == other.om;
   }
 
   @override
-  int get hashCode => Object.hash(id, code, revenue, position, akk, skan, impressionTrigger);
+  int get hashCode => Object.hash(id, code, revenue, position, akk, skan, impressionTrigger, om);
 
   @override
   String toString() {
-    return 'Bid(id: $id, code: $code, revenue: $revenue, position: $position, akk: $akk, skan: $skan, impressionTrigger: $impressionTrigger)';
+    return 'Bid(id: $id, code: $code, revenue: $revenue, position: $position, akk: $akk, skan: $skan, impressionTrigger: $impressionTrigger, om: $om)';
   }
 }

@@ -15,6 +15,7 @@ public class KontextSdkPlugin: NSObject, FlutterPlugin {
         SKAdNetworkPlugin.register(with: registrar)
         SKOverlayPlugin.register(with: registrar)
         SKStoreProductPlugin.register(with: registrar)
+        OMSDKPlugin.register(with: registrar)
         KontextInAppWebViewPlugin.register(with: registrar)
     }
 }

@@ -1,7 +1,8 @@
-import 'dart:async' show Timer;
+import 'dart:async' show Timer, unawaited;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show DeviceOrientation, SystemChrome;
+import 'package:kontext_flutter_sdk/src/models/bid.dart';
 import 'package:kontext_flutter_sdk/src/utils/constants.dart';
 import 'package:kontext_flutter_sdk/src/utils/types.dart' show Json, OpenIframeComponent;
 import 'package:kontext_flutter_sdk/src/widgets/kontext_webview.dart';
@@ -15,6 +16,7 @@ typedef InterstitialModalShowFunc = void Function(
   required OnEventIframe onEventIframe,
   required void Function(OpenIframeComponent component, Json? data) onOpenComponentIframe,
   required void Function(OpenIframeComponent component) onCloseComponentIframe,
+  OmCreativeType? omCreativeType,
 });
 
 class InterstitialModal {
@@ -33,6 +35,7 @@ class InterstitialModal {
     required OnEventIframe onEventIframe,
     required void Function(OpenIframeComponent component, Json? data) onOpenComponentIframe,
     required void Function(OpenIframeComponent component) onCloseComponentIframe,
+    OmCreativeType? omCreativeType,
     @visibleForTesting Key? animatedOpacityKey,
     @visibleForTesting KontextWebviewBuilder? webviewBuilder,
   }) {
@@ -45,22 +48,6 @@ class InterstitialModal {
     closeModal();
 
     final visible = ValueNotifier<bool>(false);
-
-    final buildWebview = webviewBuilder ??
-        ({
-          Key? key,
-          required Uri uri,
-          required List<String> allowedOrigins,
-          required OnEventIframe onEventIframe,
-          required OnMessageReceived onMessageReceived,
-        }) =>
-            KontextWebview(
-              key: key,
-              uri: uri,
-              allowedOrigins: allowedOrigins,
-              onEventIframe: onEventIframe,
-              onMessageReceived: onMessageReceived,
-            );
 
     _entry = OverlayEntry(
       builder: (context) {
@@ -77,9 +64,10 @@ class InterstitialModal {
                 child: SizedBox(
                   width: double.infinity,
                   height: double.infinity,
-                  child: buildWebview(
+                  child: (webviewBuilder ?? KontextWebview.new)(
                     uri: uri,
                     allowedOrigins: [adServerUrl],
+                    omCreativeType: omCreativeType,
                     onEventIframe: onEventIframe,
                     onMessageReceived: (controller, messageType, data) {
                       switch (messageType) {
@@ -92,6 +80,11 @@ class InterstitialModal {
 
                           _initTimer?.cancel();
                           visible.value = true;
+                          break;
+                        case 'ad-done-component-iframe':
+                          if (omCreativeType != null) {
+                            unawaited(controller.startOpenMeasurementSession());
+                          }
                           break;
                         case 'open-component-iframe':
                         case 'open-skoverlay-iframe':
@@ -108,6 +101,16 @@ class InterstitialModal {
                           closeSKOverlay();
                           break;
                         case 'error-component-iframe':
+                          if (omCreativeType != null) {
+                            unawaited(() async {
+                              await controller.logOpenMeasurementError(
+                                errorType: data?['errorType'] as String?,
+                                message: data?['message'] as String?,
+                              );
+                              closeAll();
+                            }());
+                            return;
+                          }
                           closeAll();
                           break;
                         case 'click-iframe':
@@ -126,7 +129,7 @@ class InterstitialModal {
     );
 
     Overlay.of(context, rootOverlay: true).insert(_entry!);
-    _initTimer = Timer(initTimeout, () => closeAll());
+    _initTimer = Timer(initTimeout + const Duration(milliseconds: 500), () => closeAll());
   }
 
   static void closeModal() {
