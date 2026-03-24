@@ -1,0 +1,353 @@
+import Flutter
+import Foundation
+import WebKit
+
+private let kontextInAppWebViewType = "kontext_flutter_sdk/in_app_webview"
+private let kontextInAppWebViewChannelPrefix = "kontext_flutter_sdk/in_app_webview/"
+private let kontextNativeBridgeName = "__kontextNativeBridge"
+private let kontextConsoleBridgeName = "__kontextConsoleBridge"
+private let kontextPlatformReadyScript = """
+(function() {
+  if ((window.top == null || window.top === window) &&
+      window.flutter_inappwebview != null &&
+      window.flutter_inappwebview._platformReady == null) {
+    window.dispatchEvent(new Event('flutterInAppWebViewPlatformReady'));
+    window.flutter_inappwebview._platformReady = true;
+  }
+})();
+"""
+
+final class KontextInAppWebViewPlugin: NSObject {
+    static func register(with registrar: FlutterPluginRegistrar) {
+        let factory = KontextInAppWebViewFactory(messenger: registrar.messenger())
+        registrar.register(factory, withId: kontextInAppWebViewType)
+    }
+}
+
+final class KontextInAppWebViewFactory: NSObject, FlutterPlatformViewFactory {
+    private let messenger: FlutterBinaryMessenger
+
+    init(messenger: FlutterBinaryMessenger) {
+        self.messenger = messenger
+        super.init()
+    }
+
+    func createArgsCodec() -> FlutterMessageCodec & NSObjectProtocol {
+        FlutterStandardMessageCodec.sharedInstance()
+    }
+
+    func create(
+        withFrame frame: CGRect,
+        viewIdentifier viewId: Int64,
+        arguments args: Any?
+    ) -> FlutterPlatformView {
+        let creationParams = args as? [String: Any]
+        return KontextInAppWebViewPlatformView(
+            frame: frame,
+            viewId: viewId,
+            messenger: messenger,
+            creationParams: creationParams
+        )
+    }
+}
+
+final class KontextInAppWebViewPlatformView: NSObject, FlutterPlatformView, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler {
+    private let channel: FlutterMethodChannel
+    private let webView: WKWebView
+    private let settings: IOSInAppWebViewSettings
+
+    init(
+        frame: CGRect,
+        viewId: Int64,
+        messenger: FlutterBinaryMessenger,
+        creationParams: [String: Any]?
+    ) {
+        self.settings = IOSInAppWebViewSettings(creationParams: creationParams)
+
+        let userContentController = WKUserContentController()
+        let bridgeScript = KontextInAppWebViewPlatformView.makeBridgeScript()
+        userContentController.addUserScript(
+            WKUserScript(
+                source: bridgeScript,
+                injectionTime: .atDocumentStart,
+                forMainFrameOnly: false
+            )
+        )
+        userContentController.addUserScript(
+            WKUserScript(
+                source: KontextInAppWebViewPlatformView.makeConsoleShimScript(),
+                injectionTime: .atDocumentStart,
+                forMainFrameOnly: false
+            )
+        )
+
+        let initialUserScripts = (creationParams?["initialUserScripts"] as? [[String: Any]]) ?? []
+        for script in initialUserScripts {
+            guard let source = script["source"] as? String else { continue }
+            let injectionTime: WKUserScriptInjectionTime =
+                (script["injectionTime"] as? String) == "AT_DOCUMENT_END" ? .atDocumentEnd : .atDocumentStart
+            let forMainFrameOnly = script["forMainFrameOnly"] as? Bool ?? true
+            userContentController.addUserScript(
+                WKUserScript(
+                    source: source,
+                    injectionTime: injectionTime,
+                    forMainFrameOnly: forMainFrameOnly
+                )
+            )
+        }
+
+        let configuration = WKWebViewConfiguration()
+        configuration.userContentController = userContentController
+        configuration.allowsInlineMediaPlayback = self.settings.allowsInlineMediaPlayback
+        configuration.websiteDataStore = .default()
+        if #available(iOS 10.0, *) {
+            configuration.mediaTypesRequiringUserActionForPlayback =
+                self.settings.mediaPlaybackRequiresUserGesture ? .all : []
+        }
+        if #available(iOS 14.0, *) {
+            configuration.defaultWebpagePreferences.allowsContentJavaScript = true
+        } else {
+            configuration.preferences.javaScriptEnabled = true
+        }
+
+        self.webView = WKWebView(frame: frame, configuration: configuration)
+        self.channel = FlutterMethodChannel(
+            name: "\(kontextInAppWebViewChannelPrefix)\(viewId)",
+            binaryMessenger: messenger
+        )
+
+        super.init()
+
+        userContentController.add(self, name: kontextNativeBridgeName)
+        userContentController.add(self, name: kontextConsoleBridgeName)
+
+        webView.navigationDelegate = self
+        webView.uiDelegate = self
+        webView.isOpaque = !settings.transparentBackground
+        webView.backgroundColor = settings.transparentBackground ? .clear : .white
+        webView.scrollView.backgroundColor = settings.transparentBackground ? .clear : .white
+        webView.scrollView.showsVerticalScrollIndicator = settings.verticalScrollBarEnabled
+        webView.scrollView.showsHorizontalScrollIndicator = settings.horizontalScrollBarEnabled
+
+        channel.setMethodCallHandler { [weak self] call, result in
+            self?.handle(call, result: result)
+        }
+
+        if let urlString = ((creationParams?["initialUrlRequest"] as? [String: Any])?["url"] as? String),
+           let url = URL(string: urlString) {
+            webView.load(URLRequest(url: url))
+        }
+    }
+
+    deinit {
+        webView.configuration.userContentController.removeScriptMessageHandler(forName: kontextNativeBridgeName)
+        webView.configuration.userContentController.removeScriptMessageHandler(forName: kontextConsoleBridgeName)
+        channel.setMethodCallHandler(nil)
+    }
+
+    func view() -> UIView {
+        webView
+    }
+
+    private func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+        switch call.method {
+        case "evaluateJavascript":
+            let args = call.arguments as? [String: Any]
+            let source = args?["source"] as? String
+            webView.evaluateJavaScript(source ?? "") { value, error in
+                if let error {
+                    result(FlutterError(code: "evaluate_javascript_failed", message: error.localizedDescription, details: nil))
+                } else {
+                    result(value)
+                }
+            }
+        default:
+            result(FlutterMethodNotImplemented)
+        }
+    }
+
+    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+        switch message.name {
+        case kontextNativeBridgeName:
+            guard let body = message.body as? [String: Any] else { return }
+            channel.invokeMethod(
+                "onJavaScriptHandler",
+                arguments: [
+                    "handlerName": body["handlerName"] as? String ?? "",
+                    "args": body["args"] as? String ?? "[]",
+                ]
+            )
+        case kontextConsoleBridgeName:
+            guard let body = message.body as? [String: Any] else { return }
+            channel.invokeMethod(
+                "onConsoleMessage",
+                arguments: [
+                    "message": body["message"] as? String ?? "",
+                    "messageLevel": body["messageLevel"] as? String ?? "LOG",
+                ]
+            )
+        default:
+            break
+        }
+    }
+
+    func webView(
+        _ webView: WKWebView,
+        decidePolicyFor navigationAction: WKNavigationAction,
+        decisionHandler: @escaping (WKNavigationActionPolicy) -> Void
+    ) {
+        guard settings.useShouldOverrideUrlLoading else {
+            decisionHandler(.allow)
+            return
+        }
+
+        channel.invokeMethod(
+            "shouldOverrideUrlLoading",
+            arguments: [
+                "request": [
+                    "url": urlArgument(navigationAction.request.url)
+                ]
+            ]
+        ) { result in
+            if let decision = result as? String, decision == "ALLOW" {
+                decisionHandler(.allow)
+            } else {
+                decisionHandler(.cancel)
+            }
+        }
+    }
+
+    func webView(
+        _ webView: WKWebView,
+        decidePolicyFor navigationResponse: WKNavigationResponse,
+        decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void
+    ) {
+        if let response = navigationResponse.response as? HTTPURLResponse, response.statusCode >= 400 {
+            channel.invokeMethod(
+                "onReceivedHttpError",
+                arguments: [
+                    "request": [
+                        "url": urlArgument(response.url)
+                    ],
+                    "errorResponse": [
+                        "statusCode": response.statusCode,
+                        "reasonPhrase": HTTPURLResponse.localizedString(forStatusCode: response.statusCode),
+                    ]
+                ]
+            )
+        }
+        decisionHandler(.allow)
+    }
+
+    func webView(
+        _ webView: WKWebView,
+        didFail navigation: WKNavigation!,
+        withError error: Error
+    ) {
+        sendLoadError(error, failingURL: webView.url)
+    }
+
+    func webView(
+        _ webView: WKWebView,
+        didFailProvisionalNavigation navigation: WKNavigation!,
+        withError error: Error
+    ) {
+        sendLoadError(error, failingURL: webView.url)
+    }
+
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        webView.evaluateJavaScript(kontextPlatformReadyScript, completionHandler: nil)
+    }
+
+    private func sendLoadError(_ error: Error, failingURL: URL?) {
+        let nsError = error as NSError
+        channel.invokeMethod(
+            "onReceivedError",
+            arguments: [
+                "request": [
+                    "url": urlArgument(failingURL)
+                ],
+                "error": [
+                    "type": nsError.code,
+                    "description": nsError.localizedDescription,
+                ]
+            ]
+        )
+    }
+
+    private static func makeBridgeScript() -> String {
+        """
+        (function() {
+          if (window.flutter_inappwebview && window.flutter_inappwebview.callHandler) {
+            return;
+          }
+          window.flutter_inappwebview = window.flutter_inappwebview || {};
+          window.flutter_inappwebview.callHandler = function(handlerName) {
+            var args = Array.prototype.slice.call(arguments, 1);
+            window.webkit.messageHandlers.\(kontextNativeBridgeName).postMessage({
+              handlerName: handlerName,
+              args: JSON.stringify(args)
+            });
+          };
+        })();
+        """
+    }
+
+    private static func makeConsoleShimScript() -> String {
+        """
+        (function() {
+          if (window.__kontextConsoleBridgeReady) {
+            return;
+          }
+          window.__kontextConsoleBridgeReady = true;
+          function joinArgs(args) {
+            return Array.prototype.slice.call(args).map(function(value) {
+              try {
+                if (typeof value === 'string') return value;
+                return JSON.stringify(value);
+              } catch (e) {
+                return String(value);
+              }
+            }).join(' ');
+          }
+          ['log', 'warn', 'error', 'debug'].forEach(function(level) {
+            var original = console[level];
+            console[level] = function() {
+              try {
+                window.webkit.messageHandlers.\(kontextConsoleBridgeName).postMessage({
+                  message: joinArgs(arguments),
+                  messageLevel: level === 'warn' ? 'WARNING' : (level === 'error' ? 'ERROR' : (level === 'debug' ? 'DEBUG' : 'LOG'))
+                });
+              } catch (e) {}
+              if (original) {
+                return original.apply(console, arguments);
+              }
+            };
+          });
+        })();
+        """
+    }
+
+    private func urlArgument(_ url: URL?) -> Any {
+        url?.absoluteString ?? NSNull()
+    }
+}
+
+private struct IOSInAppWebViewSettings {
+    let transparentBackground: Bool
+    let useShouldOverrideUrlLoading: Bool
+    let mediaPlaybackRequiresUserGesture: Bool
+    let allowsInlineMediaPlayback: Bool
+    let verticalScrollBarEnabled: Bool
+    let horizontalScrollBarEnabled: Bool
+
+    init(creationParams: [String: Any]?) {
+        let initialSettings = creationParams?["initialSettings"] as? [String: Any]
+        transparentBackground = initialSettings?["transparentBackground"] as? Bool ?? false
+        useShouldOverrideUrlLoading = initialSettings?["useShouldOverrideUrlLoading"] as? Bool ?? false
+        mediaPlaybackRequiresUserGesture = initialSettings?["mediaPlaybackRequiresUserGesture"] as? Bool ?? true
+        allowsInlineMediaPlayback = initialSettings?["allowsInlineMediaPlayback"] as? Bool ?? false
+        verticalScrollBarEnabled = initialSettings?["verticalScrollBarEnabled"] as? Bool ?? true
+        horizontalScrollBarEnabled = initialSettings?["horizontalScrollBarEnabled"] as? Bool ?? true
+    }
+}

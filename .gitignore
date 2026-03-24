@@ -32,5 +32,7 @@ build/
 
 # User-specific files
 kontext_sample_app/
+android/.gradle/
+android/local.properties
 
 coverage/
