@@ -173,6 +173,7 @@ void main() {
         onEventIframe: (_, __) {},
         onOpenComponentIframe: (_, __) {},
         onCloseComponentIframe: (_) {},
+        omCreativeType: OmCreativeType.display,
         webviewBuilder: ({
           Key? key,
           required Uri uri,
@@ -225,6 +226,7 @@ void main() {
         onEventIframe: (_, __) {},
         onOpenComponentIframe: (_, __) {},
         onCloseComponentIframe: (_) {},
+        omCreativeType: OmCreativeType.display,
         webviewBuilder: ({
           Key? key,
           required Uri uri,
@@ -355,7 +357,8 @@ void main() {
       await tester.pump();
       expect(receivedData!['test_key'], equals('test_value'));
 
-      await tester.pump(const Duration(milliseconds: 500));
+      InterstitialModal.closeModal();
+      await tester.pump();
     },
   );
 
