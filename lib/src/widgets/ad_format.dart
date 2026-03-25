@@ -192,7 +192,7 @@ class AdFormat extends HookWidget {
           adsProviderData.setCachedContent(bid.id, content);
         }
         unawaited(() async {
-          if (bid.om != null) {
+          if (bid.om != null && bid.impressionTrigger == ImpressionTrigger.immediate) {
             await controller.startOpenMeasurementSession();
           }
           if (bid.impressionTrigger == ImpressionTrigger.immediate) {
@@ -422,8 +422,7 @@ class AdFormat extends HookWidget {
           unawaited(_startAttributionImpression(attributionType));
         }
         final modalUri = inlineUri.replacePath('/api/${component.name}/${bid.id}');
-        final show = showInterstitial;
-        (show ?? InterstitialModal.show)(
+        (showInterstitial ?? InterstitialModal.show)(
           context,
           adServerUrl: adServerUrl,
           uri: modalUri,

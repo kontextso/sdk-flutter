@@ -503,6 +503,10 @@ final class KontextInAppWebViewPlatformView: NSObject, FlutterPlatformView, WKNa
             return
         }
 
+        guard omService.activate() else {
+            return
+        }
+
         do {
             let session = try omService.createSession(
                 webView,
@@ -512,6 +516,8 @@ final class KontextInAppWebViewPlatformView: NSObject, FlutterPlatformView, WKNa
             session.start()
             activeOMSession = session
             pendingOpenMeasurementStart = false
+        } catch OMManager.OMError.sdkIsNotActive {
+            return
         } catch {
             pendingOpenMeasurementStart = false
         }

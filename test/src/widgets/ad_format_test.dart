@@ -452,6 +452,57 @@ void main() {
   );
 
   testWidgets(
+    'ad-done-iframe does not start OM for component-trigger bids',
+    (WidgetTester tester) async {
+      late OnMessageReceived onMessage;
+
+      FakeWebview webviewBuilder({
+        Key? key,
+        required Uri uri,
+        required List<String> allowedOrigins,
+        required OnEventIframe onEventIframe,
+        required OnMessageReceived onMessageReceived,
+        OmCreativeType? omCreativeType,
+      }) {
+        onMessage = onMessageReceived;
+        return FakeWebview(
+          key: key,
+          onEventIframe: onEventIframe,
+          onMessageReceived: onMessageReceived,
+        );
+      }
+
+      await tester.pumpWidget(
+        createDefaultProvider(
+          bids: [
+            Bid(
+              id: '1',
+              code: 'test_code',
+              position: AdDisplayPosition.afterAssistantMessage,
+              impressionTrigger: ImpressionTrigger.component,
+              om: OmCreativeType.display,
+            ),
+          ],
+          child: AdFormat(
+            code: 'test_code',
+            messageId: 'msg_1',
+            onActiveChanged: onActiveChanged,
+            webviewBuilder: webviewBuilder,
+          ),
+        ),
+      );
+
+      onMessage(fakeController, 'init-iframe', null);
+      await tester.pump();
+
+      onMessage(fakeController, 'ad-done-iframe', null);
+      await tester.pump();
+
+      verifyNever(() => fakeController.startOpenMeasurementSession());
+    },
+  );
+
+  testWidgets(
     'error-iframe logs OM error before reset when bid has OM creative type',
     (WidgetTester tester) async {
       late OnMessageReceived onMessage;
