@@ -243,6 +243,9 @@ internal class KontextInAppWebView(
 
             override fun onPageFinished(view: WebView, url: String?) {
                 super.onPageFinished(view, url)
+                if (!documentStartSupported) {
+                    injectFallbackStartScripts()
+                }
                 initialUserScripts
                     .filter { it.injectionTime == "AT_DOCUMENT_END" }
                     .forEach { evaluateJavascript(it.source) }
@@ -339,10 +342,29 @@ internal class KontextInAppWebView(
     }
 
     private fun injectFallbackStartScripts() {
-        evaluateJavascript(bridgeScript)
-        initialUserScripts
+        evaluateJavascript(fallbackStartScriptsSource())
+    }
+
+    private fun fallbackStartScriptsSource(): String {
+        val documentStartUserScripts = initialUserScripts
             .filter { it.injectionTime == "AT_DOCUMENT_START" }
-            .forEach { evaluateJavascript(it.source) }
+            .joinToString(separator = "\n") { it.source }
+
+        return """
+            (function() {
+              if (window.$JAVASCRIPT_BRIDGE_NAME != null &&
+                  window.$JAVASCRIPT_BRIDGE_NAME._userScriptsAtDocumentStartLoaded === true) {
+                return;
+              }
+              $bridgeScript
+              if (window.$JAVASCRIPT_BRIDGE_NAME == null ||
+                  window.$JAVASCRIPT_BRIDGE_NAME._userScriptsAtDocumentStartLoaded === true) {
+                return;
+              }
+              window.$JAVASCRIPT_BRIDGE_NAME._userScriptsAtDocumentStartLoaded = true;
+              $documentStartUserScripts
+            })();
+        """.trimIndent()
     }
 
     private fun evaluateJavascript(source: String) {
