@@ -267,6 +267,7 @@ internal class KontextInAppWebView(
                 )
             }
 
+            @Suppress("DEPRECATION")
             override fun onReceivedError(
                 view: WebView,
                 errorCode: Int,
