@@ -10,7 +10,7 @@ Purpose:
 
 ## Backend Switch
 
-Switch point: [`lib/src/webview/in_app_webview.dart`](/Users/duc/StudioProjects/kontext_flutter_sdk/lib/src/webview/in_app_webview.dart)
+Switch point: [`lib/src/webview/in_app_webview.dart`](../lib/src/webview/in_app_webview.dart)
 
 ```dart
 export 'compat_types.dart';
@@ -23,7 +23,7 @@ Use this file only to switch the active backend. `KontextWebview`, `AdFormat`, a
 
 ## Compatibility Contract
 
-Primary call site: [`lib/src/widgets/kontext_webview.dart`](/Users/duc/StudioProjects/kontext_flutter_sdk/lib/src/widgets/kontext_webview.dart)
+Primary call site: [`lib/src/widgets/kontext_webview.dart`](../lib/src/widgets/kontext_webview.dart)
 
 ```dart
 return InAppWebView(
@@ -51,7 +51,7 @@ This is the contract to preserve when extending the compat layer.
 
 ## Current Compat Surface
 
-Defined in [`lib/src/webview/compat_types.dart`](/Users/duc/StudioProjects/kontext_flutter_sdk/lib/src/webview/compat_types.dart).
+Defined in [`lib/src/webview/compat_types.dart`](../lib/src/webview/compat_types.dart).
 
 Implemented subset:
 - `InAppWebView`
@@ -78,7 +78,7 @@ This is intentionally a narrow subset of upstream, not a full reimplementation.
 
 ### Upstream Backend
 
-File: [`lib/src/webview/backends/upstream_in_app_webview.dart`](/Users/duc/StudioProjects/kontext_flutter_sdk/lib/src/webview/backends/upstream_in_app_webview.dart)
+File: [`lib/src/webview/backends/upstream_in_app_webview.dart`](../lib/src/webview/backends/upstream_in_app_webview.dart)
 
 Role:
 - adapts the compat types to `package:flutter_inappwebview/flutter_inappwebview.dart`
@@ -91,9 +91,9 @@ Use it when:
 ### Custom Backend
 
 Files:
-- [`lib/src/webview/backends/custom_in_app_webview.dart`](/Users/duc/StudioProjects/kontext_flutter_sdk/lib/src/webview/backends/custom_in_app_webview.dart)
-- [`android/src/main/kotlin/so/kontext/sdk/flutter/KontextInAppWebView.kt`](/Users/duc/StudioProjects/kontext_flutter_sdk/android/src/main/kotlin/so/kontext/sdk/flutter/KontextInAppWebView.kt)
-- [`ios/Classes/KontextInAppWebViewPlugin.swift`](/Users/duc/StudioProjects/kontext_flutter_sdk/ios/Classes/KontextInAppWebViewPlugin.swift)
+- [`lib/src/webview/backends/custom_in_app_webview.dart`](../lib/src/webview/backends/custom_in_app_webview.dart)
+- [`android/src/main/kotlin/so/kontext/sdk/flutter/KontextInAppWebView.kt`](../android/src/main/kotlin/so/kontext/sdk/flutter/KontextInAppWebView.kt)
+- [`ios/Classes/KontextInAppWebViewPlugin.swift`](../ios/Classes/KontextInAppWebViewPlugin.swift)
 
 Role:
 - SDK-owned embedded webview implementation
@@ -110,7 +110,7 @@ The Android custom backend has two important constraints.
 
 ### 1. Use `PlatformViewLink`, not plain `AndroidView`
 
-Relevant code: [`lib/src/webview/backends/custom_in_app_webview.dart:118`](/Users/duc/StudioProjects/kontext_flutter_sdk/lib/src/webview/backends/custom_in_app_webview.dart#L118)
+Relevant code: [`lib/src/webview/backends/custom_in_app_webview.dart:118`](../lib/src/webview/backends/custom_in_app_webview.dart#L118)
 
 ```dart
 return PlatformViewLink(
@@ -130,7 +130,7 @@ This matches upstream Android embedding more closely and avoids the lifecycle pr
 
 ### 2. Defer initial load until the JS handler is registered
 
-Relevant code: [`lib/src/webview/backends/custom_in_app_webview.dart:83`](/Users/duc/StudioProjects/kontext_flutter_sdk/lib/src/webview/backends/custom_in_app_webview.dart#L83)
+Relevant code: [`lib/src/webview/backends/custom_in_app_webview.dart:83`](../lib/src/webview/backends/custom_in_app_webview.dart#L83)
 
 ```dart
 void _deliverOnWebViewCreated(_CustomInAppWebViewController controller) {
@@ -150,7 +150,7 @@ Reason:
 
 ### 3. Do not call the native per-view channel before the platform view is ready
 
-Relevant code: [`lib/src/webview/backends/custom_in_app_webview.dart:182`](/Users/duc/StudioProjects/kontext_flutter_sdk/lib/src/webview/backends/custom_in_app_webview.dart#L182)
+Relevant code: [`lib/src/webview/backends/custom_in_app_webview.dart:182`](../lib/src/webview/backends/custom_in_app_webview.dart#L182)
 
 ```dart
 final Completer<void> _platformReadyCompleter = Completer<void>();
@@ -174,7 +174,7 @@ Reason:
 
 ## JS Bridge Contract
 
-The Dart-side early bridge lives in [`lib/src/widgets/kontext_webview.dart:10`](/Users/duc/StudioProjects/kontext_flutter_sdk/lib/src/widgets/kontext_webview.dart#L10)
+The Dart-side early bridge lives in [`lib/src/widgets/kontext_webview.dart:10`](../lib/src/widgets/kontext_webview.dart#L10)
 
 ```dart
 if (window.flutter_inappwebview && window.flutter_inappwebview.callHandler) {
@@ -184,7 +184,7 @@ if (window.flutter_inappwebview && window.flutter_inappwebview.callHandler) {
 }
 ```
 
-And the queued messages are flushed in [`lib/src/widgets/kontext_webview.dart:151`](/Users/duc/StudioProjects/kontext_flutter_sdk/lib/src/widgets/kontext_webview.dart#L151)
+And the queued messages are flushed in [`lib/src/widgets/kontext_webview.dart:151`](../lib/src/widgets/kontext_webview.dart#L151)
 
 ```dart
 controller.addJavaScriptHandler(
@@ -199,7 +199,7 @@ Important rule:
 - JS handler arguments must arrive in Dart as normalized `Map<String, dynamic>` / `List<dynamic>` values
 - if they arrive as incompatible platform maps, `KontextWebview` ignores them and the ad never becomes visible
 
-Relevant code: [`lib/src/webview/backends/custom_in_app_webview.dart:230`](/Users/duc/StudioProjects/kontext_flutter_sdk/lib/src/webview/backends/custom_in_app_webview.dart#L230)
+Relevant code: [`lib/src/webview/backends/custom_in_app_webview.dart:230`](../lib/src/webview/backends/custom_in_app_webview.dart#L230)
 
 ```dart
 case 'onJavaScriptHandler':
@@ -219,7 +219,7 @@ The custom backend intentionally follows the upstream bridge shape closely.
 
 ### Android
 
-Relevant code: [`android/src/main/kotlin/so/kontext/sdk/flutter/KontextInAppWebView.kt`](/Users/duc/StudioProjects/kontext_flutter_sdk/android/src/main/kotlin/so/kontext/sdk/flutter/KontextInAppWebView.kt)
+Relevant code: [`android/src/main/kotlin/so/kontext/sdk/flutter/KontextInAppWebView.kt`](../android/src/main/kotlin/so/kontext/sdk/flutter/KontextInAppWebView.kt)
 
 ```kotlin
 private const val JAVASCRIPT_BRIDGE_NAME = "flutter_inappwebview"
@@ -243,14 +243,19 @@ Android custom still only surfaces main-frame `shouldOverrideUrlLoading` callbac
 
 ### iOS
 
-Relevant code: [`ios/Classes/KontextInAppWebViewPlugin.swift`](/Users/duc/StudioProjects/kontext_flutter_sdk/ios/Classes/KontextInAppWebViewPlugin.swift)
+Relevant code: [`ios/Classes/KontextInAppWebViewPlugin.swift`](../ios/Classes/KontextInAppWebViewPlugin.swift)
 
 ```swift
 window.flutter_inappwebview.callHandler = function(handlerName) {
+  var _callHandlerID = setTimeout(function(){});
   var args = Array.prototype.slice.call(arguments, 1);
   window.webkit.messageHandlers.\(kontextNativeBridgeName).postMessage({
     handlerName: handlerName,
+    _callHandlerID: String(_callHandlerID),
     args: JSON.stringify(args)
+  });
+  return new Promise(function(resolve, reject) {
+    window.flutter_inappwebview[_callHandlerID] = {resolve: resolve, reject: reject};
   });
 };
 ```
@@ -259,7 +264,7 @@ Do not rename this bridge shape casually. The current Flutter-side bridge code a
 
 ## Ad Visibility Constraint
 
-Relevant code: [`lib/src/widgets/ad_format.dart`](/Users/duc/StudioProjects/kontext_flutter_sdk/lib/src/widgets/ad_format.dart)
+Relevant code: [`lib/src/widgets/ad_format.dart`](../lib/src/widgets/ad_format.dart)
 
 ```dart
 return Offstage(
