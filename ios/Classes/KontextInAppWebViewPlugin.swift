@@ -410,7 +410,7 @@ final class KontextInAppWebViewPlatformView: NSObject, FlutterPlatformView, WKNa
               }
             }).join(' ');
           }
-          ['log', 'warn', 'error', 'debug'].forEach(function(level) {
+          ['log', 'info', 'warn', 'error', 'debug'].forEach(function(level) {
             var original = console[level];
             console[level] = function() {
               try {
