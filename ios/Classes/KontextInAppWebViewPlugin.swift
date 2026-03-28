@@ -188,13 +188,16 @@ final class KontextInAppWebViewPlatformView: NSObject, FlutterPlatformView, WKNa
         switch message.name {
         case kontextNativeBridgeName:
             guard let body = message.body as? [String: Any] else { return }
+            let callHandlerId = body["_callHandlerID"] as? String
             channel.invokeMethod(
                 "onJavaScriptHandler",
                 arguments: [
                     "handlerName": body["handlerName"] as? String ?? "",
                     "args": body["args"] as? String ?? "[]",
                 ]
-            )
+            ) { [weak self] _ in
+                self?.resolveJavaScriptCall(callHandlerId: callHandlerId)
+            }
         case kontextConsoleBridgeName:
             guard let body = message.body as? [String: Any] else { return }
             channel.invokeMethod(
@@ -294,6 +297,25 @@ final class KontextInAppWebViewPlatformView: NSObject, FlutterPlatformView, WKNa
         )
     }
 
+    private func resolveJavaScriptCall(callHandlerId: String?) {
+        guard let callHandlerId, !callHandlerId.isEmpty else {
+            return
+        }
+
+        let callHandlerIdLiteral = jsonStringLiteral(callHandlerId)
+        webView.evaluateJavaScript(
+            """
+            (function() {
+              if (window.flutter_inappwebview[\(callHandlerIdLiteral)] != null) {
+                window.flutter_inappwebview[\(callHandlerIdLiteral)].resolve(null);
+                delete window.flutter_inappwebview[\(callHandlerIdLiteral)];
+              }
+            })();
+            """,
+            completionHandler: nil
+        )
+    }
+
     private func loadInitialUrl() {
         guard isInitialCookieSeedingComplete else {
             hasPendingInitialLoad = true
@@ -329,6 +351,12 @@ final class KontextInAppWebViewPlatformView: NSObject, FlutterPlatformView, WKNa
         }
     }
 
+    private func jsonStringLiteral(_ value: String) -> String {
+        let data = try? JSONSerialization.data(withJSONObject: [value])
+        let encoded = data.flatMap { String(data: $0, encoding: .utf8) } ?? "[\"\"]"
+        return String(encoded.dropFirst().dropLast())
+    }
+
     private static func makeBridgeScript() -> String {
         """
         (function() {
@@ -337,10 +365,15 @@ final class KontextInAppWebViewPlatformView: NSObject, FlutterPlatformView, WKNa
           }
           window.flutter_inappwebview = window.flutter_inappwebview || {};
           window.flutter_inappwebview.callHandler = function(handlerName) {
+            var _callHandlerID = setTimeout(function(){});
             var args = Array.prototype.slice.call(arguments, 1);
             window.webkit.messageHandlers.\(kontextNativeBridgeName).postMessage({
               handlerName: handlerName,
+              _callHandlerID: String(_callHandlerID),
               args: JSON.stringify(args)
+            });
+            return new Promise(function(resolve, reject) {
+              window.flutter_inappwebview[_callHandlerID] = {resolve: resolve, reject: reject};
             });
           };
         })();
