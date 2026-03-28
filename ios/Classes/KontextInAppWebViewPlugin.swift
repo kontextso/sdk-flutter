@@ -266,7 +266,7 @@ final class KontextInAppWebViewPlatformView: NSObject, FlutterPlatformView, WKNa
         didFail navigation: WKNavigation!,
         withError error: Error
     ) {
-        sendLoadError(error, failingURL: webView.url)
+        sendLoadError(error, failingURL: failingURL(from: error, fallbackURL: webView.url))
     }
 
     func webView(
@@ -274,7 +274,7 @@ final class KontextInAppWebViewPlatformView: NSObject, FlutterPlatformView, WKNa
         didFailProvisionalNavigation navigation: WKNavigation!,
         withError error: Error
     ) {
-        sendLoadError(error, failingURL: webView.url)
+        sendLoadError(error, failingURL: failingURL(from: error, fallbackURL: webView.url))
     }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
@@ -295,6 +295,19 @@ final class KontextInAppWebViewPlatformView: NSObject, FlutterPlatformView, WKNa
                 ]
             ]
         )
+    }
+
+    private func failingURL(from error: Error, fallbackURL: URL?) -> URL? {
+        let nsError = error as NSError
+        if let failingURL = nsError.userInfo[NSURLErrorFailingURLErrorKey] as? URL {
+            return failingURL
+        }
+
+        if let failingURLString = nsError.userInfo[NSURLErrorFailingURLStringErrorKey] as? String {
+            return URL(string: failingURLString) ?? fallbackURL
+        }
+
+        return fallbackURL
     }
 
     private func resolveJavaScriptCall(callHandlerId: String?) {
