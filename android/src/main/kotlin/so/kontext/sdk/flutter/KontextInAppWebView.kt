@@ -26,6 +26,7 @@ import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.platform.PlatformView
 private const val CHANNEL_PREFIX = "kontext_flutter_sdk/in_app_webview/"
 private const val JAVASCRIPT_BRIDGE_NAME = "flutter_inappwebview"
+private const val MAX_BYPASS_MAIN_FRAME_LOADS = 100
 private const val PLATFORM_READY_SCRIPT = """
     (function() {
       if ((window.top == null || window.top === window) &&
@@ -54,7 +55,7 @@ internal class KontextInAppWebView(
     private val initialUserScripts = readUserScripts(creationParams)
     private var hasLoadedInitialUrl = false
 
-    private val bypassMainFrameLoads = mutableSetOf<String>()
+    private val bypassMainFrameLoads = linkedSetOf<String>()
     private val documentStartSupported = WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)
 
     private val bridgeScript = """
@@ -210,7 +211,7 @@ internal class KontextInAppWebView(
                         override fun success(result: Any?) {
                             if (result == "ALLOW") {
                                 mainHandler.post {
-                                    bypassMainFrameLoads.add(url)
+                                    rememberBypassMainFrameLoad(url)
                                     view.loadUrl(url)
                                 }
                             }
@@ -221,7 +222,7 @@ internal class KontextInAppWebView(
 
                         override fun notImplemented() {
                             mainHandler.post {
-                                bypassMainFrameLoads.add(url)
+                                rememberBypassMainFrameLoad(url)
                                 view.loadUrl(url)
                             }
                         }
@@ -233,6 +234,9 @@ internal class KontextInAppWebView(
             override fun onPageStarted(view: WebView, url: String?, favicon: android.graphics.Bitmap?) {
                 super.onPageStarted(view, url, favicon)
                 if (!documentStartSupported) {
+                    // Older WebView versions do not support document-start scripts, so this
+                    // fallback injects asynchronously and may still lose the race to early
+                    // page scripts that call the bridge before evaluateJavascript completes.
                     injectFallbackStartScripts()
                 }
             }
@@ -309,6 +313,19 @@ internal class KontextInAppWebView(
         hasLoadedInitialUrl = true
         if (!initialUrl.isNullOrBlank()) {
             webView.loadUrl(initialUrl)
+        }
+    }
+
+    private fun rememberBypassMainFrameLoad(url: String) {
+        bypassMainFrameLoads.remove(url)
+        bypassMainFrameLoads.add(url)
+        while (bypassMainFrameLoads.size > MAX_BYPASS_MAIN_FRAME_LOADS) {
+            val iterator = bypassMainFrameLoads.iterator()
+            if (!iterator.hasNext()) {
+                return
+            }
+            iterator.next()
+            iterator.remove()
         }
     }
 
