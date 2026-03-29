@@ -167,9 +167,7 @@ class AdsProvider extends HookWidget {
     }, const []);
 
     useEffect(() {
-      if (Platform.isIOS) {
-        unawaited(OMSDKService.activate());
-      }
+      unawaited(OMSDKService.activate());
       return null;
     }, const []);
 

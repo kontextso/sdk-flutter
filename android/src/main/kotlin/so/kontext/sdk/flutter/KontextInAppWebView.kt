@@ -6,6 +6,7 @@ import android.graphics.Color
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import android.webkit.CookieManager
@@ -24,6 +25,12 @@ import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.platform.PlatformView
+import so.kontext.sdk.flutter.omsdk.OMConstants
+import so.kontext.sdk.flutter.omsdk.OMCreativeType
+import so.kontext.sdk.flutter.omsdk.OMManager
+import so.kontext.sdk.flutter.omsdk.OMRetentionPool
+import so.kontext.sdk.flutter.omsdk.OMSession
+
 private const val CHANNEL_PREFIX = "kontext_flutter_sdk/in_app_webview/"
 private const val JAVASCRIPT_BRIDGE_NAME = "flutter_inappwebview"
 private const val MAX_BYPASS_MAIN_FRAME_LOADS = 100
@@ -53,10 +60,22 @@ internal class KontextInAppWebView(
     private val initialUrl = readInitialUrl(creationParams)
     private val settings = readSettings(creationParams)
     private val initialUserScripts = readUserScripts(creationParams)
-    private var hasLoadedInitialUrl = false
-
-    private val bypassMainFrameLoads = linkedSetOf<String>()
     private val documentStartSupported = WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)
+    private val openMeasurementJavascript = if (documentStartSupported) {
+        loadOpenMeasurementJavaScript(context)
+    } else {
+        null
+    }
+    private val bypassMainFrameLoads = linkedSetOf<String>()
+
+    private var activeOMSession: OMSession? = null
+    private var hasDeferredDestroy = false
+    private var hasLoadedInitialUrl = false
+    private var hasLoadedPage = false
+    private var hasLoggedUnsupportedOpenMeasurement = false
+    private var lastContentUrl: String? = initialUrl
+    private var omCreativeType = readInitialOmCreativeType(creationParams)
+    private var pendingOpenMeasurementStart = false
 
     private val bridgeScript = """
         (function() {
@@ -124,15 +143,22 @@ internal class KontextInAppWebView(
     init {
         channel.setMethodCallHandler(this)
         configureWebView()
+        if (omCreativeType != null && !canUseOpenMeasurement()) {
+            maybeLogUnsupportedOpenMeasurement()
+            omCreativeType = null
+        }
     }
 
     override fun getView(): View = webView
 
     override fun dispose() {
+        val retainedForDeferredDestroy = finishOpenMeasurementSession()
         channel.setMethodCallHandler(null)
-        webView.stopLoading()
         webView.removeJavascriptInterface(JAVASCRIPT_BRIDGE_NAME)
-        webView.destroy()
+        if (!retainedForDeferredDestroy) {
+            webView.stopLoading()
+            webView.destroy()
+        }
     }
 
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
@@ -152,6 +178,33 @@ internal class KontextInAppWebView(
             "loadInitialUrl" -> {
                 mainHandler.post {
                     loadInitialUrl()
+                    result.success(null)
+                }
+            }
+            "configureOpenMeasurement" -> {
+                mainHandler.post {
+                    configureOpenMeasurement(call.argument("creativeType"))
+                    result.success(null)
+                }
+            }
+            "startOpenMeasurementSession" -> {
+                mainHandler.post {
+                    startOpenMeasurementSession()
+                    result.success(null)
+                }
+            }
+            "logOpenMeasurementError" -> {
+                mainHandler.post {
+                    logOpenMeasurementError(
+                        errorType = call.argument("errorType"),
+                        message = call.argument("message"),
+                    )
+                    result.success(null)
+                }
+            }
+            "finishOpenMeasurementSession" -> {
+                mainHandler.post {
+                    finishOpenMeasurementSession()
                     result.success(null)
                 }
             }
@@ -192,6 +245,7 @@ internal class KontextInAppWebView(
         }
 
         if (documentStartSupported) {
+            openMeasurementJavascript?.let(::addDocumentStartScript)
             addDocumentStartScript(bridgeScript)
             // To avoid Android WebView loader for videos, inject JS code with 1x1 transparent pixel.
             addDocumentStartScript(posterStartScript)
@@ -260,6 +314,8 @@ internal class KontextInAppWebView(
 
             override fun onPageStarted(view: WebView, url: String?, favicon: android.graphics.Bitmap?) {
                 super.onPageStarted(view, url, favicon)
+                hasLoadedPage = false
+                lastContentUrl = url ?: initialUrl
                 if (!documentStartSupported) {
                     // Older WebView versions do not support document-start scripts, so this
                     // fallback injects asynchronously and may still lose the race to early
@@ -276,7 +332,10 @@ internal class KontextInAppWebView(
                 initialUserScripts
                     .filter { it.injectionTime == "AT_DOCUMENT_END" }
                     .forEach { evaluateJavascript(it.source) }
+                hasLoadedPage = true
+                lastContentUrl = url ?: initialUrl
                 evaluateJavascript(PLATFORM_READY_SCRIPT)
+                startOpenMeasurementSessionIfReady()
             }
 
             override fun onReceivedError(
@@ -337,11 +396,100 @@ internal class KontextInAppWebView(
         }
     }
 
+    private fun configureOpenMeasurement(creativeType: String?) {
+        val parsedCreativeType = OMCreativeType.fromRawValue(creativeType)
+        if (parsedCreativeType != null && !canUseOpenMeasurement()) {
+            maybeLogUnsupportedOpenMeasurement()
+            omCreativeType = null
+            return
+        }
+
+        omCreativeType = parsedCreativeType
+        startOpenMeasurementSessionIfReady()
+    }
+
+    private fun startOpenMeasurementSession() {
+        if (!canUseOpenMeasurement()) {
+            if (omCreativeType != null) {
+                maybeLogUnsupportedOpenMeasurement()
+            }
+            return
+        }
+
+        pendingOpenMeasurementStart = true
+        startOpenMeasurementSessionIfReady()
+    }
+
+    private fun startOpenMeasurementSessionIfReady() {
+        if (activeOMSession != null || hasDeferredDestroy) {
+            return
+        }
+
+        if (!pendingOpenMeasurementStart) {
+            return
+        }
+
+        val omCreativeType = omCreativeType ?: return
+        if (!hasLoadedPage) {
+            return
+        }
+
+        if (!canUseOpenMeasurement()) {
+            maybeLogUnsupportedOpenMeasurement()
+            pendingOpenMeasurementStart = false
+            return
+        }
+
+        if (!OMManager.activate(webView.context)) {
+            return
+        }
+
+        val session = OMManager.createSession(
+            webView = webView,
+            contentUrl = lastContentUrl ?: webView.url?.toString() ?: initialUrl,
+            creativeType = omCreativeType,
+        ) ?: run {
+            pendingOpenMeasurementStart = false
+            return
+        }
+
+        try {
+            session.start()
+            activeOMSession = session
+            pendingOpenMeasurementStart = false
+        } catch (exception: IllegalStateException) {
+            Log.e(OMConstants.logTag, "OM session start failed", exception)
+            pendingOpenMeasurementStart = false
+        }
+    }
+
+    private fun logOpenMeasurementError(errorType: String?, message: String?) {
+        activeOMSession?.logError(errorType = errorType, message = message)
+    }
+
+    private fun finishOpenMeasurementSession(): Boolean {
+        pendingOpenMeasurementStart = false
+
+        if (hasDeferredDestroy) {
+            return true
+        }
+
+        val activeOMSession = activeOMSession ?: return false
+        this.activeOMSession = null
+        activeOMSession.retire()
+        activeOMSession.finish()
+        OMRetentionPool.retain(activeOMSession.retainedWebView())
+        hasDeferredDestroy = true
+        return true
+    }
+
     private fun loadInitialUrl() {
         if (hasLoadedInitialUrl) {
             return
         }
         hasLoadedInitialUrl = true
+        hasLoadedPage = false
+        lastContentUrl = initialUrl
         if (!initialUrl.isNullOrBlank()) {
             webView.loadUrl(initialUrl)
         }
@@ -393,6 +541,23 @@ internal class KontextInAppWebView(
               $documentStartUserScripts
             })();
         """.trimIndent()
+    }
+
+    private fun canUseOpenMeasurement(): Boolean = documentStartSupported && openMeasurementJavascript != null
+
+    private fun maybeLogUnsupportedOpenMeasurement() {
+        if (hasLoggedUnsupportedOpenMeasurement) {
+            return
+        }
+        hasLoggedUnsupportedOpenMeasurement = true
+        Log.w(
+            OMConstants.logTag,
+            if (!documentStartSupported) {
+                "DOCUMENT_START_SCRIPT not supported, OM SDK disabled for this WebView"
+            } else {
+                "OM SDK JavaScript resource could not be loaded, OM SDK disabled for this WebView"
+            }
+        )
     }
 
     private fun evaluateJavascript(source: String) {
@@ -464,6 +629,10 @@ private data class AndroidUserScript(
     val injectionTime: String,
 )
 
+private fun readInitialOmCreativeType(creationParams: Map<String, Any?>?): OMCreativeType? {
+    return OMCreativeType.fromRawValue(creationParams?.get("initialOmCreativeType") as? String)
+}
+
 private fun readInitialUrl(creationParams: Map<String, Any?>?): String? {
     val initialRequest = creationParams?.get("initialUrlRequest") as? Map<*, *>
     return initialRequest?.get("url") as? String
@@ -491,6 +660,17 @@ private fun readUserScripts(creationParams: Map<String, Any?>?): List<AndroidUse
             source = source,
             injectionTime = script["injectionTime"] as? String ?: "AT_DOCUMENT_START",
         )
+    }
+}
+
+private fun loadOpenMeasurementJavaScript(context: Context): String? {
+    return try {
+        context.resources.openRawResource(R.raw.omsdk_v1)
+            .bufferedReader(Charsets.UTF_8)
+            .use { it.readText() }
+    } catch (exception: Exception) {
+        Log.e(OMConstants.logTag, "Failed to load OM SDK JavaScript", exception)
+        null
     }
 }
 

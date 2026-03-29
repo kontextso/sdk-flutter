@@ -8,7 +8,7 @@ class OMSDKService {
   static const MethodChannel _channel = MethodChannel('kontext_flutter_sdk/omsdk');
 
   static Future<bool> activate() async {
-    if (!Platform.isIOS) {
+    if (!Platform.isIOS && !Platform.isAndroid) {
       return false;
     }
 
