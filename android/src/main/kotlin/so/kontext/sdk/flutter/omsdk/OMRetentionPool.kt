@@ -8,14 +8,17 @@ internal object OMRetentionPool {
     private val mainHandler = Handler(Looper.getMainLooper())
     private val retainedWebViews = mutableMapOf<String, OMRetainedWebView>()
 
-    fun retain(webView: OMRetainedWebView) {
+    fun retain(
+        webView: OMRetainedWebView,
+        delayMillis: Long = OMConstants.retentionIntervalMillis,
+    ) {
         val id = UUID.randomUUID().toString()
         retainedWebViews[id] = webView
         mainHandler.postDelayed(
             {
                 retainedWebViews.remove(id)?.destroy()
             },
-            OMConstants.retentionIntervalMillis,
+            delayMillis,
         )
     }
 }

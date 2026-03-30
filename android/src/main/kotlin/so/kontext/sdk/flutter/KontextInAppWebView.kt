@@ -27,9 +27,7 @@ import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.platform.PlatformView
 import so.kontext.sdk.flutter.omsdk.OMConstants
 import so.kontext.sdk.flutter.omsdk.OMCreativeType
-import so.kontext.sdk.flutter.omsdk.OMManager
-import so.kontext.sdk.flutter.omsdk.OMRetentionPool
-import so.kontext.sdk.flutter.omsdk.OMSession
+import so.kontext.sdk.flutter.omsdk.WebViewOMLifecycle
 
 private const val CHANNEL_PREFIX = "kontext_flutter_sdk/in_app_webview/"
 private const val JAVASCRIPT_BRIDGE_NAME = "flutter_inappwebview"
@@ -66,16 +64,16 @@ internal class KontextInAppWebView(
     } else {
         null
     }
+    private val omLifecycle = WebViewOMLifecycle(
+        webView = webView,
+        initialContentUrl = initialUrl,
+        initialCreativeType = readInitialOmCreativeType(creationParams),
+        canUseOpenMeasurement = ::canUseOpenMeasurement,
+        logUnsupportedOpenMeasurement = ::logUnsupportedOpenMeasurement,
+    )
     private val bypassMainFrameLoads = linkedSetOf<String>()
 
-    private var activeOMSession: OMSession? = null
-    private var hasDeferredDestroy = false
     private var hasLoadedInitialUrl = false
-    private var hasLoadedPage = false
-    private var hasLoggedUnsupportedOpenMeasurement = false
-    private var lastContentUrl: String? = initialUrl
-    private var omCreativeType = readInitialOmCreativeType(creationParams)
-    private var pendingOpenMeasurementStart = false
 
     private val bridgeScript = """
         (function() {
@@ -143,21 +141,16 @@ internal class KontextInAppWebView(
     init {
         channel.setMethodCallHandler(this)
         configureWebView()
-        if (omCreativeType != null && !canUseOpenMeasurement()) {
-            maybeLogUnsupportedOpenMeasurement()
-            omCreativeType = null
-        }
     }
 
     override fun getView(): View = webView
 
     override fun dispose() {
-        val retainedForDeferredDestroy = finishOpenMeasurementSession()
+        omLifecycle.finish()
         channel.setMethodCallHandler(null)
         webView.removeJavascriptInterface(JAVASCRIPT_BRIDGE_NAME)
-        if (!retainedForDeferredDestroy) {
-            webView.stopLoading()
-            webView.destroy()
+        if (!omLifecycle.dispose()) {
+            destroyWebViewImmediately()
         }
     }
 
@@ -183,19 +176,19 @@ internal class KontextInAppWebView(
             }
             "configureOpenMeasurement" -> {
                 mainHandler.post {
-                    configureOpenMeasurement(call.argument("creativeType"))
+                    omLifecycle.configure(call.argument("creativeType"))
                     result.success(null)
                 }
             }
             "startOpenMeasurementSession" -> {
                 mainHandler.post {
-                    startOpenMeasurementSession()
+                    omLifecycle.requestStart()
                     result.success(null)
                 }
             }
             "logOpenMeasurementError" -> {
                 mainHandler.post {
-                    logOpenMeasurementError(
+                    omLifecycle.logError(
                         errorType = call.argument("errorType"),
                         message = call.argument("message"),
                     )
@@ -204,7 +197,7 @@ internal class KontextInAppWebView(
             }
             "finishOpenMeasurementSession" -> {
                 mainHandler.post {
-                    finishOpenMeasurementSession()
+                    omLifecycle.finish()
                     result.success(null)
                 }
             }
@@ -314,8 +307,7 @@ internal class KontextInAppWebView(
 
             override fun onPageStarted(view: WebView, url: String?, favicon: android.graphics.Bitmap?) {
                 super.onPageStarted(view, url, favicon)
-                hasLoadedPage = false
-                lastContentUrl = url ?: initialUrl
+                omLifecycle.markPageStarted(url)
                 if (!documentStartSupported) {
                     // Older WebView versions do not support document-start scripts, so this
                     // fallback injects asynchronously and may still lose the race to early
@@ -332,10 +324,8 @@ internal class KontextInAppWebView(
                 initialUserScripts
                     .filter { it.injectionTime == "AT_DOCUMENT_END" }
                     .forEach { evaluateJavascript(it.source) }
-                hasLoadedPage = true
-                lastContentUrl = url ?: initialUrl
                 evaluateJavascript(PLATFORM_READY_SCRIPT)
-                startOpenMeasurementSessionIfReady()
+                omLifecycle.markPageFinished(url)
             }
 
             override fun onReceivedError(
@@ -396,100 +386,12 @@ internal class KontextInAppWebView(
         }
     }
 
-    private fun configureOpenMeasurement(creativeType: String?) {
-        val parsedCreativeType = OMCreativeType.fromRawValue(creativeType)
-        if (parsedCreativeType != null && !canUseOpenMeasurement()) {
-            maybeLogUnsupportedOpenMeasurement()
-            omCreativeType = null
-            return
-        }
-
-        omCreativeType = parsedCreativeType
-        startOpenMeasurementSessionIfReady()
-    }
-
-    private fun startOpenMeasurementSession() {
-        if (!canUseOpenMeasurement()) {
-            if (omCreativeType != null) {
-                maybeLogUnsupportedOpenMeasurement()
-            }
-            return
-        }
-
-        pendingOpenMeasurementStart = true
-        startOpenMeasurementSessionIfReady()
-    }
-
-    private fun startOpenMeasurementSessionIfReady() {
-        if (activeOMSession != null || hasDeferredDestroy) {
-            return
-        }
-
-        if (!pendingOpenMeasurementStart) {
-            return
-        }
-
-        val omCreativeType = omCreativeType ?: return
-        if (!hasLoadedPage) {
-            return
-        }
-
-        if (!canUseOpenMeasurement()) {
-            maybeLogUnsupportedOpenMeasurement()
-            pendingOpenMeasurementStart = false
-            return
-        }
-
-        if (!OMManager.activate(webView.context)) {
-            return
-        }
-
-        val session = OMManager.createSession(
-            webView = webView,
-            contentUrl = lastContentUrl ?: webView.url?.toString() ?: initialUrl,
-            creativeType = omCreativeType,
-        ) ?: run {
-            pendingOpenMeasurementStart = false
-            return
-        }
-
-        try {
-            session.start()
-            activeOMSession = session
-            pendingOpenMeasurementStart = false
-        } catch (exception: IllegalStateException) {
-            Log.e(OMConstants.logTag, "OM session start failed", exception)
-            pendingOpenMeasurementStart = false
-        }
-    }
-
-    private fun logOpenMeasurementError(errorType: String?, message: String?) {
-        activeOMSession?.logError(errorType = errorType, message = message)
-    }
-
-    private fun finishOpenMeasurementSession(): Boolean {
-        pendingOpenMeasurementStart = false
-
-        if (hasDeferredDestroy) {
-            return true
-        }
-
-        val activeOMSession = activeOMSession ?: return false
-        this.activeOMSession = null
-        activeOMSession.retire()
-        activeOMSession.finish()
-        OMRetentionPool.retain(activeOMSession.retainedWebView())
-        hasDeferredDestroy = true
-        return true
-    }
-
     private fun loadInitialUrl() {
         if (hasLoadedInitialUrl) {
             return
         }
         hasLoadedInitialUrl = true
-        hasLoadedPage = false
-        lastContentUrl = initialUrl
+        omLifecycle.markPageStarted(initialUrl)
         if (!initialUrl.isNullOrBlank()) {
             webView.loadUrl(initialUrl)
         }
@@ -545,11 +447,7 @@ internal class KontextInAppWebView(
 
     private fun canUseOpenMeasurement(): Boolean = documentStartSupported && openMeasurementJavascript != null
 
-    private fun maybeLogUnsupportedOpenMeasurement() {
-        if (hasLoggedUnsupportedOpenMeasurement) {
-            return
-        }
-        hasLoggedUnsupportedOpenMeasurement = true
+    private fun logUnsupportedOpenMeasurement() {
         Log.w(
             OMConstants.logTag,
             if (!documentStartSupported) {
@@ -558,6 +456,17 @@ internal class KontextInAppWebView(
                 "OM SDK JavaScript resource could not be loaded, OM SDK disabled for this WebView"
             }
         )
+    }
+
+    private fun destroyWebViewImmediately() {
+        try {
+            (webView.parent as? ViewGroup)?.removeView(webView)
+            webView.stopLoading()
+            webView.loadUrl("about:blank")
+            webView.destroy()
+        } catch (exception: Throwable) {
+            Log.w(OMConstants.logTag, "Immediate WebView destroy failed", exception)
+        }
     }
 
     private fun evaluateJavascript(source: String) {
