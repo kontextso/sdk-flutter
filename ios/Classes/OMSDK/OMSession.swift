@@ -1,16 +1,16 @@
 import Foundation
 import WebKit
-@preconcurrency import OMSDK_Megabrainco
+@preconcurrency import OMSDK_Kontextso
 
 final class OMSession {
-    private let session: OMIDMegabraincoAdSession
+    private let session: OMIDKontextsoAdSession
     private let webView: WKWebView
-    private let adEvents: OMIDMegabraincoAdEvents
+    private let adEvents: OMIDKontextsoAdEvents
 
-    init(session: OMIDMegabraincoAdSession, webView: WKWebView) throws {
+    init(session: OMIDKontextsoAdSession, webView: WKWebView) throws {
         self.session = session
         self.webView = webView
-        self.adEvents = try OMIDMegabraincoAdEvents(adSession: session)
+        self.adEvents = try OMIDKontextsoAdEvents(adSession: session)
     }
 
     func start() {

@@ -1,6 +1,6 @@
 import Foundation
 import WebKit
-@preconcurrency import OMSDK_Megabrainco
+@preconcurrency import OMSDK_Kontextso
 
 enum OMCreativeType: String {
     case display
@@ -29,7 +29,7 @@ final class OMManager: OMManaging {
 
     private init() {}
 
-    private let partner = OMIDMegabraincoPartner(
+    private let partner = OMIDKontextsoPartner(
         name: OMConstants.partnerName,
         versionString: OMConstants.integrationVersion
     )
@@ -40,7 +40,7 @@ final class OMManager: OMManaging {
             return true
         }
 
-        OMIDMegabraincoSDK.shared.activate()
+        OMIDKontextsoSDK.shared.activate()
         return isActive
     }
 
@@ -58,7 +58,7 @@ final class OMManager: OMManaging {
         }
 
         do {
-            let context = try OMIDMegabraincoAdSessionContext(
+            let context = try OMIDKontextsoAdSessionContext(
                 partner: partner,
                 webView: webView,
                 contentUrl: url?.absoluteString,
@@ -80,7 +80,7 @@ final class OMManager: OMManaging {
                 mediaEventsOwner = .javaScriptOwner
             }
 
-            let configuration = try OMIDMegabraincoAdSessionConfiguration(
+            let configuration = try OMIDKontextsoAdSessionConfiguration(
                 creativeType: omCreativeType,
                 impressionType: .beginToRender,
                 impressionOwner: impressionOwner,
@@ -88,7 +88,7 @@ final class OMManager: OMManaging {
                 isolateVerificationScripts: false
             )
 
-            let session = try OMIDMegabraincoAdSession(
+            let session = try OMIDKontextsoAdSession(
                 configuration: configuration,
                 adSessionContext: context
             )
@@ -103,6 +103,6 @@ final class OMManager: OMManaging {
 
 private extension OMManager {
     var isActive: Bool {
-        OMIDMegabraincoSDK.shared.isActive
+        OMIDKontextsoSDK.shared.isActive
     }
 }
