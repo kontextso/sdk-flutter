@@ -96,6 +96,31 @@ internal class KontextInAppWebView(
         })();
     """.trimIndent()
 
+    private val posterStartScript = """
+        (function() {
+          if (window.__kontextVideoPosterPatched) {
+            return;
+          }
+          window.__kontextVideoPosterPatched = true;
+
+          const transparentPoster = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIW2NkYGBgAAAABAABJzQnCgAAAABJRU5ErkJggg==";
+          const css = document.createElement('style');
+          css.textContent = "video{background:#000!important;}";
+          document.documentElement.appendChild(css);
+
+          const apply = function() {
+            document.querySelectorAll('video').forEach(function(video) {
+              video.setAttribute('poster', transparentPoster);
+              video.setAttribute('playsinline', '');
+              video.setAttribute('preload', 'auto');
+            });
+          };
+
+          apply();
+          new MutationObserver(apply).observe(document.documentElement, { childList: true, subtree: true });
+        })();
+    """.trimIndent()
+
     init {
         channel.setMethodCallHandler(this)
         configureWebView()
@@ -168,6 +193,8 @@ internal class KontextInAppWebView(
 
         if (documentStartSupported) {
             addDocumentStartScript(bridgeScript)
+            // To avoid Android WebView loader for videos, inject JS code with 1x1 transparent pixel.
+            addDocumentStartScript(posterStartScript)
             initialUserScripts
                 .filter { it.injectionTime == "AT_DOCUMENT_START" }
                 .forEach { addDocumentStartScript(it.source) }
@@ -357,6 +384,7 @@ internal class KontextInAppWebView(
                 return;
               }
               $bridgeScript
+              $posterStartScript
               if (window.$JAVASCRIPT_BRIDGE_NAME == null ||
                   window.$JAVASCRIPT_BRIDGE_NAME._userScriptsAtDocumentStartLoaded === true) {
                 return;

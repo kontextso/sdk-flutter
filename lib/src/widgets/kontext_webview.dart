@@ -193,7 +193,7 @@ class KontextWebview extends HookWidget {
         // ERR_BLOCKED_BY_ORB errors are caused by third-party ad creatives
         // loading cross-origin resources without proper CORS headers.
         // They are not actionable on our side, so we suppress them.
-        if (error.description.contains('ERR_BLOCKED_BY_ORB')) {
+        if (error.description?.contains('ERR_BLOCKED_BY_ORB') == true) {
           return;
         }
         final webViewMessage = 'Error received in InAppWebView: $error, request: $request';
