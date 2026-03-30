@@ -177,12 +177,6 @@ class KontextWebview extends HookWidget {
 
         switch (level) {
           case ConsoleMessageLevel.ERROR:
-            // ERR_BLOCKED_BY_ORB errors are caused by third-party ad creatives
-            // loading cross-origin resources without proper CORS headers.
-            // They are not actionable on our side, so we suppress them.
-            if (consoleMessage.message.contains('ERR_BLOCKED_BY_ORB')) {
-              return;
-            }
             _logError(
               webViewConsoleErrorLimiter,
               message: webViewMessage,
