@@ -3,8 +3,8 @@ package so.kontext.sdk.flutter.omsdk
 import android.util.Log
 import android.view.ViewGroup
 import android.webkit.WebView
-import com.iab.omid.library.megabrainco.adsession.AdSession
-import com.iab.omid.library.megabrainco.adsession.ErrorType
+import com.iab.omid.library.kontextso.adsession.AdSession
+import com.iab.omid.library.kontextso.adsession.ErrorType
 
 internal class OMSession(
     private val session: AdSession,
