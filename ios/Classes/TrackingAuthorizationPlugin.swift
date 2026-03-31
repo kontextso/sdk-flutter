@@ -66,6 +66,9 @@ public class TrackingAuthorizationPlugin: NSObject, FlutterPlugin {
     }
 
     private func addObserver(result: @escaping FlutterResult) {
+        // Concurrent calls are not expected here — the Dart layer enforces a single
+        // in-flight ATT request. removeObserver() is called defensively in case that
+        // assumption is ever violated.
         removeObserver()
         observer = NotificationCenter.default.addObserver(
             forName: UIApplication.didBecomeActiveNotification,
