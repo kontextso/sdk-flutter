@@ -2,12 +2,12 @@ import 'dart:collection' show UnmodifiableListView;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:kontext_flutter_sdk/src/services/logger.dart' show Logger;
 import 'package:kontext_flutter_sdk/src/utils/types.dart' show Json;
+import 'package:kontext_flutter_sdk/src/webview/in_app_webview.dart';
 import 'package:kontext_flutter_sdk/src/widgets/webview_console_error_limiter.dart' show WebViewConsoleErrorLimiter;
 
-final _earlyBridge = UserScript(
+final _earlyBridge = const UserScript(
   source: '''
     (function() {
       if (window.__flutterSdkBridgeReady) return;
@@ -122,7 +122,7 @@ class KontextWebview extends HookWidget {
     return InAppWebView(
       initialUrlRequest: URLRequest(url: WebUri.uri(uri)),
       initialUserScripts: UnmodifiableListView([_earlyBridge]),
-      initialSettings: InAppWebViewSettings(
+      initialSettings: const InAppWebViewSettings(
         transparentBackground: true,
         mixedContentMode: MixedContentMode.MIXED_CONTENT_ALWAYS_ALLOW,
         useShouldOverrideUrlLoading: true,
@@ -190,6 +190,12 @@ class KontextWebview extends HookWidget {
         }
       },
       onReceivedError: (controller, request, error) {
+        // ERR_BLOCKED_BY_ORB errors are caused by third-party ad creatives
+        // loading cross-origin resources without proper CORS headers.
+        // They are not actionable on our side, so we suppress them.
+        if (error.description?.contains('ERR_BLOCKED_BY_ORB') == true) {
+          return;
+        }
         final webViewMessage = 'Error received in InAppWebView: $error, request: $request';
         _logError(
           webViewConsoleErrorLimiter,

@@ -2,8 +2,6 @@ import 'dart:async' show unawaited;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart' show HookWidget, useState, useEffect, useRef;
-import 'package:flutter_inappwebview/flutter_inappwebview.dart'
-    show PlatformInAppWebViewController, DebugLoggingSettings;
 import 'package:kontext_flutter_sdk/src/models/bid.dart';
 import 'package:kontext_flutter_sdk/src/models/regulatory.dart';
 import 'package:kontext_flutter_sdk/src/services/api.dart';
@@ -136,12 +134,6 @@ class AdsProvider extends HookWidget {
       setLastUserMessageId(null);
       setRelevantAssistantMessageId(null);
     }
-
-    useEffect(() {
-      PlatformInAppWebViewController.debugLoggingSettings =
-          DebugLoggingSettings(excludeFilter: [RegExp(r'postMessage')]);
-      return null;
-    }, const []);
 
     useEffect(() {
       resetAll();
