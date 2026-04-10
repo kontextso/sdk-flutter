@@ -56,6 +56,7 @@ final class KontextInAppWebViewPlatformView: NSObject, FlutterPlatformView, WKNa
     private let webView: WKWebView
     private let settings: IOSInAppWebViewSettings
     private let omService: OMManaging
+    private let omAudioSessionHelper: OMAudioSessionHelper
     private var hasLoadedInitialUrl = false
     private var isInitialCookieSeedingComplete: Bool
     private var hasPendingInitialLoad = false
@@ -64,6 +65,7 @@ final class KontextInAppWebViewPlatformView: NSObject, FlutterPlatformView, WKNa
     private var hasLoadedPage = false
     private var pendingOpenMeasurementStart = false
     private var activeOMSession: OMSession?
+    private var activeOMSessionUsesVideoAudioSession = false
     private var lastContentURL: URL?
 
     init(
@@ -74,6 +76,7 @@ final class KontextInAppWebViewPlatformView: NSObject, FlutterPlatformView, WKNa
     ) {
         self.settings = IOSInAppWebViewSettings(creationParams: creationParams)
         self.omService = OMManager.shared
+        self.omAudioSessionHelper = OMAudioSessionHelper.shared
         if let urlString = ((creationParams?["initialUrlRequest"] as? [String: Any])?["url"] as? String) {
             self.initialUrl = URL(string: urlString)
         } else {
@@ -507,6 +510,11 @@ final class KontextInAppWebViewPlatformView: NSObject, FlutterPlatformView, WKNa
             return
         }
 
+        let usesVideoAudioSession = omCreativeType == .video
+        if usesVideoAudioSession {
+            omAudioSessionHelper.acquireVideoSession()
+        }
+
         do {
             let session = try omService.createSession(
                 webView,
@@ -515,11 +523,18 @@ final class KontextInAppWebViewPlatformView: NSObject, FlutterPlatformView, WKNa
             )
             session.start()
             activeOMSession = session
+            activeOMSessionUsesVideoAudioSession = usesVideoAudioSession
             pendingOpenMeasurementStart = false
         } catch OMManager.OMError.sdkIsNotActive {
+            if usesVideoAudioSession {
+                omAudioSessionHelper.releaseVideoSession()
+            }
             return
         } catch {
             pendingOpenMeasurementStart = false
+            if usesVideoAudioSession {
+                omAudioSessionHelper.releaseVideoSession()
+            }
         }
     }
 
@@ -534,10 +549,15 @@ final class KontextInAppWebViewPlatformView: NSObject, FlutterPlatformView, WKNa
             return
         }
 
+        let usesVideoAudioSession = activeOMSessionUsesVideoAudioSession
         self.activeOMSession = nil
+        activeOMSessionUsesVideoAudioSession = false
         activeOMSession.retire()
         activeOMSession.finish()
         OMRetentionPool.shared.retain(activeOMSession)
+        if usesVideoAudioSession {
+            omAudioSessionHelper.releaseVideoSession()
+        }
     }
 
     private static func loadOpenMeasurementJavaScript() -> String? {
