@@ -18,12 +18,20 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(Uri.parse('https://dummy.local'));
+    registerFallbackValue(OmCreativeType.display);
   });
   setUp(() {
     fakeController = MockInAppWebViewController();
     opener = MockBrowserOpener();
 
     when(() => fakeController.evaluateJavascript(source: any(named: 'source'))).thenAnswer((_) async => null);
+    when(() => fakeController.configureOpenMeasurement(any())).thenAnswer((_) async {});
+    when(() => fakeController.startOpenMeasurementSession()).thenAnswer((_) async {});
+    when(() => fakeController.logOpenMeasurementError(
+          errorType: any(named: 'errorType'),
+          message: any(named: 'message'),
+        )).thenAnswer((_) async {});
+    when(() => fakeController.finishOpenMeasurementSession()).thenAnswer((_) async {});
     when(() => opener.open(any())).thenAnswer((_) async => true);
   });
 
@@ -230,6 +238,7 @@ void main() {
         required List<String> allowedOrigins,
         required OnEventIframe onEventIframe,
         required OnMessageReceived onMessageReceived,
+        OmCreativeType? omCreativeType,
       }) {
         onMessage = onMessageReceived;
         return FakeWebview(
@@ -289,6 +298,7 @@ void main() {
         required List<String> allowedOrigins,
         required OnEventIframe onEventIframe,
         required OnMessageReceived onMessageReceived,
+        OmCreativeType? omCreativeType,
       }) {
         onMessage = onMessageReceived;
         return FakeWebview(
@@ -339,6 +349,7 @@ void main() {
         required List<String> allowedOrigins,
         required OnEventIframe onEventIframe,
         required OnMessageReceived onMessageReceived,
+        OmCreativeType? omCreativeType,
       }) {
         onMessage = onMessageReceived;
         return FakeWebview(
@@ -391,6 +402,163 @@ void main() {
   );
 
   testWidgets(
+    'ad-done-iframe starts OM when bid has OM creative type',
+    (WidgetTester tester) async {
+      late OnMessageReceived onMessage;
+
+      FakeWebview webviewBuilder({
+        Key? key,
+        required Uri uri,
+        required List<String> allowedOrigins,
+        required OnEventIframe onEventIframe,
+        required OnMessageReceived onMessageReceived,
+        OmCreativeType? omCreativeType,
+      }) {
+        onMessage = onMessageReceived;
+        return FakeWebview(
+          key: key,
+          onEventIframe: onEventIframe,
+          onMessageReceived: onMessageReceived,
+        );
+      }
+
+      await tester.pumpWidget(
+        createDefaultProvider(
+          bids: [
+            Bid(
+              id: '1',
+              code: 'test_code',
+              position: AdDisplayPosition.afterAssistantMessage,
+              om: OmCreativeType.display,
+            ),
+          ],
+          child: AdFormat(
+            code: 'test_code',
+            messageId: 'msg_1',
+            onActiveChanged: onActiveChanged,
+            webviewBuilder: webviewBuilder,
+          ),
+        ),
+      );
+
+      onMessage(fakeController, 'init-iframe', null);
+      await tester.pump();
+
+      onMessage(fakeController, 'ad-done-iframe', null);
+      await tester.pump();
+
+      verify(() => fakeController.startOpenMeasurementSession()).called(1);
+    },
+  );
+
+  testWidgets(
+    'ad-done-iframe does not start OM for component-trigger bids',
+    (WidgetTester tester) async {
+      late OnMessageReceived onMessage;
+
+      FakeWebview webviewBuilder({
+        Key? key,
+        required Uri uri,
+        required List<String> allowedOrigins,
+        required OnEventIframe onEventIframe,
+        required OnMessageReceived onMessageReceived,
+        OmCreativeType? omCreativeType,
+      }) {
+        onMessage = onMessageReceived;
+        return FakeWebview(
+          key: key,
+          onEventIframe: onEventIframe,
+          onMessageReceived: onMessageReceived,
+        );
+      }
+
+      await tester.pumpWidget(
+        createDefaultProvider(
+          bids: [
+            Bid(
+              id: '1',
+              code: 'test_code',
+              position: AdDisplayPosition.afterAssistantMessage,
+              impressionTrigger: ImpressionTrigger.component,
+              om: OmCreativeType.display,
+            ),
+          ],
+          child: AdFormat(
+            code: 'test_code',
+            messageId: 'msg_1',
+            onActiveChanged: onActiveChanged,
+            webviewBuilder: webviewBuilder,
+          ),
+        ),
+      );
+
+      onMessage(fakeController, 'init-iframe', null);
+      await tester.pump();
+
+      onMessage(fakeController, 'ad-done-iframe', null);
+      await tester.pump();
+
+      verifyNever(() => fakeController.startOpenMeasurementSession());
+    },
+  );
+
+  testWidgets(
+    'error-iframe logs OM error before reset when bid has OM creative type',
+    (WidgetTester tester) async {
+      late OnMessageReceived onMessage;
+
+      FakeWebview webviewBuilder({
+        Key? key,
+        required Uri uri,
+        required List<String> allowedOrigins,
+        required OnEventIframe onEventIframe,
+        required OnMessageReceived onMessageReceived,
+        OmCreativeType? omCreativeType,
+      }) {
+        onMessage = onMessageReceived;
+        return FakeWebview(
+          key: key,
+          onEventIframe: onEventIframe,
+          onMessageReceived: onMessageReceived,
+        );
+      }
+
+      await tester.pumpWidget(
+        createDefaultProvider(
+          bids: [
+            Bid(
+              id: '1',
+              code: 'test_code',
+              position: AdDisplayPosition.afterAssistantMessage,
+              om: OmCreativeType.video,
+            ),
+          ],
+          child: AdFormat(
+            code: 'test_code',
+            messageId: 'msg_1',
+            onActiveChanged: onActiveChanged,
+            webviewBuilder: webviewBuilder,
+          ),
+        ),
+      );
+
+      onMessage(fakeController, 'init-iframe', null);
+      await tester.pump();
+
+      onMessage(fakeController, 'error-iframe', {
+        'errorType': 'video',
+        'message': 'boom',
+      });
+      await tester.pump();
+
+      verify(() => fakeController.logOpenMeasurementError(
+            errorType: 'video',
+            message: 'boom',
+          )).called(1);
+    },
+  );
+
+  testWidgets(
     'update-dimensions-iframe posts periodically when iframe is visible',
     (WidgetTester tester) async {
       late OnMessageReceived onMessage;
@@ -410,6 +578,7 @@ void main() {
         required List<String> allowedOrigins,
         required OnEventIframe onEventIframe,
         required OnMessageReceived onMessageReceived,
+        OmCreativeType? omCreativeType,
       }) {
         onMessage = onMessageReceived;
         return FakeWebview(
@@ -471,6 +640,7 @@ void main() {
         required List<String> allowedOrigins,
         required OnEventIframe onEventIframe,
         required OnMessageReceived onMessageReceived,
+        OmCreativeType? omCreativeType,
       }) {
         onMessage = onMessageReceived;
         return FakeWebview(
@@ -543,6 +713,7 @@ void main() {
         required List<String> allowedOrigins,
         required OnEventIframe onEventIframe,
         required OnMessageReceived onMessageReceived,
+        OmCreativeType? omCreativeType,
       }) {
         onMessage = onMessageReceived;
         return FakeWebview(
@@ -583,6 +754,7 @@ void main() {
         required List<String> allowedOrigins,
         required OnEventIframe onEventIframe,
         required OnMessageReceived onMessageReceived,
+        OmCreativeType? omCreativeType,
       }) {
         onMessage = onMessageReceived;
         onEvent = onEventIframe;
@@ -646,6 +818,7 @@ void main() {
         required List<String> allowedOrigins,
         required OnEventIframe onEventIframe,
         required OnMessageReceived onMessageReceived,
+        OmCreativeType? omCreativeType,
       }) {
         onMessage = onMessageReceived;
         onEvent = onEventIframe;
@@ -702,6 +875,7 @@ void main() {
         required List<String> allowedOrigins,
         required OnEventIframe onEventIframe,
         required OnMessageReceived onMessageReceived,
+        OmCreativeType? omCreativeType,
       }) {
         onMessage = onMessageReceived;
         return FakeWebview(
@@ -720,6 +894,7 @@ void main() {
         required OnEventIframe onEventIframe,
         required void Function(OpenIframeComponent component, Json? data) onOpenComponentIframe,
         required void Function(OpenIframeComponent component) onCloseComponentIframe,
+        OmCreativeType? omCreativeType,
       }) {
         capturedModalUri = uri;
         capturedAdServerUrl = adServerUrl;
@@ -766,6 +941,7 @@ void main() {
         required List<String> allowedOrigins,
         required OnEventIframe onEventIframe,
         required OnMessageReceived onMessageReceived,
+        OmCreativeType? omCreativeType,
       }) {
         onMessage = onMessageReceived;
         return FakeWebview(
@@ -784,6 +960,7 @@ void main() {
         required OnEventIframe onEventIframe,
         required void Function(OpenIframeComponent component, Json? data) onOpenComponentIframe,
         required void Function(OpenIframeComponent component) onCloseComponentIframe,
+        OmCreativeType? omCreativeType,
       }) {
         capturedTimeout = initTimeout;
       }
@@ -823,6 +1000,7 @@ void main() {
         required List<String> allowedOrigins,
         required OnEventIframe onEventIframe,
         required OnMessageReceived onMessageReceived,
+        OmCreativeType? omCreativeType,
       }) {
         onMessage = onMessageReceived;
         return FakeWebview(
@@ -866,6 +1044,7 @@ void main() {
         required List<String> allowedOrigins,
         required OnEventIframe onEventIframe,
         required OnMessageReceived onMessageReceived,
+        OmCreativeType? omCreativeType,
       }) {
         onMessage = onMessageReceived;
         return FakeWebview(
@@ -909,6 +1088,7 @@ void main() {
         required List<String> allowedOrigins,
         required OnEventIframe onEventIframe,
         required OnMessageReceived onMessageReceived,
+        OmCreativeType? omCreativeType,
       }) {
         onMessage = onMessageReceived;
         return FakeWebview(
@@ -953,6 +1133,7 @@ void main() {
         required List<String> allowedOrigins,
         required OnEventIframe onEventIframe,
         required OnMessageReceived onMessageReceived,
+        OmCreativeType? omCreativeType,
       }) {
         onMessage = onMessageReceived;
         return FakeWebview(
@@ -971,6 +1152,7 @@ void main() {
         required OnEventIframe onEventIframe,
         required void Function(OpenIframeComponent component, Json? data) onOpenComponentIframe,
         required void Function(OpenIframeComponent component) onCloseComponentIframe,
+        OmCreativeType? omCreativeType,
       }) {
         showInterstitialCalled = true;
       }
@@ -1009,6 +1191,7 @@ void main() {
         required List<String> allowedOrigins,
         required OnEventIframe onEventIframe,
         required OnMessageReceived onMessageReceived,
+        OmCreativeType? omCreativeType,
       }) {
         onMessage = onMessageReceived;
         return FakeWebview(
@@ -1027,6 +1210,7 @@ void main() {
         required OnEventIframe onEventIframe,
         required void Function(OpenIframeComponent component, Json? data) onOpenComponentIframe,
         required void Function(OpenIframeComponent component) onCloseComponentIframe,
+        OmCreativeType? omCreativeType,
       }) {
         showInterstitialCalled = true;
       }
@@ -1064,6 +1248,7 @@ void main() {
         required List<String> allowedOrigins,
         required OnEventIframe onEventIframe,
         required OnMessageReceived onMessageReceived,
+        OmCreativeType? omCreativeType,
       }) {
         onMessage = onMessageReceived;
         return FakeWebview(
@@ -1159,6 +1344,7 @@ void main() {
         required List<String> allowedOrigins,
         required OnEventIframe onEventIframe,
         required OnMessageReceived onMessageReceived,
+        OmCreativeType? omCreativeType,
       }) {
         onMessage = onMessageReceived;
         return FakeWebview(

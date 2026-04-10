@@ -1,6 +1,7 @@
 // ignore_for_file: constant_identifier_names
 
 import 'package:flutter/foundation.dart';
+import 'package:kontext_flutter_sdk/src/models/bid.dart';
 
 typedef JavaScriptHandlerCallback = dynamic Function(List<dynamic> args);
 
@@ -223,4 +224,15 @@ abstract class InAppWebViewController {
     required String handlerName,
     required JavaScriptHandlerCallback callback,
   });
+
+  Future<void> configureOpenMeasurement(OmCreativeType creativeType);
+
+  Future<void> startOpenMeasurementSession();
+
+  Future<void> logOpenMeasurementError({
+    String? errorType,
+    String? message,
+  });
+
+  Future<void> finishOpenMeasurementSession();
 }

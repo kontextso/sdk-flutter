@@ -143,7 +143,7 @@ class Api {
         bids: bidJson?.map((json) => Bid.fromJson(json)).toList() ?? [],
         statusCode: statusCode,
         remoteLogLevel: remoteLogLevel != null
-            ? LogLevel.values.firstWhereOrElse(
+            ? LogLevel.values.firstWhereOrMaybeElse(
                 (level) => level.name == remoteLogLevel,
               )
             : null,

@@ -191,9 +191,14 @@ class AdFormat extends HookWidget {
         if (content != null) {
           adsProviderData.setCachedContent(bid.id, content);
         }
-        if (bid.impressionTrigger == ImpressionTrigger.immediate) {
-          unawaited(_startAttributionImpression(attributionType));
-        }
+        unawaited(() async {
+          if (bid.om != null && bid.impressionTrigger == ImpressionTrigger.immediate) {
+            await controller.startOpenMeasurementSession();
+          }
+          if (bid.impressionTrigger == ImpressionTrigger.immediate) {
+            await _startAttributionImpression(attributionType);
+          }
+        }());
         break;
       case 'open-component-iframe':
       case 'open-skoverlay-iframe':
@@ -224,6 +229,16 @@ class AdFormat extends HookWidget {
         _handleCloseComponentIframe(component);
         break;
       case 'error-iframe':
+        if (bid.om != null) {
+          unawaited(() async {
+            await controller.logOpenMeasurementError(
+              errorType: data?['errorType'] as String?,
+              message: data?['message'] as String?,
+            );
+            resetIframe();
+          }());
+          break;
+        }
         resetIframe();
         break;
       default:
@@ -435,9 +450,8 @@ class AdFormat extends HookWidget {
             data: data,
             onEvent: onEvent,
           ),
-          onCloseComponentIframe: (component) => _handleCloseComponentIframe(
-            component
-          ),
+          onCloseComponentIframe: (component) => _handleCloseComponentIframe(component),
+          omCreativeType: bid.om,
         );
         break;
       case OpenIframeComponent.skoverlay:
@@ -596,6 +610,11 @@ class AdFormat extends HookWidget {
     }, [iframeLoaded.value, webviewController.value, otherParamsHash]);
 
     void resetIframe() {
+      final controller = webviewController.value;
+      if (controller != null && bid.om != null) {
+        unawaited(controller.finishOpenMeasurementSession());
+      }
+
       unawaited(_cleanupAttributionResources(attributionType));
       _dismissSkOverlay();
       _dismissSkStoreProduct();
@@ -608,22 +627,6 @@ class AdFormat extends HookWidget {
       setActive(false);
     }
 
-    final buildWebview = webviewBuilder ??
-        ({
-          Key? key,
-          required Uri uri,
-          required List<String> allowedOrigins,
-          required OnEventIframe onEventIframe,
-          required OnMessageReceived onMessageReceived,
-        }) =>
-            KontextWebview(
-              key: key,
-              uri: uri,
-              allowedOrigins: allowedOrigins,
-              onEventIframe: onEventIframe,
-              onMessageReceived: onMessageReceived,
-            );
-
     return Offstage(
       offstage: !iframeLoaded.value || !showIframe.value,
       child: Container(
@@ -631,10 +634,11 @@ class AdFormat extends HookWidget {
         height: height.value,
         width: double.infinity,
         color: Colors.transparent,
-        child: buildWebview(
+        child: (webviewBuilder ?? KontextWebview.new)(
           key: ValueKey('ad-$messageId-$bidId'),
           uri: inlineUri,
           allowedOrigins: [adServerUrl],
+          omCreativeType: bid.om,
           onEventIframe: (controller, data) => _handleEventIframe(
             bid: bid,
             adServerUrl: adServerUrl,

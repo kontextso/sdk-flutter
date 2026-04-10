@@ -10,7 +10,7 @@ extension DeepHashExt on Object? {
 }
 
 extension ListExtension<E> on List<E> {
-  E? firstWhereOrElse(bool Function(E element) test, {E Function()? orElse}) {
+  E? firstWhereOrMaybeElse(bool Function(E element) test, {E Function()? orElse}) {
     for (E element in this) {
       if (test(element)) return element;
     }

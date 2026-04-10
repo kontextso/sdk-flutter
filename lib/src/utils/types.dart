@@ -14,7 +14,7 @@ enum OpenIframeComponent {
 
   static OpenIframeComponent? fromMessageType(Object? type) {
     if (type is! String) return null;
-    return OpenIframeComponent.values.firstWhereOrElse(
+    return OpenIframeComponent.values.firstWhereOrMaybeElse(
       (component) => component.types.contains(type),
     );
   }

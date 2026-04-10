@@ -2,6 +2,7 @@ import 'dart:collection';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart' as upstream;
+import 'package:kontext_flutter_sdk/src/models/bid.dart';
 import 'package:kontext_flutter_sdk/src/webview/compat_types.dart';
 
 class InAppWebView extends StatelessWidget {
@@ -10,6 +11,7 @@ class InAppWebView extends StatelessWidget {
     this.initialUrlRequest,
     this.initialUserScripts,
     this.initialSettings = const InAppWebViewSettings(),
+    this.initialOmCreativeType,
     this.shouldOverrideUrlLoading,
     this.onWebViewCreated,
     this.onConsoleMessage,
@@ -20,6 +22,7 @@ class InAppWebView extends StatelessWidget {
   final URLRequest? initialUrlRequest;
   final UnmodifiableListView<UserScript>? initialUserScripts;
   final InAppWebViewSettings initialSettings;
+  final OmCreativeType? initialOmCreativeType;
   final Future<NavigationActionPolicy?> Function(
     InAppWebViewController controller,
     NavigationAction navigationAction,
@@ -147,6 +150,21 @@ class _UpstreamInAppWebViewController extends InAppWebViewController {
   Future<dynamic> evaluateJavascript({required String source}) {
     return _delegate.evaluateJavascript(source: source);
   }
+
+  @override
+  Future<void> configureOpenMeasurement(OmCreativeType creativeType) async {}
+
+  @override
+  Future<void> startOpenMeasurementSession() async {}
+
+  @override
+  Future<void> logOpenMeasurementError({
+    String? errorType,
+    String? message,
+  }) async {}
+
+  @override
+  Future<void> finishOpenMeasurementSession() async {}
 }
 
 upstream.UserScriptInjectionTime _toUpstreamInjectionTime(UserScriptInjectionTime value) {

@@ -17,8 +17,12 @@ Kontext Flutter SDK: sound status, app info, hardware, power, network, etc.
   s.swift_version       = '5.0'
 
   s.frameworks = 'AVFoundation', 'SystemConfiguration', 'CoreTelephony', 'WebKit', 'AdSupport', 'AppTrackingTransparency', 'StoreKit'
+  s.vendored_frameworks = 'Frameworks/OMSDK_Kontextso.xcframework'
 
-  s.resources = ['PrivacyInfo.xcprivacy']
+  s.resources = ['PrivacyInfo.xcprivacy', 'Resources/omsdk-v1.js']
 
-  s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES' }
+  s.pod_target_xcconfig = {
+    'DEFINES_MODULE' => 'YES',
+    'OTHER_LDFLAGS' => '$(inherited) -framework "OMSDK_Kontextso"',
+  }
 end

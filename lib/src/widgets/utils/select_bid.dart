@@ -3,12 +3,12 @@ import 'package:kontext_flutter_sdk/src/utils/extensions.dart';
 import 'package:kontext_flutter_sdk/src/widgets/ads_provider_data.dart';
 
 Bid? selectBid(AdsProviderData data, {required String code, required String messageId}) {
-  final placement = data.enabledPlacementCodes.firstWhereOrElse((c) => c == code);
+  final placement = data.enabledPlacementCodes.firstWhereOrMaybeElse((c) => c == code);
   if (placement == null) {
     return null;
   }
 
-  final bid = data.bids.firstWhereOrElse((bid) => bid.code == code);
+  final bid = data.bids.firstWhereOrMaybeElse((bid) => bid.code == code);
   if (bid == null) {
     return null;
   }
