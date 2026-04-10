@@ -1,6 +1,7 @@
 package so.kontext.sdk.flutter
 
 import io.flutter.embedding.engine.plugins.FlutterPlugin
+import so.kontext.sdk.flutter.omsdk.OMSDKPlugin
 
 class KontextSdkPlugin : FlutterPlugin {
     private val advertisingId = AdvertisingIdPlugin()
@@ -10,6 +11,7 @@ class KontextSdkPlugin : FlutterPlugin {
     private val inAppWebView = KontextInAppWebViewPlugin()
     private val network = DeviceNetworkPlugin()
     private val os = OperationSystemPlugin()
+    private val omsdk = OMSDKPlugin()
     private val power = DevicePowerPlugin()
     private val tcf = TransparencyConsentFramework()
 
@@ -21,6 +23,7 @@ class KontextSdkPlugin : FlutterPlugin {
         inAppWebView.onAttachedToEngine(binding)
         network.onAttachedToEngine(binding)
         os.onAttachedToEngine(binding)
+        omsdk.onAttachedToEngine(binding)
         power.onAttachedToEngine(binding)
         tcf.onAttachedToEngine(binding)
     }
@@ -32,6 +35,7 @@ class KontextSdkPlugin : FlutterPlugin {
         hardware.onDetachedFromEngine(binding)
         network.onDetachedFromEngine(binding)
         os.onDetachedFromEngine(binding)
+        omsdk.onDetachedFromEngine(binding)
         power.onDetachedFromEngine(binding)
         tcf.onDetachedFromEngine(binding)
     }

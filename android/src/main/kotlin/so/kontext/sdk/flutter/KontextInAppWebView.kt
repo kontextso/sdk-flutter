@@ -6,6 +6,7 @@ import android.graphics.Color
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import android.webkit.CookieManager
@@ -24,6 +25,10 @@ import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.platform.PlatformView
+import so.kontext.sdk.flutter.omsdk.OMConstants
+import so.kontext.sdk.flutter.omsdk.OMCreativeType
+import so.kontext.sdk.flutter.omsdk.WebViewOMLifecycle
+
 private const val CHANNEL_PREFIX = "kontext_flutter_sdk/in_app_webview/"
 private const val JAVASCRIPT_BRIDGE_NAME = "flutter_inappwebview"
 private const val MAX_BYPASS_MAIN_FRAME_LOADS = 100
@@ -53,10 +58,22 @@ internal class KontextInAppWebView(
     private val initialUrl = readInitialUrl(creationParams)
     private val settings = readSettings(creationParams)
     private val initialUserScripts = readUserScripts(creationParams)
-    private var hasLoadedInitialUrl = false
-
-    private val bypassMainFrameLoads = linkedSetOf<String>()
     private val documentStartSupported = WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)
+    private val openMeasurementJavascript = if (documentStartSupported) {
+        loadOpenMeasurementJavaScript(context)
+    } else {
+        null
+    }
+    private val omLifecycle = WebViewOMLifecycle(
+        webView = webView,
+        initialContentUrl = initialUrl,
+        initialCreativeType = readInitialOmCreativeType(creationParams),
+        canUseOpenMeasurement = ::canUseOpenMeasurement,
+        logUnsupportedOpenMeasurement = ::logUnsupportedOpenMeasurement,
+    )
+    private val bypassMainFrameLoads = linkedSetOf<String>()
+
+    private var hasLoadedInitialUrl = false
 
     private val bridgeScript = """
         (function() {
@@ -129,10 +146,12 @@ internal class KontextInAppWebView(
     override fun getView(): View = webView
 
     override fun dispose() {
+        omLifecycle.finish()
         channel.setMethodCallHandler(null)
-        webView.stopLoading()
         webView.removeJavascriptInterface(JAVASCRIPT_BRIDGE_NAME)
-        webView.destroy()
+        if (!omLifecycle.dispose()) {
+            destroyWebViewImmediately()
+        }
     }
 
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
@@ -152,6 +171,33 @@ internal class KontextInAppWebView(
             "loadInitialUrl" -> {
                 mainHandler.post {
                     loadInitialUrl()
+                    result.success(null)
+                }
+            }
+            "configureOpenMeasurement" -> {
+                mainHandler.post {
+                    omLifecycle.configure(call.argument("creativeType"))
+                    result.success(null)
+                }
+            }
+            "startOpenMeasurementSession" -> {
+                mainHandler.post {
+                    omLifecycle.requestStart()
+                    result.success(null)
+                }
+            }
+            "logOpenMeasurementError" -> {
+                mainHandler.post {
+                    omLifecycle.logError(
+                        errorType = call.argument("errorType"),
+                        message = call.argument("message"),
+                    )
+                    result.success(null)
+                }
+            }
+            "finishOpenMeasurementSession" -> {
+                mainHandler.post {
+                    omLifecycle.finish()
                     result.success(null)
                 }
             }
@@ -192,6 +238,7 @@ internal class KontextInAppWebView(
         }
 
         if (documentStartSupported) {
+            openMeasurementJavascript?.let(::addDocumentStartScript)
             addDocumentStartScript(bridgeScript)
             // To avoid Android WebView loader for videos, inject JS code with 1x1 transparent pixel.
             addDocumentStartScript(posterStartScript)
@@ -260,6 +307,7 @@ internal class KontextInAppWebView(
 
             override fun onPageStarted(view: WebView, url: String?, favicon: android.graphics.Bitmap?) {
                 super.onPageStarted(view, url, favicon)
+                omLifecycle.markPageStarted(url)
                 if (!documentStartSupported) {
                     // Older WebView versions do not support document-start scripts, so this
                     // fallback injects asynchronously and may still lose the race to early
@@ -277,6 +325,7 @@ internal class KontextInAppWebView(
                     .filter { it.injectionTime == "AT_DOCUMENT_END" }
                     .forEach { evaluateJavascript(it.source) }
                 evaluateJavascript(PLATFORM_READY_SCRIPT)
+                omLifecycle.markPageFinished(url)
             }
 
             override fun onReceivedError(
@@ -342,6 +391,7 @@ internal class KontextInAppWebView(
             return
         }
         hasLoadedInitialUrl = true
+        omLifecycle.markPageStarted(initialUrl)
         if (!initialUrl.isNullOrBlank()) {
             webView.loadUrl(initialUrl)
         }
@@ -393,6 +443,30 @@ internal class KontextInAppWebView(
               $documentStartUserScripts
             })();
         """.trimIndent()
+    }
+
+    private fun canUseOpenMeasurement(): Boolean = documentStartSupported && openMeasurementJavascript != null
+
+    private fun logUnsupportedOpenMeasurement() {
+        Log.w(
+            OMConstants.logTag,
+            if (!documentStartSupported) {
+                "DOCUMENT_START_SCRIPT not supported, OM SDK disabled for this WebView"
+            } else {
+                "OM SDK JavaScript resource could not be loaded, OM SDK disabled for this WebView"
+            }
+        )
+    }
+
+    private fun destroyWebViewImmediately() {
+        try {
+            (webView.parent as? ViewGroup)?.removeView(webView)
+            webView.stopLoading()
+            webView.loadUrl("about:blank")
+            webView.destroy()
+        } catch (exception: Throwable) {
+            Log.w(OMConstants.logTag, "Immediate WebView destroy failed", exception)
+        }
     }
 
     private fun evaluateJavascript(source: String) {
@@ -464,6 +538,10 @@ private data class AndroidUserScript(
     val injectionTime: String,
 )
 
+private fun readInitialOmCreativeType(creationParams: Map<String, Any?>?): OMCreativeType? {
+    return OMCreativeType.fromRawValue(creationParams?.get("initialOmCreativeType") as? String)
+}
+
 private fun readInitialUrl(creationParams: Map<String, Any?>?): String? {
     val initialRequest = creationParams?.get("initialUrlRequest") as? Map<*, *>
     return initialRequest?.get("url") as? String
@@ -491,6 +569,17 @@ private fun readUserScripts(creationParams: Map<String, Any?>?): List<AndroidUse
             source = source,
             injectionTime = script["injectionTime"] as? String ?: "AT_DOCUMENT_START",
         )
+    }
+}
+
+private fun loadOpenMeasurementJavaScript(context: Context): String? {
+    return try {
+        context.resources.openRawResource(R.raw.omsdk_v1)
+            .bufferedReader(Charsets.UTF_8)
+            .use { it.readText() }
+    } catch (exception: Exception) {
+        Log.e(OMConstants.logTag, "Failed to load OM SDK JavaScript", exception)
+        null
     }
 }
 

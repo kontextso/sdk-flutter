@@ -3,6 +3,24 @@ plugins {
     id "org.jetbrains.kotlin.android"
 }
 
+def omSdkLocalMavenRepo = uri("${project.projectDir}/local-maven")
+
+rootProject.allprojects {
+    repositories {
+        maven {
+            url omSdkLocalMavenRepo
+        }
+    }
+}
+
+repositories {
+    google()
+    mavenCentral()
+    maven {
+        url omSdkLocalMavenRepo
+    }
+}
+
 android {
     namespace "so.kontext.sdk.flutter"
     compileSdk = 34
@@ -27,4 +45,5 @@ android {
 dependencies {
     implementation "androidx.webkit:webkit:1.8.0"
     implementation "com.google.android.gms:play-services-ads-identifier:18.0.1"
+    implementation "iab:omsdk-android:1.6.4"
 }
