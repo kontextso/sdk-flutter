@@ -81,6 +81,7 @@ void main() {
 
     test('is not equal to a non-Message', () {
       final a = Message(id: '1', role: MessageRole.user, content: 'hi', createdAt: createdAt);
+      // ignore: unrelated_type_equality_checks
       expect(a == 'not a message', isFalse);
     });
   });

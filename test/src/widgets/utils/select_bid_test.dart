@@ -16,12 +16,12 @@ void main() {
 
   AdsProviderData makeData({
     required List<Bid> bids,
-    List<String> placementCodes = const ['inlineAd'],
+    List<String> placementCodes = const [],
     String? lastAssistantMessageId,
     String? relevantAssistantMessageId,
     String? lastUserMessageId,
-    bool readyForStreamingAssistant = true,
-    bool readyForStreamingUser = true,
+    bool readyForStreamingAssistant = false,
+    bool readyForStreamingUser = false,
   }) {
     return AdsProviderData(
       adServerUrl: 'https://ads.example',
@@ -47,7 +47,6 @@ void main() {
     test('returns null when placement code is not enabled', () {
       final data = makeData(
         bids: [makeBid('inlineAd', AdDisplayPosition.afterAssistantMessage)],
-        placementCodes: const [],
       );
       expect(selectBid(data, code: 'inlineAd', messageId: 'm-1'), isNull);
     });
@@ -64,6 +63,7 @@ void main() {
       final bid = makeBid('inlineAd', AdDisplayPosition.afterAssistantMessage);
       final data = makeData(
         bids: [bid],
+        placementCodes: const ['inlineAd'],
         lastAssistantMessageId: 'm-1',
         readyForStreamingAssistant: true,
       );
@@ -74,6 +74,7 @@ void main() {
       final bid = makeBid('inlineAd', AdDisplayPosition.afterAssistantMessage);
       final data = makeData(
         bids: [bid],
+        placementCodes: const ['inlineAd'],
         lastAssistantMessageId: 'm-2',
         relevantAssistantMessageId: 'm-1',
         readyForStreamingAssistant: true,
@@ -87,8 +88,8 @@ void main() {
       final bid = makeBid('inlineAd', AdDisplayPosition.afterAssistantMessage);
       final data = makeData(
         bids: [bid],
+        placementCodes: const ['inlineAd'],
         lastAssistantMessageId: 'm-1',
-        readyForStreamingAssistant: false,
       );
       expect(selectBid(data, code: 'inlineAd', messageId: 'm-1'), isNull);
     });
@@ -97,6 +98,7 @@ void main() {
       final bid = makeBid('inlineAd', AdDisplayPosition.afterAssistantMessage);
       final data = makeData(
         bids: [bid],
+        placementCodes: const ['inlineAd'],
         lastAssistantMessageId: 'm-1',
         readyForStreamingAssistant: true,
       );
@@ -107,6 +109,7 @@ void main() {
       final bid = makeBid('inlineAd', AdDisplayPosition.afterUserMessage);
       final data = makeData(
         bids: [bid],
+        placementCodes: const ['inlineAd'],
         lastUserMessageId: 'u-1',
         readyForStreamingUser: true,
       );
@@ -117,8 +120,8 @@ void main() {
       final bid = makeBid('inlineAd', AdDisplayPosition.afterUserMessage);
       final data = makeData(
         bids: [bid],
+        placementCodes: const ['inlineAd'],
         lastUserMessageId: 'u-1',
-        readyForStreamingUser: false,
       );
       expect(selectBid(data, code: 'inlineAd', messageId: 'u-1'), isNull);
     });
@@ -127,6 +130,7 @@ void main() {
       final bid = makeBid('inlineAd', AdDisplayPosition.afterUserMessage);
       final data = makeData(
         bids: [bid],
+        placementCodes: const ['inlineAd'],
         lastUserMessageId: 'u-1',
         readyForStreamingUser: true,
       );
@@ -146,6 +150,7 @@ void main() {
       });
       final data = makeData(
         bids: [first, second],
+        placementCodes: const ['inlineAd'],
         lastAssistantMessageId: 'm-1',
         readyForStreamingAssistant: true,
       );
