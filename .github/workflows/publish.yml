@@ -15,8 +15,15 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Ensure tag commit is contained in origin/main
+      - name: Ensure tag commit is contained in origin/main (skipped for pre-release tags)
         run: |
+          # Stable releases must be cut from main. Pre-release tags (semver with a
+          # `-` suffix, e.g. v2.2.3-rc.0) may be published from a release/RC branch
+          # so we can hand a build to a customer without merging to main.
+          if [[ "$GITHUB_REF_NAME" == *-* ]]; then
+            echo "Pre-release tag '$GITHUB_REF_NAME' — skipping on-main ancestry check."
+            exit 0
+          fi
           git fetch origin main --prune
           echo "Tag commit: $GITHUB_SHA"
           git merge-base --is-ancestor "$GITHUB_SHA" "origin/main"

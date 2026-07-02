@@ -1,5 +1,8 @@
 # Changelog
 
+## 2.2.3-rc.0
+* Pre-release. Fix an Android race where a lost `init-iframe` (WebView `onLoad` firing multiple times) left the ad filled but never shown: re-flush the message queue on every load and add an `update-iframe` fallback. Adds `[Kontext][handshake]` diagnostic logging.
+
 ## 2.2.2
 * BREAKING: Update minimum requirements to Flutter `>=3.38.0` and iOS deployment target `13.0`.
 * Set NSPrivacyTracking to false and clear tracking domains.
