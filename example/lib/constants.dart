@@ -1,2 +1,2 @@
-const String kPublisherToken = 'PUBLISHER_TOKEN';
+const String kPublisherToken = 'chai-dev';
 const String kPlacementCode  = 'inlineAd';

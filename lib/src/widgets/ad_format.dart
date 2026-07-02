@@ -136,6 +136,7 @@ class AdFormat extends HookWidget {
       },
     };
 
+    Logger.info('[Kontext][handshake] sending update-iframe (code=$code, messageId=$messageId)');
     _postMessageToWebView(adServerUrl, controller, payload);
   }
 
@@ -145,7 +146,7 @@ class AdFormat extends HookWidget {
     Json payload,
   ) {
     controller.evaluateJavascript(source: '''
-      window.postMessage(${jsonEncode(payload)}, '$adServerUrl'); null
+      window.postMessage(${jsonEncode(payload)}, '$adServerUrl');
     ''');
   }
 
@@ -168,25 +169,32 @@ class AdFormat extends HookWidget {
   }) {
     switch (messageType) {
       case 'init-iframe':
+        Logger.info('[Kontext][handshake] init-iframe received (code=$code, messageId=$messageId, bidId=${bid.id})');
         iframeLoaded.value = true;
         unawaited(_handleAttributionInitialization(bid.akk, bid.skan, attributionType));
         break;
       case 'show-iframe':
+        Logger.info('[Kontext][handshake] show-iframe received (code=$code, messageId=$messageId, bidId=${bid.id})');
         showIframe.value = true;
         break;
       case 'hide-iframe':
+        Logger.info('[Kontext][handshake] hide-iframe received (code=$code, messageId=$messageId)');
         showIframe.value = false;
         break;
       case 'resize-iframe':
         final dataHeight = data?['height'];
         if (dataHeight is num) {
+          Logger.info('[Kontext][handshake] resize-iframe received height=$dataHeight (code=$code, messageId=$messageId)');
           height.value = dataHeight.toDouble();
+        } else {
+          Logger.info('[Kontext][handshake] resize-iframe received with non-numeric height=$dataHeight (code=$code, messageId=$messageId)');
         }
         break;
       case 'click-iframe':
         _handleClickIframe(bid: bid, adServerUrl: adServerUrl, controller: controller, data: data);
         break;
       case 'ad-done-iframe':
+        Logger.info('[Kontext][handshake] ad-done-iframe received (code=$code, messageId=$messageId, impressionTrigger=${bid.impressionTrigger.name})');
         final content = data?['cachedContent'] as String?;
         if (content != null) {
           adsProviderData.setCachedContent(bid.id, content);
@@ -224,9 +232,11 @@ class AdFormat extends HookWidget {
         _handleCloseComponentIframe(component);
         break;
       case 'error-iframe':
+        Logger.info('[Kontext][handshake] error-iframe received — resetting (code=$code, messageId=$messageId, data=$data)');
         resetIframe();
         break;
       default:
+        Logger.info('[Kontext][handshake] unhandled message "$messageType" (code=$code, messageId=$messageId)');
     }
   }
 
@@ -462,11 +472,14 @@ class AdFormat extends HookWidget {
 
     final ticker = useRef<Timer?>(null);
     final delayedTicker = useRef<Timer?>(null);
+    final initFallbackTimer = useRef<Timer?>(null);
     void cancelTimers() {
       delayedTicker.value?.cancel();
       delayedTicker.value = null;
       ticker.value?.cancel();
       ticker.value = null;
+      initFallbackTimer.value?.cancel();
+      initFallbackTimer.value = null;
     }
 
     void setActive(bool active) => WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -496,6 +509,9 @@ class AdFormat extends HookWidget {
     final isActive = !disabled && bid != null && inlineUri != null;
 
     useEffect(() {
+      if (isActive) {
+        Logger.info('[Kontext][handshake] ad active — loading frame (code=$code, messageId=$messageId, bidId=$bidId, uri=$inlineUri)');
+      }
       setActive(isActive);
       return null;
     }, [isActive]);
@@ -532,6 +548,44 @@ class AdFormat extends HookWidget {
     final showIframe = useState(false);
     final height = useState(.0);
 
+    // Fallback for a lost `init-iframe` (Android double-onLoad race; see RN Saylo fix).
+    // Normally the iframe posts `init-iframe`, we set `iframeLoaded` and send `update-iframe`,
+    // and the server starts the stream. If `init-iframe` never reaches us, that chain never
+    // starts: the ad fills (frame served) but never shows, with no error. This starts on
+    // page load and, if the handshake hasn't progressed after a short delay, forces
+    // `iframeLoaded` (to unblock dimension posting) and (re)sends `update-iframe` directly.
+    void startInitFallback(InAppWebViewController controller) {
+      if (initFallbackTimer.value != null) return; // already armed for this load cycle
+      var attempts = 0;
+      initFallbackTimer.value = Timer.periodic(const Duration(milliseconds: 500), (timer) {
+        // Stop once the ad actually starts showing, on dispose, or if init-iframe arrived
+        // normally before we ever needed to fire.
+        if (disposed.value || showIframe.value || (iframeLoaded.value && attempts == 0)) {
+          timer.cancel();
+          initFallbackTimer.value = null;
+          return;
+        }
+        attempts++;
+        Logger.info(
+          '[Kontext][handshake] init-iframe/show-iframe not received after '
+          '${attempts * 500}ms — sending update-iframe fallback '
+          '(code=$code, messageId=$messageId, attempt=$attempts)',
+        );
+        iframeLoaded.value = true; // unblock the Offstage + dimension-posting pipeline
+        _postUpdateIframe(
+          controller,
+          adServerUrl: adsProviderData.adServerUrl,
+          messages: adsProviderData.messages.getLastMessages(),
+          otherParams: adsProviderData.otherParams,
+        );
+        if (attempts >= 6) {
+          // ~3s of retries; give up so we don't spin forever on a genuinely empty slot.
+          timer.cancel();
+          initFallbackTimer.value = null;
+        }
+      });
+    }
+
     useEffect(() {
       // messageId can only become relevant if an ad was shown for that specific messageId
       if (showIframe.value && adsProviderData.lastAssistantMessageId == messageId) {
@@ -556,6 +610,7 @@ class AdFormat extends HookWidget {
           );
       final shouldRun = iframeLoaded.value && showIframe.value;
       if (shouldRun && ticker.value == null && delayedTicker.value == null) {
+        Logger.info('[Kontext][handshake] ad visible (iframeLoaded && showIframe) — starting dimension posting (code=$code, messageId=$messageId)');
         // Start after a short delay to allow initial layout to settle
         delayedTicker.value = Timer(const Duration(milliseconds: 500), () {
           delayedTicker.value = null;
@@ -563,6 +618,7 @@ class AdFormat extends HookWidget {
             return;
           }
           // First call immediately without waiting for the first tick
+          Logger.info('[Kontext][handshake] posting first update-dimensions-iframe (code=$code, messageId=$messageId)');
           postDimensions();
           ticker.value = Timer.periodic(
             const Duration(milliseconds: 300),
@@ -596,6 +652,7 @@ class AdFormat extends HookWidget {
     }, [iframeLoaded.value, webviewController.value, otherParamsHash]);
 
     void resetIframe() {
+      Logger.info('[Kontext][handshake] resetIframe (code=$code, messageId=$messageId)');
       unawaited(_cleanupAttributionResources(attributionType));
       _dismissSkOverlay();
       _dismissSkStoreProduct();
@@ -622,6 +679,11 @@ class AdFormat extends HookWidget {
               allowedOrigins: allowedOrigins,
               onEventIframe: onEventIframe,
               onMessageReceived: onMessageReceived,
+              onLoadStop: (controller) {
+                Logger.info('[Kontext][handshake] webview onLoadStop (code=$code, messageId=$messageId)');
+                webviewController.value = controller;
+                startInitFallback(controller);
+              },
             );
 
     return Offstage(

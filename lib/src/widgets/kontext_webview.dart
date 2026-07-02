@@ -55,7 +55,7 @@ final _flushMsgQueue = '''
     } catch (e) {
       console.error('Error flushing message queue to Flutter: ', e);
     }
-  })(); null
+  })();
 ''';
 
 typedef OnEventIframe = void Function(InAppWebViewController controller, Json? data);
@@ -75,12 +75,14 @@ class KontextWebview extends HookWidget {
     required this.allowedOrigins,
     required this.onEventIframe,
     required this.onMessageReceived,
+    this.onLoadStop,
   });
 
   final Uri uri;
   final List<String> allowedOrigins;
   final OnEventIframe onEventIframe;
   final OnMessageReceived onMessageReceived;
+  final void Function(InAppWebViewController controller)? onLoadStop;
 
   void _logError(WebViewConsoleErrorLimiter limiter, {required String message}) {
     if (limiter.shouldSendRemote(message)) {
@@ -170,6 +172,16 @@ class KontextWebview extends HookWidget {
         );
 
         controller.evaluateJavascript(source: _flushMsgQueue);
+      },
+      onLoadStop: (controller, url) async {
+        // onWebViewCreated flushes the early-bridge queue exactly once. On Android the
+        // page's onLoadStop can fire two or more times; a reload after that first flush
+        // re-creates an empty __kontextMsgQueue, so an `init-iframe` posted on the reload
+        // is queued but never flushed again — the SDK never learns the iframe is ready and
+        // never sends `update-iframe`, so the stream never starts and the ad never shows.
+        // Re-flushing on every load delivers those queued messages. (See RN Saylo fix.)
+        await controller.evaluateJavascript(source: _flushMsgQueue);
+        onLoadStop?.call(controller);
       },
       onConsoleMessage: (controller, consoleMessage) {
         final level = consoleMessage.messageLevel;
