@@ -558,32 +558,45 @@ class AdFormat extends HookWidget {
     // mid-handshake and the message never reaches us), that chain never starts and the
     // ad is served but never shown — silently.
     //
-    // This is armed on MOUNT (not on any load/`onLoadStop` event, which the reload itself
-    // corrupts): once a controller is available it (re)sends `update-iframe` every tick
-    // until the ad actually shows. It also sets `iframeLoaded` so dimension posting can run
-    // once `show-iframe` finally lands. Idempotent: an extra `update-iframe` on the happy
-    // path is harmless, and it stops the instant `show-iframe` arrives.
+    // Armed independent of any load/`onLoadStop` event (which the reload itself corrupts),
+    // and keyed on [bidId] so it RE-ARMS for every ad — a reused slot handling multiple ads
+    // otherwise only ever recovers the first one.
     useEffect(() {
       var attempts = 0;
-      final timer = Timer.periodic(const Duration(milliseconds: 800), (t) {
-        if (disposed.value || showIframe.value) {
+      var recovering = false;
+      final timer = Timer.periodic(const Duration(milliseconds: 1000), (t) {
+        if (disposed.value) {
+          t.cancel();
+          return;
+        }
+        // Truly shown (BOTH flags) -> success, stop.
+        if (iframeLoaded.value && showIframe.value) {
+          t.cancel();
+          return;
+        }
+        // Healthy path: a real init-iframe set iframeLoaded and we never had to recover.
+        // Stop and never interfere — this is why well-behaved integrations see ZERO recovery
+        // traffic. We must NOT key off showIframe here: `show-iframe` can arrive while
+        // `init-iframe` was lost, and without `iframeLoaded` the ad stays blank — that is
+        // exactly the served-but-never-shown failure.
+        if (iframeLoaded.value && !recovering) {
           t.cancel();
           return;
         }
         final controller = webviewController.value;
-        if (controller == null) return; // wait until the webview hands us a controller
-        if (attempts >= 8) {
-          // ~6.4s of nudging; stop so we don't spin forever on a genuinely empty slot.
+        if (controller == null) return; // no webview yet
+        if (attempts >= 3) {
+          // Bounded. Give up so we don't spin on a genuinely empty slot.
           t.cancel();
           return;
         }
         attempts++;
+        recovering = true;
         Logger.info(
-          '[Kontext][handshake] recovery nudge #$attempts — show-iframe not received; '
-          '(re)sending update-iframe (iframeLoaded=${iframeLoaded.value}, '
-          'code=$code, messageId=$messageId)',
+          '[Kontext][handshake] recovery: init-iframe missing after ${attempts}s — '
+          'sending update-iframe (attempt $attempts, code=$code, messageId=$messageId)',
         );
-        iframeLoaded.value = true; // unblock the Offstage + dimension-posting pipeline
+        iframeLoaded.value = true; // the piece a lost init-iframe never delivered
         _postUpdateIframe(
           controller,
           adServerUrl: adsProviderData.adServerUrl,
@@ -593,7 +606,7 @@ class AdFormat extends HookWidget {
       });
       initFallbackTimer.value = timer;
       return () => timer.cancel();
-    }, const []);
+    }, [bidId]);
 
     useEffect(() {
       // messageId can only become relevant if an ad was shown for that specific messageId

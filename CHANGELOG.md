@@ -1,5 +1,8 @@
 # Changelog
 
+## 2.2.3-rc.2
+* Pre-release. Correct the lost-`init-iframe` recovery: it now keys off the real failure signal (`iframeLoaded` never set — `show-iframe` can arrive while `init-iframe` was lost) and re-arms per ad, so every ad in a reused slot recovers, not just the first. Healthy ads trigger zero recovery traffic. Adds a regression test for the `show-iframe`-first case.
+
 ## 2.2.3-rc.1
 * Pre-release. Harden the lost-`init-iframe` recovery: the `update-iframe` fallback is now armed on mount (reload-proof) instead of on `onLoadStop`, and it re-sends until `show-iframe` actually arrives. Adds a widget test reproducing the lost-`init-iframe` case.
 

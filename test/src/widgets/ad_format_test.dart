@@ -452,12 +452,12 @@ void main() {
   );
 
   testWidgets(
-    'recovers a lost init-iframe: mount nudger re-sends update-iframe until show-iframe',
+    'recovers a lost init-iframe even when show-iframe arrives first',
     (WidgetTester tester) async {
-      // Reproduces the Android double-onLoad race: the frame loads (so a controller is
-      // available and a resize can arrive) but `init-iframe` is NEVER delivered — the
-      // exact "served but never shown" case seen on the customer device. The mount-based
-      // recovery must send `update-iframe` anyway, and keep doing so until `show-iframe`.
+      // The exact customer failure: init-iframe is lost (WebView reload), but show-iframe
+      // STILL arrives. Without iframeLoaded the Offstage stays hidden and the ad is blank.
+      // Regression guard: the recovery must key off the failure signature (no iframeLoaded),
+      // NOT be fooled into stopping just because show-iframe was received.
       late OnMessageReceived onMessage;
       final updateIframeCalls = <String>[];
 
@@ -491,31 +491,24 @@ void main() {
         ),
       );
 
-      // Frame loaded and posted a resize, but init-iframe is withheld (lost in the reload).
+      // Frame loaded (controller arrives via a resize) and show-iframe arrived, but
+      // init-iframe was LOST — so iframeLoaded is still false and the ad is blank.
       onMessage(fakeController, 'resize-iframe', {'height': 100});
-      await tester.pump();
-
-      // Nothing sent yet — before the fix, update-iframe was gated on init-iframe, so the
-      // ad would stay served-but-never-shown here forever.
-      expect(updateIframeCalls, isEmpty);
-
-      // The mount-based nudger must send update-iframe even though init-iframe never came.
-      await tester.pump(const Duration(milliseconds: 900));
-      expect(updateIframeCalls, isNotEmpty, reason: 'recovery must fire without init-iframe');
-
-      // ...and keep nudging until the ad actually shows.
-      final countAfterFirst = updateIframeCalls.length;
-      await tester.pump(const Duration(milliseconds: 900));
-      expect(updateIframeCalls.length, greaterThan(countAfterFirst));
-
-      // Once show-iframe finally arrives, nudging stops.
       onMessage(fakeController, 'show-iframe', null);
       await tester.pump();
-      final countAtShow = updateIframeCalls.length;
-      await tester.pump(const Duration(milliseconds: 1600));
-      expect(updateIframeCalls.length, countAtShow, reason: 'nudging stops once show-iframe arrives');
 
-      // Dispose to cancel the dimension ticker started by show-iframe.
+      // The normal path is dead (init-iframe never set iframeLoaded), so nothing yet.
+      expect(updateIframeCalls, isEmpty);
+
+      // Recovery MUST still fire — the old code stopped on show-iframe and left the ad blank.
+      await tester.pump(const Duration(milliseconds: 1100));
+      expect(
+        updateIframeCalls,
+        isNotEmpty,
+        reason: 'recovery must fire even when show-iframe arrived but init-iframe was lost',
+      );
+
+      // Dispose to cancel the dimension ticker started once the ad became visible.
       await tester.pumpWidget(const SizedBox());
     },
   );
