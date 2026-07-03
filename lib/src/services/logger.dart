@@ -121,6 +121,13 @@ class Logger {
       error: error,
       stackTrace: stackTrace,
     );
+
+    // developer.log only surfaces in DevTools; also print so logs are visible
+    // in `flutter run` stdout / logcat during debugging.
+    if (kDebugMode) {
+      debugPrint('[Kontext][${level.name}] $message');
+      if (error != null) debugPrint('[Kontext][${level.name}] error: $error');
+    }
   }
 
   Future<void> _logRemote(LogLevel level, String message) async {

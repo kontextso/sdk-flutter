@@ -64,6 +64,25 @@ class _HomePageState extends State<HomePage> {
 
   void _append(Message m) => setState(() => _messages.add(m));
 
+  void _onAdEvent(AdEvent event) {
+    // Surface every ad event (ad.filled, ad.no-fill, ad.viewed, ad.clicked, …)
+    // in the console so it's visible in `flutter run` logs.
+    final parts = <String>[
+      'type=${event.type.value}',
+      if (event.code != null) 'code=${event.code}',
+      if (event.skipCode != null) 'skipCode=${event.skipCode}',
+      if (event.id != null) 'id=${event.id}',
+      if (event.revenue != null) 'revenue=${event.revenue}',
+      if (event.messageId != null) 'messageId=${event.messageId}',
+      if (event.format != null) 'format=${event.format}',
+      if (event.area != null) 'area=${event.area}',
+      if (event.url != null) 'url=${event.url}',
+      if (event.message != null) 'message=${event.message}',
+      if (event.errCode != null) 'errCode=${event.errCode}',
+    ];
+    debugPrint('[KontextAdEvent] ${parts.join(' ')}');
+  }
+
   void _onSubmit() {
     final text = _input.text.trim();
     if (text.isEmpty || _isLoading) return;
@@ -116,6 +135,7 @@ class _HomePageState extends State<HomePage> {
         enabledPlacementCodes: const [kPlacementCode],
         otherParams: {'theme': theme},
         logLevel: LogLevel.info,
+        onEvent: _onAdEvent,
         child: Column(
           children: [
             Expanded(

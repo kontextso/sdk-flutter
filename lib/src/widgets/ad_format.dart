@@ -136,6 +136,7 @@ class AdFormat extends HookWidget {
       },
     };
 
+    Logger.info('[Kontext][handshake] sending update-iframe (code=$code, messageId=$messageId)');
     _postMessageToWebView(adServerUrl, controller, payload);
   }
 
@@ -145,7 +146,7 @@ class AdFormat extends HookWidget {
     Json payload,
   ) {
     controller.evaluateJavascript(source: '''
-      window.postMessage(${jsonEncode(payload)}, '$adServerUrl'); null
+      window.postMessage(${jsonEncode(payload)}, '$adServerUrl');
     ''');
   }
 
@@ -168,25 +169,32 @@ class AdFormat extends HookWidget {
   }) {
     switch (messageType) {
       case 'init-iframe':
+        Logger.info('[Kontext][handshake] init-iframe received (code=$code, messageId=$messageId, bidId=${bid.id})');
         iframeLoaded.value = true;
         unawaited(_handleAttributionInitialization(bid.akk, bid.skan, attributionType));
         break;
       case 'show-iframe':
+        Logger.info('[Kontext][handshake] show-iframe received (code=$code, messageId=$messageId, bidId=${bid.id})');
         showIframe.value = true;
         break;
       case 'hide-iframe':
+        Logger.info('[Kontext][handshake] hide-iframe received (code=$code, messageId=$messageId)');
         showIframe.value = false;
         break;
       case 'resize-iframe':
         final dataHeight = data?['height'];
         if (dataHeight is num) {
+          Logger.info('[Kontext][handshake] resize-iframe received height=$dataHeight (code=$code, messageId=$messageId)');
           height.value = dataHeight.toDouble();
+        } else {
+          Logger.info('[Kontext][handshake] resize-iframe received with non-numeric height=$dataHeight (code=$code, messageId=$messageId)');
         }
         break;
       case 'click-iframe':
         _handleClickIframe(bid: bid, adServerUrl: adServerUrl, controller: controller, data: data);
         break;
       case 'ad-done-iframe':
+        Logger.info('[Kontext][handshake] ad-done-iframe received (code=$code, messageId=$messageId, impressionTrigger=${bid.impressionTrigger.name})');
         final content = data?['cachedContent'] as String?;
         if (content != null) {
           adsProviderData.setCachedContent(bid.id, content);
@@ -224,9 +232,11 @@ class AdFormat extends HookWidget {
         _handleCloseComponentIframe(component);
         break;
       case 'error-iframe':
+        Logger.info('[Kontext][handshake] error-iframe received — resetting (code=$code, messageId=$messageId, data=$data)');
         resetIframe();
         break;
       default:
+        Logger.info('[Kontext][handshake] unhandled message "$messageType" (code=$code, messageId=$messageId)');
     }
   }
 
@@ -462,7 +472,12 @@ class AdFormat extends HookWidget {
 
     final ticker = useRef<Timer?>(null);
     final delayedTicker = useRef<Timer?>(null);
+    final initFallbackTimer = useRef<Timer?>(null);
     void cancelTimers() {
+      // Note: initFallbackTimer is intentionally NOT cancelled here. It's the mount-based
+      // recovery nudger and has its own lifecycle (armed once, stops on show-iframe/dispose);
+      // this cancelTimers() runs whenever the dimension ticker should stop (i.e. before the
+      // ad is visible), which is exactly when the nudger still needs to run.
       delayedTicker.value?.cancel();
       delayedTicker.value = null;
       ticker.value?.cancel();
@@ -496,6 +511,9 @@ class AdFormat extends HookWidget {
     final isActive = !disabled && bid != null && inlineUri != null;
 
     useEffect(() {
+      if (isActive) {
+        Logger.info('[Kontext][handshake] ad active — loading frame (code=$code, messageId=$messageId, bidId=$bidId, uri=$inlineUri)');
+      }
       setActive(isActive);
       return null;
     }, [isActive]);
@@ -532,6 +550,64 @@ class AdFormat extends HookWidget {
     final showIframe = useState(false);
     final height = useState(.0);
 
+    // Recovery nudger for a lost `init-iframe` (Android double-onLoad race; see RN Saylo fix).
+    //
+    // Normal flow: the iframe posts `init-iframe` -> we set `iframeLoaded` -> the
+    // [iframeLoaded] effect sends `update-iframe` -> the server starts the stream ->
+    // the iframe posts `show-iframe`. If `init-iframe` is lost (the WebView reloads
+    // mid-handshake and the message never reaches us), that chain never starts and the
+    // ad is served but never shown — silently.
+    //
+    // Armed independent of any load/`onLoadStop` event (which the reload itself corrupts),
+    // and keyed on [bidId] so it RE-ARMS for every ad — a reused slot handling multiple ads
+    // otherwise only ever recovers the first one.
+    useEffect(() {
+      var attempts = 0;
+      var recovering = false;
+      final timer = Timer.periodic(const Duration(milliseconds: 1000), (t) {
+        if (disposed.value) {
+          t.cancel();
+          return;
+        }
+        // Truly shown (BOTH flags) -> success, stop.
+        if (iframeLoaded.value && showIframe.value) {
+          t.cancel();
+          return;
+        }
+        // Healthy path: a real init-iframe set iframeLoaded and we never had to recover.
+        // Stop and never interfere — this is why well-behaved integrations see ZERO recovery
+        // traffic. We must NOT key off showIframe here: `show-iframe` can arrive while
+        // `init-iframe` was lost, and without `iframeLoaded` the ad stays blank — that is
+        // exactly the served-but-never-shown failure.
+        if (iframeLoaded.value && !recovering) {
+          t.cancel();
+          return;
+        }
+        final controller = webviewController.value;
+        if (controller == null) return; // no webview yet
+        if (attempts >= 3) {
+          // Bounded. Give up so we don't spin on a genuinely empty slot.
+          t.cancel();
+          return;
+        }
+        attempts++;
+        recovering = true;
+        Logger.info(
+          '[Kontext][handshake] recovery: init-iframe missing after ${attempts}s — '
+          'sending update-iframe (attempt $attempts, code=$code, messageId=$messageId)',
+        );
+        iframeLoaded.value = true; // the piece a lost init-iframe never delivered
+        _postUpdateIframe(
+          controller,
+          adServerUrl: adsProviderData.adServerUrl,
+          messages: adsProviderData.messages.getLastMessages(),
+          otherParams: adsProviderData.otherParams,
+        );
+      });
+      initFallbackTimer.value = timer;
+      return () => timer.cancel();
+    }, [bidId]);
+
     useEffect(() {
       // messageId can only become relevant if an ad was shown for that specific messageId
       if (showIframe.value && adsProviderData.lastAssistantMessageId == messageId) {
@@ -556,6 +632,7 @@ class AdFormat extends HookWidget {
           );
       final shouldRun = iframeLoaded.value && showIframe.value;
       if (shouldRun && ticker.value == null && delayedTicker.value == null) {
+        Logger.info('[Kontext][handshake] ad visible (iframeLoaded && showIframe) — starting dimension posting (code=$code, messageId=$messageId)');
         // Start after a short delay to allow initial layout to settle
         delayedTicker.value = Timer(const Duration(milliseconds: 500), () {
           delayedTicker.value = null;
@@ -563,6 +640,7 @@ class AdFormat extends HookWidget {
             return;
           }
           // First call immediately without waiting for the first tick
+          Logger.info('[Kontext][handshake] posting first update-dimensions-iframe (code=$code, messageId=$messageId)');
           postDimensions();
           ticker.value = Timer.periodic(
             const Duration(milliseconds: 300),
@@ -596,6 +674,7 @@ class AdFormat extends HookWidget {
     }, [iframeLoaded.value, webviewController.value, otherParamsHash]);
 
     void resetIframe() {
+      Logger.info('[Kontext][handshake] resetIframe (code=$code, messageId=$messageId)');
       unawaited(_cleanupAttributionResources(attributionType));
       _dismissSkOverlay();
       _dismissSkStoreProduct();
@@ -622,6 +701,14 @@ class AdFormat extends HookWidget {
               allowedOrigins: allowedOrigins,
               onEventIframe: onEventIframe,
               onMessageReceived: onMessageReceived,
+              onWebViewCreated: (controller) {
+                Logger.info('[Kontext][handshake] webview created (code=$code, messageId=$messageId)');
+                webviewController.value = controller;
+              },
+              onLoadStop: (controller) {
+                Logger.info('[Kontext][handshake] webview onLoadStop (code=$code, messageId=$messageId)');
+                webviewController.value = controller;
+              },
             );
 
     return Offstage(

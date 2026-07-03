@@ -452,6 +452,68 @@ void main() {
   );
 
   testWidgets(
+    'recovers a lost init-iframe even when show-iframe arrives first',
+    (WidgetTester tester) async {
+      // The exact customer failure: init-iframe is lost (WebView reload), but show-iframe
+      // STILL arrives. Without iframeLoaded the Offstage stays hidden and the ad is blank.
+      // Regression guard: the recovery must key off the failure signature (no iframeLoaded),
+      // NOT be fooled into stopping just because show-iframe was received.
+      late OnMessageReceived onMessage;
+      final updateIframeCalls = <String>[];
+
+      when(() => fakeController.evaluateJavascript(source: any(named: 'source'))).thenAnswer((invocation) async {
+        final source = invocation.namedArguments[const Symbol('source')] as String;
+        if (source.contains('"type":"update-iframe"')) {
+          updateIframeCalls.add(source);
+        }
+        return null;
+      });
+
+      FakeWebview webviewBuilder({
+        Key? key,
+        required Uri uri,
+        required List<String> allowedOrigins,
+        required OnEventIframe onEventIframe,
+        required OnMessageReceived onMessageReceived,
+      }) {
+        onMessage = onMessageReceived;
+        return FakeWebview(key: key, onEventIframe: onEventIframe, onMessageReceived: onMessageReceived);
+      }
+
+      await tester.pumpWidget(
+        createDefaultProvider(
+          child: AdFormat(
+            code: 'test_code',
+            messageId: 'msg_1',
+            onActiveChanged: onActiveChanged,
+            webviewBuilder: webviewBuilder,
+          ),
+        ),
+      );
+
+      // Frame loaded (controller arrives via a resize) and show-iframe arrived, but
+      // init-iframe was LOST — so iframeLoaded is still false and the ad is blank.
+      onMessage(fakeController, 'resize-iframe', {'height': 100});
+      onMessage(fakeController, 'show-iframe', null);
+      await tester.pump();
+
+      // The normal path is dead (init-iframe never set iframeLoaded), so nothing yet.
+      expect(updateIframeCalls, isEmpty);
+
+      // Recovery MUST still fire — the old code stopped on show-iframe and left the ad blank.
+      await tester.pump(const Duration(milliseconds: 1100));
+      expect(
+        updateIframeCalls,
+        isNotEmpty,
+        reason: 'recovery must fire even when show-iframe arrived but init-iframe was lost',
+      );
+
+      // Dispose to cancel the dimension ticker started once the ad became visible.
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
+
+  testWidgets(
     'Timer is cancelled when widget is disposed mid-update',
     (WidgetTester tester) async {
       late OnMessageReceived onMessage;
