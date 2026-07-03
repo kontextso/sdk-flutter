@@ -452,6 +452,75 @@ void main() {
   );
 
   testWidgets(
+    'recovers a lost init-iframe: mount nudger re-sends update-iframe until show-iframe',
+    (WidgetTester tester) async {
+      // Reproduces the Android double-onLoad race: the frame loads (so a controller is
+      // available and a resize can arrive) but `init-iframe` is NEVER delivered — the
+      // exact "served but never shown" case seen on the customer device. The mount-based
+      // recovery must send `update-iframe` anyway, and keep doing so until `show-iframe`.
+      late OnMessageReceived onMessage;
+      final updateIframeCalls = <String>[];
+
+      when(() => fakeController.evaluateJavascript(source: any(named: 'source'))).thenAnswer((invocation) async {
+        final source = invocation.namedArguments[const Symbol('source')] as String;
+        if (source.contains('"type":"update-iframe"')) {
+          updateIframeCalls.add(source);
+        }
+        return null;
+      });
+
+      FakeWebview webviewBuilder({
+        Key? key,
+        required Uri uri,
+        required List<String> allowedOrigins,
+        required OnEventIframe onEventIframe,
+        required OnMessageReceived onMessageReceived,
+      }) {
+        onMessage = onMessageReceived;
+        return FakeWebview(key: key, onEventIframe: onEventIframe, onMessageReceived: onMessageReceived);
+      }
+
+      await tester.pumpWidget(
+        createDefaultProvider(
+          child: AdFormat(
+            code: 'test_code',
+            messageId: 'msg_1',
+            onActiveChanged: onActiveChanged,
+            webviewBuilder: webviewBuilder,
+          ),
+        ),
+      );
+
+      // Frame loaded and posted a resize, but init-iframe is withheld (lost in the reload).
+      onMessage(fakeController, 'resize-iframe', {'height': 100});
+      await tester.pump();
+
+      // Nothing sent yet — before the fix, update-iframe was gated on init-iframe, so the
+      // ad would stay served-but-never-shown here forever.
+      expect(updateIframeCalls, isEmpty);
+
+      // The mount-based nudger must send update-iframe even though init-iframe never came.
+      await tester.pump(const Duration(milliseconds: 900));
+      expect(updateIframeCalls, isNotEmpty, reason: 'recovery must fire without init-iframe');
+
+      // ...and keep nudging until the ad actually shows.
+      final countAfterFirst = updateIframeCalls.length;
+      await tester.pump(const Duration(milliseconds: 900));
+      expect(updateIframeCalls.length, greaterThan(countAfterFirst));
+
+      // Once show-iframe finally arrives, nudging stops.
+      onMessage(fakeController, 'show-iframe', null);
+      await tester.pump();
+      final countAtShow = updateIframeCalls.length;
+      await tester.pump(const Duration(milliseconds: 1600));
+      expect(updateIframeCalls.length, countAtShow, reason: 'nudging stops once show-iframe arrives');
+
+      // Dispose to cancel the dimension ticker started by show-iframe.
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
+
+  testWidgets(
     'Timer is cancelled when widget is disposed mid-update',
     (WidgetTester tester) async {
       late OnMessageReceived onMessage;

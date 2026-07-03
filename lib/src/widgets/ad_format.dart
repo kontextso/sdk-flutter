@@ -474,12 +474,14 @@ class AdFormat extends HookWidget {
     final delayedTicker = useRef<Timer?>(null);
     final initFallbackTimer = useRef<Timer?>(null);
     void cancelTimers() {
+      // Note: initFallbackTimer is intentionally NOT cancelled here. It's the mount-based
+      // recovery nudger and has its own lifecycle (armed once, stops on show-iframe/dispose);
+      // this cancelTimers() runs whenever the dimension ticker should stop (i.e. before the
+      // ad is visible), which is exactly when the nudger still needs to run.
       delayedTicker.value?.cancel();
       delayedTicker.value = null;
       ticker.value?.cancel();
       ticker.value = null;
-      initFallbackTimer.value?.cancel();
-      initFallbackTimer.value = null;
     }
 
     void setActive(bool active) => WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -548,28 +550,38 @@ class AdFormat extends HookWidget {
     final showIframe = useState(false);
     final height = useState(.0);
 
-    // Fallback for a lost `init-iframe` (Android double-onLoad race; see RN Saylo fix).
-    // Normally the iframe posts `init-iframe`, we set `iframeLoaded` and send `update-iframe`,
-    // and the server starts the stream. If `init-iframe` never reaches us, that chain never
-    // starts: the ad fills (frame served) but never shows, with no error. This starts on
-    // page load and, if the handshake hasn't progressed after a short delay, forces
-    // `iframeLoaded` (to unblock dimension posting) and (re)sends `update-iframe` directly.
-    void startInitFallback(InAppWebViewController controller) {
-      if (initFallbackTimer.value != null) return; // already armed for this load cycle
+    // Recovery nudger for a lost `init-iframe` (Android double-onLoad race; see RN Saylo fix).
+    //
+    // Normal flow: the iframe posts `init-iframe` -> we set `iframeLoaded` -> the
+    // [iframeLoaded] effect sends `update-iframe` -> the server starts the stream ->
+    // the iframe posts `show-iframe`. If `init-iframe` is lost (the WebView reloads
+    // mid-handshake and the message never reaches us), that chain never starts and the
+    // ad is served but never shown — silently.
+    //
+    // This is armed on MOUNT (not on any load/`onLoadStop` event, which the reload itself
+    // corrupts): once a controller is available it (re)sends `update-iframe` every tick
+    // until the ad actually shows. It also sets `iframeLoaded` so dimension posting can run
+    // once `show-iframe` finally lands. Idempotent: an extra `update-iframe` on the happy
+    // path is harmless, and it stops the instant `show-iframe` arrives.
+    useEffect(() {
       var attempts = 0;
-      initFallbackTimer.value = Timer.periodic(const Duration(milliseconds: 500), (timer) {
-        // Stop once the ad actually starts showing, on dispose, or if init-iframe arrived
-        // normally before we ever needed to fire.
-        if (disposed.value || showIframe.value || (iframeLoaded.value && attempts == 0)) {
-          timer.cancel();
-          initFallbackTimer.value = null;
+      final timer = Timer.periodic(const Duration(milliseconds: 800), (t) {
+        if (disposed.value || showIframe.value) {
+          t.cancel();
+          return;
+        }
+        final controller = webviewController.value;
+        if (controller == null) return; // wait until the webview hands us a controller
+        if (attempts >= 8) {
+          // ~6.4s of nudging; stop so we don't spin forever on a genuinely empty slot.
+          t.cancel();
           return;
         }
         attempts++;
         Logger.info(
-          '[Kontext][handshake] init-iframe/show-iframe not received after '
-          '${attempts * 500}ms — sending update-iframe fallback '
-          '(code=$code, messageId=$messageId, attempt=$attempts)',
+          '[Kontext][handshake] recovery nudge #$attempts — show-iframe not received; '
+          '(re)sending update-iframe (iframeLoaded=${iframeLoaded.value}, '
+          'code=$code, messageId=$messageId)',
         );
         iframeLoaded.value = true; // unblock the Offstage + dimension-posting pipeline
         _postUpdateIframe(
@@ -578,13 +590,10 @@ class AdFormat extends HookWidget {
           messages: adsProviderData.messages.getLastMessages(),
           otherParams: adsProviderData.otherParams,
         );
-        if (attempts >= 6) {
-          // ~3s of retries; give up so we don't spin forever on a genuinely empty slot.
-          timer.cancel();
-          initFallbackTimer.value = null;
-        }
       });
-    }
+      initFallbackTimer.value = timer;
+      return () => timer.cancel();
+    }, const []);
 
     useEffect(() {
       // messageId can only become relevant if an ad was shown for that specific messageId
@@ -679,10 +688,13 @@ class AdFormat extends HookWidget {
               allowedOrigins: allowedOrigins,
               onEventIframe: onEventIframe,
               onMessageReceived: onMessageReceived,
+              onWebViewCreated: (controller) {
+                Logger.info('[Kontext][handshake] webview created (code=$code, messageId=$messageId)');
+                webviewController.value = controller;
+              },
               onLoadStop: (controller) {
                 Logger.info('[Kontext][handshake] webview onLoadStop (code=$code, messageId=$messageId)');
                 webviewController.value = controller;
-                startInitFallback(controller);
               },
             );
 

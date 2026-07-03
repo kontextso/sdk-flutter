@@ -75,6 +75,7 @@ class KontextWebview extends HookWidget {
     required this.allowedOrigins,
     required this.onEventIframe,
     required this.onMessageReceived,
+    this.onWebViewCreated,
     this.onLoadStop,
   });
 
@@ -82,6 +83,7 @@ class KontextWebview extends HookWidget {
   final List<String> allowedOrigins;
   final OnEventIframe onEventIframe;
   final OnMessageReceived onMessageReceived;
+  final void Function(InAppWebViewController controller)? onWebViewCreated;
   final void Function(InAppWebViewController controller)? onLoadStop;
 
   void _logError(WebViewConsoleErrorLimiter limiter, {required String message}) {
@@ -172,6 +174,7 @@ class KontextWebview extends HookWidget {
         );
 
         controller.evaluateJavascript(source: _flushMsgQueue);
+        onWebViewCreated?.call(controller);
       },
       onLoadStop: (controller, url) async {
         // onWebViewCreated flushes the early-bridge queue exactly once. On Android the
