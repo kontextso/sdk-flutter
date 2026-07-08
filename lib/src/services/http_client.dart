@@ -24,7 +24,7 @@ class HttpClient {
 
   Future<({http.Response response, Json data})> post(
     String path, {
-    Duration timeout = const Duration(seconds: 60),
+    Duration timeout = const Duration(seconds: kHttpTimeoutSeconds),
     Json? body,
     Json? headers,
   }) async {

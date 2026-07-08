@@ -14,14 +14,13 @@ public class SKStoreProductPlugin: NSObject, FlutterPlugin {
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         switch call.method {
         case "present":
-            guard let args = call.arguments as? [String: Any],
-            let appStoreId = args["appStoreId"] as? String else {
-                result(FlutterError(code: "INVALID_ARGUMENTS", message: "appStoreId is required", details: nil))
+            guard let params = call.arguments as? [String: Any] else {
+                result(FlutterError(code: "INVALID_ARGUMENTS", message: "arguments must be a map", details: nil))
                 return
             }
             DispatchQueue.main.async {
-                SKStoreProductManager.shared.present(appStoreId: appStoreId) { success in
-                    result(success)
+                SKStoreProductManager.shared.present(skan: params) { res in
+                    result(res)
                 }
             }
         case "dismiss":

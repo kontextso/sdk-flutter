@@ -2,6 +2,7 @@ import 'dart:async' show Timer;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show DeviceOrientation, SystemChrome;
+import 'package:kontext_flutter_sdk/src/utils/constants.dart';
 import 'package:kontext_flutter_sdk/src/utils/types.dart' show Json, OpenIframeComponent;
 import 'package:kontext_flutter_sdk/src/widgets/kontext_webview.dart';
 
@@ -36,10 +37,8 @@ class InterstitialModal {
     @visibleForTesting KontextWebviewBuilder? webviewBuilder,
   }) {
     closeSKOverlay() => onCloseComponentIframe(OpenIframeComponent.skoverlay);
-    closeSkStoreProduct() => onCloseComponentIframe(OpenIframeComponent.skstoreproduct);
     closeAll() {
       closeSKOverlay();
-      closeSkStoreProduct();
       closeModal();
     }
 
@@ -73,7 +72,7 @@ class InterstitialModal {
               child: AnimatedOpacity(
                 key: animatedOpacityKey,
                 opacity: isVisible ? 1.0 : 0.0,
-                duration: const Duration(milliseconds: 300),
+                duration: const Duration(milliseconds: kInterstitialFadeDurationMs),
                 curve: Curves.easeInOut,
                 child: SizedBox(
                   width: double.infinity,
@@ -96,7 +95,6 @@ class InterstitialModal {
                           break;
                         case 'open-component-iframe':
                         case 'open-skoverlay-iframe':
-                        case 'open-skstoreproduct-iframe':
                           final component = OpenIframeComponent.fromMessageType(messageType);
                           if (component == null) {
                             return;
@@ -108,9 +106,6 @@ class InterstitialModal {
                           break;
                         case 'close-skoverlay-iframe':
                           closeSKOverlay();
-                          break;
-                        case 'close-skstoreproduct-iframe':
-                          closeSkStoreProduct();
                           break;
                         case 'error-component-iframe':
                           closeAll();

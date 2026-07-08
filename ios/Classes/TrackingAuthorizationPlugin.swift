@@ -40,20 +40,35 @@ public class TrackingAuthorizationPlugin: NSObject, FlutterPlugin {
 
     private func requestTrackingAuthorization(result: @escaping FlutterResult) {
         if #available(iOS 14, *) {
-            removeObserver()
-            ATTrackingManager.requestTrackingAuthorization { [weak self] status in
-                if status == .denied && ATTrackingManager.trackingAuthorizationStatus == .notDetermined {
-                    self?.addObserver(result: result)
-                    return
-                }
-                result(Int(status.rawValue))
-            }
+            requestTrackingAuthorizationWhenActive(result: result)
         } else {
             result(Self.notSupportedStatus)
         }
     }
 
+    @available(iOS 14, *)
+    private func requestTrackingAuthorizationWhenActive(result: @escaping FlutterResult) {
+        if UIApplication.shared.applicationState != .active {
+            addObserver(result: result)
+            return
+        }
+
+        removeObserver()
+        ATTrackingManager.requestTrackingAuthorization { [weak self] status in
+            if status == .denied && ATTrackingManager.trackingAuthorizationStatus == .notDetermined {
+                self?.addObserver(result: result)
+                return
+            }
+
+            self?.removeObserver()
+            result(Int(status.rawValue))
+        }
+    }
+
     private func addObserver(result: @escaping FlutterResult) {
+        // Concurrent calls are not expected here — the Dart layer enforces a single
+        // in-flight ATT request. removeObserver() is called defensively in case that
+        // assumption is ever violated.
         removeObserver()
         observer = NotificationCenter.default.addObserver(
             forName: UIApplication.didBecomeActiveNotification,

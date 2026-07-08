@@ -17,8 +17,14 @@ class AppInfo {
   final String bundleId;
   final String version;
   final String? storeUrl;
+
+  /// Milliseconds since Unix epoch.
   final int firstInstallTime;
+
+  /// Milliseconds since Unix epoch.
   final int lastUpdateTime;
+
+  /// Milliseconds since Unix epoch.
   final int startTime;
 
   static const _ch = MethodChannel('kontext_flutter_sdk/app_info');

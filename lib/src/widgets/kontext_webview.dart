@@ -55,7 +55,7 @@ final _flushMsgQueue = '''
     } catch (e) {
       console.error('Error flushing message queue to Flutter: ', e);
     }
-  })();
+  })(); null
 ''';
 
 typedef OnEventIframe = void Function(InAppWebViewController controller, Json? data);
@@ -190,6 +190,12 @@ class KontextWebview extends HookWidget {
         }
       },
       onReceivedError: (controller, request, error) {
+        // ERR_BLOCKED_BY_ORB errors are caused by third-party ad creatives
+        // loading cross-origin resources without proper CORS headers.
+        // They are not actionable on our side, so we suppress them.
+        if (error.description.contains('ERR_BLOCKED_BY_ORB')) {
+          return;
+        }
         final webViewMessage = 'Error received in InAppWebView: $error, request: $request';
         _logError(
           webViewConsoleErrorLimiter,

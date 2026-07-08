@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/services.dart' show MethodChannel;
 import 'package:kontext_flutter_sdk/src/services/logger.dart';
 import 'package:kontext_flutter_sdk/src/services/tracking_authorization_service.dart';
+import 'package:kontext_flutter_sdk/src/utils/constants.dart';
 import 'package:kontext_flutter_sdk/src/utils/extensions.dart';
 
 class AdvertisingIdService {
@@ -137,14 +138,14 @@ class AdvertisingIdService {
     final major = int.tryParse(parts[0]) ?? 0;
     final minor = parts.length > 1 ? int.tryParse(parts[1]) ?? 0 : 0;
 
-    if (major > 14) {
+    if (major > kMinAttIosMajorVersion) {
       return true;
     }
-    if (major < 14) {
+    if (major < kMinAttIosMajorVersion) {
       return false;
     }
 
-    return minor >= 5;
+    return minor >= kMinAttIosMinorVersion;
   }
 
   static bool _isIOS() => Platform.isIOS;
