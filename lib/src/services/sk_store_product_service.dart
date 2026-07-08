@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/services.dart' show MethodChannel;
+import 'package:kontext_flutter_sdk/src/models/bid.dart' show Skan;
 import 'package:kontext_flutter_sdk/src/services/logger.dart' show Logger;
 
 abstract final class SKStoreProductService {
@@ -8,11 +9,11 @@ abstract final class SKStoreProductService {
 
   static bool Function() isIOS = () => Platform.isIOS;
 
-  static Future<bool> present({required String appStoreId}) async {
+  static Future<bool> present(Skan skan) async {
     if (!isIOS()) return false;
 
     try {
-      final result = await _channel.invokeMethod('present', {'appStoreId': appStoreId});
+      final result = await _channel.invokeMethod('present', skan.toJson());
       Logger.debug('SKStoreProduct presented: $result');
       return result == true;
     } catch (e, stack) {

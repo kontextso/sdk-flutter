@@ -36,10 +36,8 @@ class InterstitialModal {
     @visibleForTesting KontextWebviewBuilder? webviewBuilder,
   }) {
     closeSKOverlay() => onCloseComponentIframe(OpenIframeComponent.skoverlay);
-    closeSkStoreProduct() => onCloseComponentIframe(OpenIframeComponent.skstoreproduct);
     closeAll() {
       closeSKOverlay();
-      closeSkStoreProduct();
       closeModal();
     }
 
@@ -96,7 +94,6 @@ class InterstitialModal {
                           break;
                         case 'open-component-iframe':
                         case 'open-skoverlay-iframe':
-                        case 'open-skstoreproduct-iframe':
                           final component = OpenIframeComponent.fromMessageType(messageType);
                           if (component == null) {
                             return;
@@ -108,9 +105,6 @@ class InterstitialModal {
                           break;
                         case 'close-skoverlay-iframe':
                           closeSKOverlay();
-                          break;
-                        case 'close-skstoreproduct-iframe':
-                          closeSkStoreProduct();
                           break;
                         case 'error-component-iframe':
                           closeAll();

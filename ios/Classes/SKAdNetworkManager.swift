@@ -19,14 +19,15 @@ final class SKAdNetworkManager {
     ///  - version: String
     ///  - network: String              (adNetworkIdentifier)
     ///  - itunesItem: String/Int       (advertisedAppStoreItemIdentifier)
-    ///  - sourceApp: String/Int        (sourceAppStoreItemIdentifier, 0 if no App Store ID)
+    /// Attribution (resolved from the top-level keys, else the fidelity-0 entry):
+    ///  - nonce: String                (adImpressionIdentifier)
+    ///  - timestamp: String/Int
+    ///  - signature: String
     /// Optional keys:
+    ///  - sourceApp: String/Int        (sourceAppStoreItemIdentifier; defaults to 0 — "no App Store ID known")
+    ///  - campaign: String/Int         (adCampaignIdentifier; defaults to 0)
     ///  - sourceIdentifier: String/Int (SKAdNetwork 4.0, iOS 16.1+)
-    ///  - campaign: String/Int         (adCampaignIdentifier)
-    ///  - fidelities: Array  (iOS 16.1+; each entry may contain nonce, timestamp, signature)
-    ///  - nonce: String                (adImpressionIdentifier; required if no fidelities)
-    ///  - timestamp: String/Int        (required if no fidelities)
-    ///  - signature: String            (required if no fidelities)
+    ///  - fidelities: Array            (fidelity-0 entry fills missing top-level nonce/timestamp/signature)
     func initImpression(params: [String: Any], completion: @escaping (Any) -> Void) {
         guard #available(iOS 14.5, *) else {
             completeOnMain(completion, false)
@@ -44,7 +45,7 @@ final class SKAdNetworkManager {
             return nil
         }
 
-        // Required
+        // Identity
         let version    = params["version"] as? String
         let networkId  = params["network"] as? String
         let itunesItem = num(params["itunesItem"])
@@ -53,17 +54,13 @@ final class SKAdNetworkManager {
         // Optional
         let campaign         = num(params["campaign"])
         let sourceIdentifier = num(params["sourceIdentifier"])
-        let nonce            = params["nonce"] as? String
-        let timestamp        = num(params["timestamp"])
-        let signature        = params["signature"] as? String
-        let fidelities       = params["fidelities"] as? [[String: Any]]
 
-        let hasFidelities: Bool = {
-            if #available(iOS 16.1, *) {
-                return !(fidelities?.isEmpty ?? true)
-            }
-            return false
-        }()
+        // Attribution: prefer top-level fields, fall back to the fidelity-0 entry.
+        // (No fallback to fidelity-1 — those values are signed with a different formula.)
+        let f0 = Self.fidelity0Values(from: params)
+        let nonce     = (params["nonce"] as? String)     ?? f0?.nonce
+        let timestamp = num(params["timestamp"])         ?? f0?.timestamp
+        let signature = (params["signature"] as? String) ?? f0?.signature
 
         // Validate that required strings are non-empty after trimming whitespace
         func isBlank(_ s: String?) -> Bool {
@@ -74,25 +71,21 @@ final class SKAdNetworkManager {
         if isBlank(version)   { missing.append("version") }
         if isBlank(networkId) { missing.append("network") }
         if itunesItem == nil  { missing.append("itunesItem") }
-        if !hasFidelities {
-            if isBlank(nonce)     { missing.append("nonce") }
-            if timestamp == nil   { missing.append("timestamp") }
-            if isBlank(signature) { missing.append("signature") }
-        }
+        if isBlank(nonce)     { missing.append("nonce") }
+        if timestamp == nil   { missing.append("timestamp") }
+        if isBlank(signature) { missing.append("signature") }
 
-        // When fidelities were provided but ignored due to OS version,
-        // include a clear hint in the error so the caller understands why the
-        // top-level nonce/timestamp/signature are still being required.
-        guard missing.isEmpty else {
-            let hint: String? = (fidelities != nil && !hasFidelities)
-                ? "Note: fidelities array was provided but is only supported on iOS 16.1+. " +
-                "Top-level nonce/timestamp/signature are required on this OS version."
-                : nil
-
+        guard missing.isEmpty,
+              let version = version,
+              let networkId = networkId,
+              let itunesItem = itunesItem,
+              let nonce = nonce,
+              let timestamp = timestamp,
+              let signature = signature
+        else {
             completeOnMain(completion, FlutterError(
                 code: "MISSING_ARGUMENTS",
-                message: "Missing required arguments: \(missing.joined(separator: ", "))" +
-                        (hint.map { " \($0)" } ?? ""),
+                message: "Missing required arguments: \(missing.joined(separator: ", "))",
                 details: ["provided_keys": Array(params.keys)]
             ))
             return
@@ -101,49 +94,35 @@ final class SKAdNetworkManager {
         let previousImpression = isStarted ? skImpression : nil
         isStarted = false
 
-        // Collapsed the iOS 16.1 and iOS 16.0 branches into one, since they
-        // called the identical memberwise initializer. The 4.0-specific extras
-        // (sourceIdentifier, fidelities) are applied conditionally inside the same branch,
-        // making the version boundaries explicit and removing the duplicated init call.
+        // The 16.0 memberwise initializer and the pre-16.0 property setters build
+        // the identical impression; sourceIdentifier (SKAN 4.0) is applied only on 16.1+.
         if #available(iOS 16.0, *) {
             let imp = SKAdImpression(
                 sourceAppStoreItemIdentifier: sourceApp,
-                advertisedAppStoreItemIdentifier: itunesItem!,
-                adNetworkIdentifier: networkId!,
-                // Comment clarifying that on SKAN 4.0 this field is vestigial, 
-                // sourceIdentifier replaces it. We still populate it for API completeness
-                // and backwards compatibility with older postback versions.
+                advertisedAppStoreItemIdentifier: itunesItem,
+                adNetworkIdentifier: networkId,
+                // Vestigial on SKAN 4.0 (sourceIdentifier replaces it); still populated
+                // for API completeness and older postback versions.
                 adCampaignIdentifier: campaign ?? NSNumber(value: 0),
-                adImpressionIdentifier: nonce ?? "",
-                timestamp: timestamp ?? NSNumber(value: 0),
-                signature: signature ?? "",
-                version: version!
+                adImpressionIdentifier: nonce,
+                timestamp: timestamp,
+                signature: signature,
+                version: version
             )
-
-            if #available(iOS 16.1, *) {
-                // SKAN 4.0: hierarchical source identifier replaces adCampaignIdentifier
-                if let sourceIdentifier = sourceIdentifier {
-                    imp.sourceIdentifier = sourceIdentifier
-                }
-                // SKAN 2.2 fidelity-type: 0 = view-through, 1 = StoreKit-rendered
-                if hasFidelities, let fidelities = fidelities {
-                    parseFidelities(fidelities, into: imp)
-                }
+            if #available(iOS 16.1, *), let sourceIdentifier = sourceIdentifier {
+                imp.sourceIdentifier = sourceIdentifier
             }
-
             skImpression = imp
-
         } else {
-            // iOS 14.5–15.x: memberwise initializer not available, use property-based init
             let imp = SKAdImpression()
             imp.sourceAppStoreItemIdentifier     = sourceApp
-            imp.advertisedAppStoreItemIdentifier = itunesItem!
-            imp.adNetworkIdentifier              = networkId!
+            imp.advertisedAppStoreItemIdentifier = itunesItem
+            imp.adNetworkIdentifier              = networkId
             imp.adCampaignIdentifier             = campaign ?? NSNumber(value: 0)
-            imp.adImpressionIdentifier           = nonce ?? ""
-            imp.timestamp                        = timestamp ?? NSNumber(value: 0)
-            imp.signature                        = signature ?? ""
-            imp.version                          = version!
+            imp.adImpressionIdentifier           = nonce
+            imp.timestamp                        = timestamp
+            imp.signature                        = signature
+            imp.version                          = version
             skImpression = imp
         }
 
@@ -245,22 +224,22 @@ final class SKAdNetworkManager {
 
     // MARK: - Private
 
-    /// Fills nonce/timestamp/signature on the impression from fidelity entries,
-    /// only if those fields weren't already set at the top level.    
-    @available(iOS 16.1, *)
-    private func parseFidelities(_ fidelities: [[String: Any]], into imp: SKAdImpression) {
-        for f in fidelities {
-            if imp.adImpressionIdentifier.isEmpty, let nonce = f["nonce"] as? String {
-                imp.adImpressionIdentifier = nonce
-            }
-            if imp.timestamp == NSNumber(value: 0) {
-                if let n = f["timestamp"] as? NSNumber { imp.timestamp = n }
-                else if let s = f["timestamp"] as? String, let i = Int(s) { imp.timestamp = NSNumber(value: i) }
-            }
-            if imp.signature.isEmpty, let sig = f["signature"] as? String {
-                imp.signature = sig
-            }
-        }
+    /// Resolves nonce/timestamp/signature from the fidelity-0 (view-through) entry.
+    /// Returns nil if there is no valid fidelity-0 entry — no fallback to fidelity-1,
+    /// whose values are signed with a different formula.
+    private static func fidelity0Values(from params: [String: Any]) -> (nonce: String, timestamp: NSNumber, signature: String)? {
+        guard let fidelities = params["fidelities"] as? [[String: Any]],
+              let f0 = fidelities.first(where: { ($0["fidelity"] as? Int) == 0 }),
+              let nonce = f0["nonce"] as? String, !nonce.isEmpty,
+              let signature = f0["signature"] as? String, !signature.isEmpty
+        else { return nil }
+
+        let timestamp: NSNumber
+        if let n = f0["timestamp"] as? NSNumber { timestamp = n }
+        else if let s = f0["timestamp"] as? String, let i = Int(s) { timestamp = NSNumber(value: i) }
+        else { return nil }
+
+        return (nonce, timestamp, signature)
     }
 
     private func completeOnMain(_ completion: @escaping (Any) -> Void, _ value: Any) {
