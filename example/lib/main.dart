@@ -116,6 +116,20 @@ class _HomePageState extends State<HomePage> {
         enabledPlacementCodes: const [kPlacementCode],
         otherParams: {'theme': theme},
         logLevel: LogLevel.info,
+        onEvent: (event) {
+          debugPrint(
+            '📢 [KONTEXT] ${event.type.value}'
+            '${event.code != null ? '  code=${event.code}' : ''}'
+            '${event.format != null ? '  format=${event.format}' : ''}'
+            '${event.messageId != null ? '  messageId=${event.messageId}' : ''}'
+            '${event.id != null ? '  id=${event.id}' : ''}'
+            '${event.revenue != null ? '  revenue=${event.revenue}' : ''}'
+            '${event.skipCode != null ? '  skipCode=${event.skipCode}' : ''}'
+            '${event.url != null ? '  url=${event.url}' : ''}'
+            '${event.errCode != null ? '  errCode=${event.errCode}' : ''}'
+            '${event.message != null ? '  message=${event.message}' : ''}',
+          );
+        },
         child: Column(
           children: [
             Expanded(
