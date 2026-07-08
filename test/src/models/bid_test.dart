@@ -284,4 +284,204 @@ void main() {
       });
     });
   });
+
+  // ===== Added for v2.2.4: coverage for the 2.2.2 SKAN-model additions =====
+  // (impressionTrigger, Skan.toJson, fidelities in equality, AttributionFidelity)
+
+  group('Bid.impressionTrigger', () {
+    Map<String, dynamic> json(Object? trigger) => {
+          'bidId': 'bid-1',
+          'code': 'code-1',
+          'adDisplayPosition': 'afterAssistantMessage',
+          if (trigger != null) 'impressionTrigger': trigger,
+        };
+
+    test('defaults to immediate when missing', () {
+      expect(Bid.fromJson(json(null)).impressionTrigger, ImpressionTrigger.immediate);
+    });
+
+    test('parses immediate', () {
+      expect(Bid.fromJson(json('immediate')).impressionTrigger, ImpressionTrigger.immediate);
+    });
+
+    test('parses component', () {
+      expect(Bid.fromJson(json('component')).impressionTrigger, ImpressionTrigger.component);
+    });
+
+    test('falls back to immediate for an unknown value', () {
+      expect(Bid.fromJson(json('whenever')).impressionTrigger, ImpressionTrigger.immediate);
+    });
+
+    test('falls back to immediate for a non-string value', () {
+      expect(Bid.fromJson(json(42)).impressionTrigger, ImpressionTrigger.immediate);
+    });
+  });
+
+  group('Bid equality (skan & impressionTrigger)', () {
+    Bid make({String? trigger, Map<String, dynamic>? skan}) => Bid.fromJson({
+          'bidId': 'bid-1',
+          'code': 'code-1',
+          'adDisplayPosition': 'afterAssistantMessage',
+          if (trigger != null) 'impressionTrigger': trigger,
+          if (skan != null) 'skan': skan,
+        });
+
+    test('bids differing only in impressionTrigger are not equal', () {
+      expect(make(trigger: 'immediate'), isNot(equals(make(trigger: 'component'))));
+    });
+
+    test('bids with the same impressionTrigger are equal', () {
+      final a = make(trigger: 'component');
+      final b = make(trigger: 'component');
+      expect(a, equals(b));
+      expect(a.hashCode, equals(b.hashCode));
+    });
+
+    test('bids differing only in skan are not equal', () {
+      final s1 = {'version': '4.0', 'network': 'net-a', 'itunesItem': 'i', 'sourceApp': 's'};
+      final s2 = {'version': '4.0', 'network': 'net-b', 'itunesItem': 'i', 'sourceApp': 's'};
+      expect(make(skan: s1), isNot(equals(make(skan: s2))));
+    });
+  });
+
+  group('Skan.toJson', () {
+    Skan requiredOnly() => Skan.fromJson({
+          'version': '4.0',
+          'network': 'network-id',
+          'itunesItem': 'itunes-item',
+          'sourceApp': 'source-app',
+        })!;
+
+    test('includes exactly the required keys when optionals are null', () {
+      expect(requiredOnly().toJson(), {
+        'version': '4.0',
+        'network': 'network-id',
+        'itunesItem': 'itunes-item',
+        'sourceApp': 'source-app',
+      });
+    });
+
+    test('omits null optional fields', () {
+      final json = requiredOnly().toJson();
+      for (final key in ['sourceIdentifier', 'campaign', 'nonce', 'timestamp', 'signature', 'fidelities']) {
+        expect(json.containsKey(key), isFalse, reason: 'should not contain $key');
+      }
+    });
+
+    test('includes all optional scalar fields when present', () {
+      final json = Skan.fromJson({
+        'version': '4.0',
+        'network': 'network-id',
+        'itunesItem': 'itunes-item',
+        'sourceApp': 'source-app',
+        'sourceIdentifier': 'src-id',
+        'campaign': 'camp-1',
+        'nonce': 'nonce-abc',
+        'timestamp': '1700000000',
+        'signature': 'sig-xyz',
+      })!.toJson();
+      expect(json['sourceIdentifier'], 'src-id');
+      expect(json['campaign'], 'camp-1');
+      expect(json['nonce'], 'nonce-abc');
+      expect(json['timestamp'], '1700000000');
+      expect(json['signature'], 'sig-xyz');
+    });
+
+    test('serializes fidelities as a list of maps', () {
+      final json = Skan.fromJson({
+        'version': '4.0',
+        'network': 'network-id',
+        'itunesItem': 'itunes-item',
+        'sourceApp': 'source-app',
+        'fidelities': [
+          {'fidelity': 1, 'signature': 'sig-1', 'nonce': 'nonce-1', 'timestamp': 'ts-1'},
+        ],
+      })!.toJson();
+      expect(json['fidelities'], [
+        {'fidelity': 1, 'nonce': 'nonce-1', 'timestamp': 'ts-1', 'signature': 'sig-1'},
+      ]);
+    });
+  });
+
+  group('Skan equality', () {
+    Skan skanWith([Map<String, dynamic> overrides = const {}]) => Skan.fromJson({
+          'version': '4.0',
+          'network': 'net',
+          'itunesItem': 'i',
+          'sourceApp': 's',
+          ...overrides,
+        })!;
+
+    test('identical skans are equal with equal hashCodes', () {
+      expect(skanWith(), equals(skanWith()));
+      expect(skanWith().hashCode, equals(skanWith().hashCode));
+    });
+
+    test('skans differing in a scalar field are not equal', () {
+      expect(skanWith({'network': 'a'}), isNot(equals(skanWith({'network': 'b'}))));
+    });
+
+    test('skans differing in fidelities are not equal', () {
+      final withFid = skanWith({
+        'fidelities': [
+          {'fidelity': 1, 'signature': 's', 'nonce': 'n', 'timestamp': 't'},
+        ],
+      });
+      expect(withFid, isNot(equals(skanWith())));
+    });
+
+    test('skans with equal fidelities are equal', () {
+      final a = skanWith({
+        'fidelities': [
+          {'fidelity': 1, 'signature': 's', 'nonce': 'n', 'timestamp': 't'},
+        ],
+      });
+      final b = skanWith({
+        'fidelities': [
+          {'fidelity': 1, 'signature': 's', 'nonce': 'n', 'timestamp': 't'},
+        ],
+      });
+      expect(a, equals(b));
+      expect(a.hashCode, equals(b.hashCode));
+    });
+  });
+
+  group('AttributionFidelity', () {
+    test('parses a valid entry', () {
+      final f = AttributionFidelity.fromJson({
+        'fidelity': 1,
+        'signature': 'sig',
+        'nonce': 'nonce',
+        'timestamp': '1700000000',
+      });
+      expect(f, isNotNull);
+      expect(f!.fidelity, 1);
+      expect(f.signature, 'sig');
+      expect(f.nonce, 'nonce');
+      expect(f.timestamp, '1700000000');
+    });
+
+    test('returns null when a required field is missing', () {
+      expect(
+        AttributionFidelity.fromJson({'fidelity': 1, 'signature': 'sig', 'nonce': 'n'}),
+        isNull,
+      );
+    });
+
+    test('returns null when fidelity has the wrong type', () {
+      expect(
+        AttributionFidelity.fromJson({'fidelity': 'x', 'signature': 'sig', 'nonce': 'n', 'timestamp': 't'}),
+        isNull,
+      );
+    });
+
+    test('equal entries are equal; different ones are not', () {
+      final a = AttributionFidelity.fromJson({'fidelity': 1, 'signature': 's', 'nonce': 'n', 'timestamp': 't'});
+      final b = AttributionFidelity.fromJson({'fidelity': 1, 'signature': 's', 'nonce': 'n', 'timestamp': 't'});
+      final c = AttributionFidelity.fromJson({'fidelity': 0, 'signature': 's', 'nonce': 'n', 'timestamp': 't'});
+      expect(a, equals(b));
+      expect(a.hashCode, equals(b.hashCode));
+      expect(a, isNot(equals(c)));
+    });
+  });
 }
