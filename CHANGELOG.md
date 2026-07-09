@@ -8,7 +8,6 @@
 * Remove the message-driven `open-/close-skstoreproduct-iframe` component; StoreKit presentation is now SDK-driven from the click.
 * SKOverlay now requires iOS 16.0+ and fidelity-1 SKAN data — attribution is mandatory, so on iOS 14–15 `present` returns `UNSUPPORTED_IOS` instead of showing an unattributable overlay (previous behavior).
 * Harden the native `SKAdImpression` construction: resolve attribution fields upfront (top-level, else fidelity-0 entry), validate all required fields, and fail cleanly with `MISSING_ARGUMENTS` instead of building an empty impression.
-* Update the iOS privacy manifest (`NSPrivacyTracking` = false, no tracking domains, add the UserDefaults required-reason API) to match the Swift SDK.
 * Declare the `StoreKit` framework in the podspec.
 * Document the required host-app `SKAdNetworkItems` entry (`mp7rpxwdrx.skadnetwork`) in the README.
 
