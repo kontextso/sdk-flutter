@@ -19,7 +19,18 @@ final class SKStoreProductManager: NSObject, SKStoreProductViewControllerDelegat
         var params: [String: Any] = [
             SKStoreProductParameterITunesItemIdentifier: NSNumber(value: itemId)
         ]
-        Self.applySkanParams(skan, into: &params)
+        // Fail closed when attribution can't be attached: presenting the sheet without
+        // SKAN params would open the store page unattributed with no error surfaced.
+        // Returning an error makes the Dart side fall back to the browser instead.
+        // Mirrors KontextKit and SKOverlayManager.
+        guard Self.applySkanParams(skan, into: &params) else {
+            completion(FlutterError(
+                code: "ATTRIBUTION_FAILED",
+                message: "Failed to apply SKAN attribution — missing or invalid fidelity-1 data",
+                details: nil
+            ))
+            return
+        }
 
         let viewController = SKStoreProductViewController()
         viewController.delegate = self
@@ -75,15 +86,16 @@ final class SKStoreProductManager: NSObject, SKStoreProductViewControllerDelegat
     }
 
     /// Appends all required SKAN install-validation keys to the SKStoreProduct params dict.
-    private static func applySkanParams(_ skan: [String: Any], into params: inout [String: Any]) {
-        guard #available(iOS 14.0, *) else { return }
+    /// Returns false when attribution can't be attached (missing/invalid fields or iOS < 14).
+    private static func applySkanParams(_ skan: [String: Any], into params: inout [String: Any]) -> Bool {
+        guard #available(iOS 14.0, *) else { return false }
 
         guard
             let version   = skan["version"]   as? String, !version.isEmpty,
             let network   = skan["network"]   as? String, !network.isEmpty,
             let sourceApp = skan["sourceApp"] as? String,
             let f1        = fidelity1Values(from: skan)
-        else { return }
+        else { return false }
 
         let sourceAppInt = Int(sourceApp) ?? 0
         let campaignInt  = (skan["campaign"] as? String).flatMap { Int($0) } ?? 0
@@ -102,8 +114,10 @@ final class SKStoreProductManager: NSObject, SKStoreProductViewControllerDelegat
                 params[SKStoreProductParameterAdNetworkSourceIdentifier] = NSNumber(value: sourceIdentifierInt)
             }
         }
+
+        return true
     }
-    
+
     func dismiss(completion: @escaping (Bool) -> Void) {
         let run: () -> Void = { [weak self] in
             guard let self = self else {
