@@ -9,10 +9,12 @@ class SKAdNetwork {
 
   static const MethodChannel _channel = MethodChannel('kontext_flutter_sdk/sk_ad_network');
 
+  static bool Function() isIOS = () => Platform.isIOS;
+
   static bool _impressionReady = false;
 
   static Future<bool> initImpression(Skan skan) async {
-    if (!Platform.isIOS) return false;
+    if (!isIOS()) return false;
 
     final params = {
       'version': skan.version,
@@ -56,7 +58,7 @@ class SKAdNetwork {
   }
 
   static Future<void> startImpression() async {
-    if (!Platform.isIOS || !_impressionReady) return;
+    if (!isIOS() || !_impressionReady) return;
 
     try {
       final result = await _channel.invokeMethod('startImpression');
@@ -69,7 +71,7 @@ class SKAdNetwork {
   }
 
   static Future<void> endImpression() async {
-    if (!Platform.isIOS || !_impressionReady) return;
+    if (!isIOS() || !_impressionReady) return;
 
     try {
       final result = await _channel.invokeMethod('endImpression');
@@ -84,7 +86,7 @@ class SKAdNetwork {
   static Future<void> dispose() async {
     _impressionReady = false;
 
-    if (!Platform.isIOS) return;
+    if (!isIOS()) return;
 
     try {
       final result = await _channel.invokeMethod('dispose');
