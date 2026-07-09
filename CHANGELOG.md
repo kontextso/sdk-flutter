@@ -1,6 +1,16 @@
 # Changelog
 
 ## 2.2.4
+* Activate SKAdNetwork (SKAN) install attribution for directly-served campaigns (iOS). The SDK now reports a version the ad server accepts for SKAN, receives signed `skan` payloads, and registers view-through (fidelity-0) impressions via `SKAdImpression`.
+* Clicks on bids with fidelity-1 SKAN data now open the App Store product sheet (`SKStoreProductViewController`) with full attribution parameters, falling back to the browser if it fails to load.
+* Support the `impressionTrigger` bid field (`immediate` — fire on ad done, `component` — fire on component open; defaults to `immediate`).
+* Pass the complete signed SKAN payload to the native SKOverlay/SKStoreProduct layers (previously only a bare `appStoreId`, which could not carry attribution).
+* Remove the message-driven `open-/close-skstoreproduct-iframe` component; StoreKit presentation is now SDK-driven from the click.
+* SKOverlay now requires iOS 16.0+ and fidelity-1 SKAN data — attribution is mandatory, so on iOS 14–15 `present` returns `UNSUPPORTED_IOS` instead of showing an unattributable overlay (previous behavior).
+* Harden the native `SKAdImpression` construction: resolve attribution fields upfront (top-level, else fidelity-0 entry), validate all required fields, and fail cleanly with `MISSING_ARGUMENTS` instead of building an empty impression.
+* Update the iOS privacy manifest (`NSPrivacyTracking` = false, no tracking domains, add the UserDefaults required-reason API) to match the Swift SDK.
+* Declare the `StoreKit` framework in the podspec.
+* Document the required host-app `SKAdNetworkItems` entry (`mp7rpxwdrx.skadnetwork`) in the README.
 
 ## 2.2.1
 * Add `revenue` to `AdEvent.adViewed` events.
