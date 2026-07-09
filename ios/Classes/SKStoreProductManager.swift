@@ -20,7 +20,7 @@ final class SKStoreProductManager: NSObject, SKStoreProductViewControllerDelegat
             SKStoreProductParameterITunesItemIdentifier: NSNumber(value: itemId)
         ]
         Self.applySkanParams(skan, into: &params)
-        
+
         let viewController = SKStoreProductViewController()
         viewController.delegate = self
         viewController.loadProduct(withParameters: params) { [weak self] loaded, error in
@@ -41,7 +41,7 @@ final class SKStoreProductManager: NSObject, SKStoreProductViewControllerDelegat
                         completion(FlutterError(code: "NO_TOP_VIEW_CONTROLLER", message: "No top view controller found", details: nil))
                         return
                     }
-                    
+
                     top.present(viewController, animated: true) { [weak self] in
                         self?.presentedViewController = viewController
                         completion(true)
@@ -56,14 +56,21 @@ final class SKStoreProductManager: NSObject, SKStoreProductViewControllerDelegat
     /// Picks nonce/timestamp/signature from the fidelity-1 entry only.
     /// Returns nil if no fidelity-1 entry exists — no fallback to top-level fields
     /// since those are fidelity-0 values signed with a different formula.
-    private static func fidelity1Values(from skan: [String: Any]) -> (nonce: UUID, timestamp: String, signature: String)? {
+    private static func fidelity1Values(from skan: [String: Any]) -> (nonce: UUID, timestamp: NSNumber, signature: String)? {
         guard let fidelities = skan["fidelities"] as? [[String: Any]],
             let f1 = fidelities.first(where: { ($0["fidelity"] as? Int) == 1 }),
             let nonceStr  = f1["nonce"]      as? String, !nonceStr.isEmpty,
             let nonce     = UUID(uuidString: nonceStr),   // validate UUID here
-            let timestamp = f1["timestamp"]  as? String, !timestamp.isEmpty,
             let signature = f1["signature"]  as? String, !signature.isEmpty
         else { return nil }
+
+        // Validate the timestamp parses — a coerced 0 would produce an invalid
+        // signature and a silent attribution failure. Mirrors SKOverlayManager.
+        let timestamp: NSNumber
+        if let n = f1["timestamp"] as? NSNumber { timestamp = n }
+        else if let s = f1["timestamp"] as? String, let i = Int(s) { timestamp = NSNumber(value: i) }
+        else { return nil }
+
         return (nonce, timestamp, signature)
     }
 
@@ -80,13 +87,12 @@ final class SKStoreProductManager: NSObject, SKStoreProductViewControllerDelegat
 
         let sourceAppInt = Int(sourceApp) ?? 0
         let campaignInt  = (skan["campaign"] as? String).flatMap { Int($0) } ?? 0
-        let timestampInt = Int(f1.timestamp) ?? 0
 
         params[SKStoreProductParameterAdNetworkVersion]                  = version
         params[SKStoreProductParameterAdNetworkIdentifier]               = network
         params[SKStoreProductParameterAdNetworkSourceAppStoreIdentifier] = NSNumber(value: sourceAppInt)
         params[SKStoreProductParameterAdNetworkCampaignIdentifier]       = NSNumber(value: campaignInt)
-        params[SKStoreProductParameterAdNetworkTimestamp]                = NSNumber(value: timestampInt)
+        params[SKStoreProductParameterAdNetworkTimestamp]                = f1.timestamp
         params[SKStoreProductParameterAdNetworkAttributionSignature]     = f1.signature
         params[SKStoreProductParameterAdNetworkNonce]                    = f1.nonce
 
